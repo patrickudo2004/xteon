@@ -85,7 +85,7 @@ pub fn enumerate_real_windows_displays() -> Vec<NativeDisplayInfo> {
                 } else if is_wireless {
                     "Phone / Tablet (ASUS GlideX Wireless)".to_string()
                 } else {
-                    format!("External Stage Display {}", os_index)
+                    format!("External Stage Display {}", dev_num + 1)
                 };
 
                 let stage_zone = if is_primary {
