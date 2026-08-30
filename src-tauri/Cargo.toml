@@ -1,0 +1,37 @@
+[package]
+name = "xteon"
+version = "1.2.0"
+description = "Xteon: Real-Time Display Topology, Pre-Production Rig Planner & Live Hardware Diagnostics Workspace"
+authors = ["Xteon Core Engineering"]
+edition = "2021"
+
+[lib]
+name = "xteon_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.0.0", features = ["tray-icon"] }
+tauri-plugin-shell = "2.0.0"
+tauri-plugin-updater = "2.0.0"
+tauri-plugin-process = "2.0.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.38", features = ["full"] }
+axum = { version = "0.7", features = ["ws"] }
+tower-http = { version = "0.5", features = ["cors"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+image = { version = "0.25", default-features = false, features = ["jpeg"] }
+base64 = "0.22"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Graphics_Gdi",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Foundation",
+    "Win32_Media_Audio",
+    "Win32_System_Com"
+] }
