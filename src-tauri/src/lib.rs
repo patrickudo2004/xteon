@@ -199,6 +199,12 @@ fn close_test_pattern(app: tauri::AppHandle) -> bool {
 }
 
 #[tauri::command]
+fn sync_mobile_companion_displays(displays: Vec<server::companion::CompanionDisplayPayload>) -> bool {
+    server::companion::update_synced_displays(displays);
+    true
+}
+
+#[tauri::command]
 fn close_all_overlays(app: tauri::AppHandle) -> bool {
     for (label, window) in app.webview_windows() {
         if label.starts_with("xteon_pattern_") || label.starts_with("xteon_flash_") || label.starts_with("xteon_blackout_") {
@@ -243,6 +249,7 @@ pub fn run() {
             capture_all_screens,
             validate_bandwidth,
             get_mobile_companion_status,
+            sync_mobile_companion_displays,
             trigger_flash,
             close_flash,
             show_test_pattern,

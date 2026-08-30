@@ -106,6 +106,31 @@ export const detectCameraProtocol = (
   return { portType: 'USB_C_DP', vendor: 'DirectShow Video', defaultAlias: label || 'External Video Camera' };
 };
 
+// Helper for pushing live normalized displays to the local Mobile Companion server
+export const pushDisplaysToCompanion = async (displays: LiveDisplay[]) => {
+  if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const payload = displays.map((d, idx) => ({
+        id: d.id,
+        os_index: d.osIndex || idx + 1,
+        name: d.name,
+        custom_alias: d.customAlias,
+        stage_zone: d.stageZone,
+        port_type: d.portType,
+        width: d.activeResolution.width,
+        height: d.activeResolution.height,
+        refresh_rate_hz: d.refreshRateHz,
+        is_primary: idx === 0 || d.osIndex === 1,
+        is_frozen: d.isFrozen || false,
+        bounds_x: d.bounds?.x,
+        bounds_y: d.bounds?.y,
+      }));
+      await invoke('sync_mobile_companion_displays', { displays: payload });
+    } catch (_) {}
+  }
+};
+
 // Helper for generating initial port definitions for any device
 export const createDefaultPorts = (
   deviceType: DeviceType
@@ -1836,25 +1861,25 @@ export const useRigStore = create<RigState>((set, get) => ({
   },
 
   updateDisplayAlias: (displayId, alias) => {
-    set({
-      liveDisplays: get().liveDisplays.map((disp) => {
-        if (disp.id === displayId) {
-          return { ...disp, customAlias: alias };
-        }
-        return disp;
-      }),
+    const updated = get().liveDisplays.map((disp) => {
+      if (disp.id === displayId) {
+        return { ...disp, customAlias: alias };
+      }
+      return disp;
     });
+    set({ liveDisplays: updated });
+    pushDisplaysToCompanion(updated);
   },
 
   updateDisplayStageZone: (displayId, zone) => {
-    set({
-      liveDisplays: get().liveDisplays.map((disp) => {
-        if (disp.id === displayId) {
-          return { ...disp, stageZone: zone };
-        }
-        return disp;
-      }),
+    const updated = get().liveDisplays.map((disp) => {
+      if (disp.id === displayId) {
+        return { ...disp, stageZone: zone };
+      }
+      return disp;
     });
+    set({ liveDisplays: updated });
+    pushDisplaysToCompanion(updated);
   },
 
   refreshLiveCameras: async () => {
@@ -2164,6 +2189,8 @@ export const useRigStore = create<RigState>((set, get) => ({
             liveDisplays: mappedDisplays,
             nodes: convergedNodes,
           });
+
+          pushDisplaysToCompanion(mappedDisplays);
         }
       }
     } catch (e) {

@@ -727,6 +727,82 @@ const forkedCamNodes = isolatedForkedRig.nodes.filter((n) => n.id.startsWith('fo
 assertEqual(forkedCamNodes.length, 1, 'Forked Planner Rig strictly created 1 camera node (only unhidden camera, 0 internal/virtual drivers)');
 assertEqual(forkedCamNodes[0].id, 'forked-cam-cam-iriun', 'Forked camera node corresponds to Iriun');
 
+// ==============================================================================
+// TEST SUITE 8: Mobile Companion Display Normalization & State Sync
+// ==============================================================================
+console.log('\n\x1b[1m\x1b[33m--- [SUITE 8] Mobile Companion Normalization & State Synchronization ---\x1b[0m');
+
+// 8.1 Sequential Normalization for Dual-Screen Setup (Laptop + ASUS GlideX Phone)
+console.log('\n  \x1b[34m▶ Test 8.1: Normalization of Discontinuous Windows Hardware Slots\x1b[0m');
+
+const rawDiscontinuousHardwareDisplays = [
+  {
+    rawSlot: 0,
+    isPrimary: true,
+    name: 'Intel UHD Graphics Internal',
+    portType: 'DP_1_4' as PortType,
+    width: 1920,
+    height: 1080,
+  },
+  {
+    rawSlot: 3, // Windows assigned slot 3 to ASUS GlideX virtual display driver
+    isPrimary: false,
+    name: 'ASUS GlideX Virtual Display',
+    portType: 'WIRELESS' as PortType,
+    width: 1080,
+    height: 2400,
+  },
+];
+
+// Sort primary first and normalize 1-based sequential index
+const normalizedDisplays: LiveDisplay[] = rawDiscontinuousHardwareDisplays
+  .sort((a, b) => (a.isPrimary ? -1 : 1))
+  .map((d, idx) => ({
+    id: `live-disp-${idx + 1}`,
+    osIndex: idx + 1, // Normalized to 1, 2 (NOT 1, 4!)
+    name: d.name,
+    customAlias: d.isPrimary ? 'Host Workstation (Primary Screen)' : 'Phone / Tablet (ASUS GlideX Wireless)',
+    stageZone: d.isPrimary ? 'FOH Control Booth' : 'Mobile Director / Stage',
+    portType: d.portType,
+    vendor: d.isPrimary ? 'Dell' : 'ASUS',
+    model: d.name,
+    serial: `SN-${idx + 1}`,
+    activeResolution: { width: d.width, height: d.height },
+    nativeResolution: { width: d.width, height: d.height },
+    refreshRateHz: 60,
+    isHdr: false,
+    colorSpace: 'sRGB',
+    audioLevelDb: -60.0,
+    status: 'ONLINE',
+    isFrozen: false,
+    isLiveFeedEnabled: true,
+  }));
+
+assertEqual(normalizedDisplays.length, 2, 'Normalized displays count matches active screens (2)');
+assertEqual(normalizedDisplays[0].osIndex, 1, 'Primary Laptop is Screen 1');
+assertEqual(normalizedDisplays[0].customAlias, 'Host Workstation (Primary Screen)', 'Screen 1 has Host Workstation alias');
+assertEqual(normalizedDisplays[1].osIndex, 2, 'Phone is normalized to Screen 2 (NOT Screen 4)');
+assertEqual(normalizedDisplays[1].customAlias, 'Phone / Tablet (ASUS GlideX Wireless)', 'Screen 2 has Phone / Tablet alias');
+assertEqual(normalizedDisplays[1].stageZone, 'Mobile Director / Stage', 'Screen 2 stage zone is Mobile Director');
+
+// 8.2 Live Alias & Stage Zone Update Propagation
+console.log('\n  \x1b[34m▶ Test 8.2: Live Alias & Stage Zone Customization Propagation\x1b[0m');
+useRigStore.setState({ liveDisplays: normalizedDisplays });
+
+useRigStore.getState().updateDisplayAlias('live-disp-2', 'Pastor Roaming Confidence Phone');
+assertEqual(
+  useRigStore.getState().liveDisplays.find((d) => d.id === 'live-disp-2')?.customAlias,
+  'Pastor Roaming Confidence Phone',
+  'updateDisplayAlias updates custom alias for mobile companion push'
+);
+
+useRigStore.getState().updateDisplayStageZone('live-disp-2', 'Auditorium Center Aisle');
+assertEqual(
+  useRigStore.getState().liveDisplays.find((d) => d.id === 'live-disp-2')?.stageZone,
+  'Auditorium Center Aisle',
+  'updateDisplayStageZone updates stage zone for mobile companion push'
+);
+
 console.log('\n\x1b[1m\x1b[36m===============================================================================\x1b[0m');
 console.log(`\x1b[1mTOTAL ASSERTIONS: ${totalAssertions} | \x1b[32mPASSED: ${passedAssertions}\x1b[0m | \x1b[31mFAILED: ${failedAssertions}\x1b[0m`);
 console.log('\x1b[1m\x1b[36m===============================================================================\x1b[0m\n');

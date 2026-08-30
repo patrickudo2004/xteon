@@ -125,10 +125,10 @@ pub fn enumerate_real_windows_displays() -> Vec<NativeDisplayInfo> {
                     format!("WIN-MON-{}", os_index)
                 };
 
-                result.push(NativeDisplayInfo {
-                    id: display_id,
-                    os_index,
-                    name: if !monitor_string.is_empty() { monitor_string } else { format!("Display {}", os_index) },
+                result.push((is_primary, NativeDisplayInfo {
+                    id: String::new(), // Will be normalized below
+                    os_index: 0,
+                    name: if !monitor_string.is_empty() { monitor_string } else { format!("Display Device") },
                     custom_alias,
                     stage_zone,
                     port_type,
@@ -147,14 +147,41 @@ pub fn enumerate_real_windows_displays() -> Vec<NativeDisplayInfo> {
                         width,
                         height,
                     }),
-                });
+                }));
             }
 
             dev_num += 1;
         }
     }
 
-    result
+    // Sort: Primary display strictly first, then remaining displays
+    result.sort_by(|a, b| {
+        if a.0 && !b.0 {
+            std::cmp::Ordering::Less
+        } else if !a.0 && b.0 {
+            std::cmp::Ordering::Greater
+        } else {
+            std::cmp::Ordering::Equal
+        }
+    });
+
+    // Normalize sequential index 1, 2, 3...
+    result.into_iter().enumerate().map(|(idx, (is_primary, mut d))| {
+        let seq_num = (idx + 1) as u32;
+        d.os_index = seq_num;
+        d.id = format!("live-disp-{}", seq_num);
+        if is_primary {
+            d.custom_alias = "Host Workstation (Primary Screen)".to_string();
+            d.stage_zone = "FOH Control Booth".to_string();
+        } else if d.port_type == "WIRELESS" {
+            d.custom_alias = "Phone / Tablet (Wireless Display)".to_string();
+            d.stage_zone = "Mobile Director / Stage".to_string();
+        } else {
+            d.custom_alias = format!("External Stage Display {}", seq_num);
+            d.stage_zone = "Stage Area".to_string();
+        }
+        d
+    }).collect()
 }
 
 #[derive(serde::Deserialize, Clone)]
