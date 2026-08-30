@@ -1,5 +1,5 @@
 # End User License Agreement (EULA) & Terms of Service
-# Product: Xteon (Extension + Eon)
+# Product: Xteon
 
 ---
 

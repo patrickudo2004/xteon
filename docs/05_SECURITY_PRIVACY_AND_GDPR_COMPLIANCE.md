@@ -1,5 +1,5 @@
 # Security, Privacy & GDPR Compliance Specification
-# System: Xteon (Extension + Eon)
+# System: Xteon
 > **Local-First Architecture, Zero-Telemetry Principles & Broadcast NDA Compliance**
 
 ---

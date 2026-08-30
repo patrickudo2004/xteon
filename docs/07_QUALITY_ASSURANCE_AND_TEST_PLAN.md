@@ -1,5 +1,5 @@
 # Quality Assurance & Hardware Test Plan
-# System: Xteon (Extension + Eon)
+# System: Xteon
 > **Multi-GPU Test Matrix, Rig Planner Validation, StreamDeck & Live Production Reliability Suite**
 
 ---

@@ -1,5 +1,5 @@
 # System Architecture & Tech Stack Document
-# System: Xteon (Extension + Eon)
+# System: Xteon
 > **Dual-Engine Architecture: Pre-Production Rig Planner, Live Diagnostics Engine & Hardware Integrations**
 
 ---

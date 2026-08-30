@@ -1,5 +1,5 @@
 # Project Initiation Document (PID)
-# Project Name: Xteon (Extension + Eon)
+# Project Name: Xteon
 > **Real-Time Display Topology, Pre-Production Rig Planner & Live Hardware Diagnostics Workspace for Pro AV & Media Production**
 
 ---

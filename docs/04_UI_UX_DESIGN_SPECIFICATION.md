@@ -1,5 +1,5 @@
 # UI/UX Design Specification & Themes
-# System: Xteon (Extension + Eon)
+# System: Xteon
 > **Pro AV Design System: Dual-Mode Planner Studio, Live Monitor, High-Performance SVG Vector Engine & Mobile Companion UX**
 
 ---

@@ -1,5 +1,5 @@
 # Product Requirements Document (PRD)
-# Product: Xteon (Extension + Eon)
+# Product: Xteon
 > **Real-Time Display Topology, Pre-Production Rig Planner & Live Hardware Intelligence Workspace**
 
 ---

@@ -1,4 +1,4 @@
-# Xteon (Extension + Eon)
+# Xteon
 > **The Real-Time Display Topology, Pre-Production Rig Planner & Live Hardware Intelligence Workspace for Pro AV & Media Production**
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue.svg)](#)
@@ -11,13 +11,30 @@
 
 ## 1. Executive Summary
 
-**Xteon** (*Extension + Eon*) is the industry-first, unified **Offline Pre-Production Rig Planner** and **Real-Time Live Display Topology Workspace** designed for media production teams, AV engineers, church tech directors, broadcast operators, and touring video crews.
+**Xteon** is the industry-first, unified **Offline Pre-Production Rig Planner**, **Live Graph Topology Workspace**, and **Real-Time Display & Camera Intelligence Monitor** engineered for live events, houses of worship, touring concert crews, broadcast trucks, corporate AV engineers, and media server operators.
 
-In high-stakes live productions, video routing is complex: a single media server connects to external splitters, HDBaseT extenders, SDI converters, LED wall processors, and matrix switchers driving dozens of screens across an arena or sanctuary.
+In high-stakes productions, video distribution and stage camera routing is complex: media servers and presentation workstations connect to external splitters, HDBaseT extenders, SDI converters, LED wall processors, matrix routers, stage confidence monitors, and wireless roving cameras.
 
-**Xteon bridges the entire production lifecycle across two synchronized modes:**
-1. **📐 Offline Rig Planner Mode ("Cisco Packet Tracer for Pro AV"):** Allows media directors to design, simulate, and calculate complex multi-display rigs weeks in advance with zero connected hardware. Features a drag-and-drop virtual component library (splitters, matrixes, extenders, converters, LED processors), a smart cable bandwidth & distance validator, and automated export of **Cable Patch Sheets** and **Equipment Bill of Materials (BOM)** for crews.
-2. **🔴 Live Monitor & Diagnostics Mode:** On show day, Xteon automatically detects all live displays, reconciles them with the pre-production plan ("Plan-to-Live Reconciliation"), renders **GPU-accelerated live video previews**, monitors signal health and audio VU meters, provides one-click screen flash identifiers, and hosts a zero-config **Untethered Mobile Wi-Fi Companion** for walking the venue.
+**Xteon unifies the entire production lifecycle across three synchronized modes:**
+
+1. 🎨 **Planner Studio ("CAD for Pro AV"):** Design, route, and calculate complex multi-screen video and camera rigs weeks in advance with zero connected hardware.
+   * Drag-and-drop component library (Laptops, Cameras, Splitters, Matrix Switchers, Extenders, Converters, LED Walls, Projectors, Stage TVs).
+   * Dynamic Custom Port Manager (add, remove, and reconfigure HDMI, DisplayPort, SDI, NDI, Fiber, and USB-C ports on any node).
+   * 4 Industry Starter Templates (Corporate Dual IMAG, Broadcast 4-Camera, LED Wall Arena, Hybrid GlideX Overflow).
+   * Automated **15-Column CSV Cable Pull List Generator** (RFC 4180 compliant with metric/imperial lengths and crew routing sheets).
+   * Portable `.xteon` project file format for 1-click sharing.
+
+2. 🗺️ **Live Map Topology:** Interactive 2D topological graph of your live physical setup.
+   * Single unified Host Workstation node connected to live physical screens and unhidden camera feeds.
+   * Real-time cable signal bandwidth status (Valid, Warning, Exceeded) and length degradation tracking.
+   * High-contrast Pro AV themes (FOH Dark & High-Noon Daylight) with interactive Inspector and Palette dock/float controls.
+
+3. 🔴 **Live Monitor & Diagnostics:** Comprehensive show-day mission control.
+   * **GPU-Accelerated Screen Previews:** Live low-latency thumbnails with cursor toggle and audio VU metering.
+   * **Momentary Screen Flash Identifier:** 1-click borderless flash cards to instantly spot physical display positions across large venues.
+   * **SMPTE Color Bars & Alignment Grids:** Integrated full-screen test pattern generator.
+   * **Emergency Master Blackout (`Ctrl+Shift+B`):** Global instantaneous panic blackout shield protecting presentation hosts.
+   * **"Fork Live Rig into Planner":** 1-click reverse-synthesis engine converting live hardware topologies into an editable Planner CAD canvas.
 
 ---
 
@@ -39,68 +56,63 @@ In high-stakes live productions, video routing is complex: a single media server
 │ 4. 👁️ Color-Blind Accessible Status Geometry                                 │
 │    Distinct shapes (🟢 Circle OK, 🟡 Triangle Warning, 🛑 Octagon Error).   │
 │                                                                             │
-│ 5. 📦 Zero-Dependency Packaging & Tauri v2 Auto-Updater                     │
-│    Native signed .msi/.exe (Windows), .dmg (macOS), .AppImage (Linux).      │
+│ 5. 📦 Zero-Dependency Multi-Platform Packaging & Auto-Updater                │
+│    Native installers for Windows (.exe/.msi), macOS (.dmg), Linux (.AppImage│
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Core Pillars & The Unified Workflow
+## 3. Camera Ingest & Privacy Subsystem
 
-```
-   ┌─────────────────────────────────────────────────────────────────────────────┐
-   │                         THE XTEON UNIFIED WORKFLOW                          │
-   └──────────────────────────────────────┬──────────────────────────────────────┘
-                                          │
-    ┌─────────────────────────────────────┴─────────────────────────────────────┐
-    │                                                                           │
-┌───▼─────────────────────────────────────┐   ┌─────────────────────────────────▼───┐
-│     PLAN (Offline Rig Studio)           │   │    DEPLOY & MONITOR (Live Mode)     │
-│ • Design 2D stage topologies ahead      │   │ • Plug in at venue -> Auto-detect   │
-│ • Drag splitters, extenders & matrices  │──>│ • "Plan-to-Live" Reconciliation     │
-│ • Validate cable bandwidth & distances  │   │ • GPU Live Mini-Previews @ 10 FPS   │
-│ • Export Cable Patch Sheets & Crew BOM  │   │ • Mobile Wi-Fi Companion walk-around│
-│ • Save to portable .xteon file          │   │ • StreamDeck / OSC hardware control │
-└─────────────────────────────────────────┘   └─────────────────────────────────────┘
-```
+Xteon includes a multi-path video camera ingest pipeline:
 
-* **Universal Distribution Intelligence:** Recognizes complex routing paths, including 1x4/1x8 HDMI splitters, DisplayPort MST hubs, USB-C/Thunderbolt docks, HDBaseT extenders, SDI converters (Decimator/Blackmagic), and IP matrix switchers.
-* **Zero-Interference Footprint:** Under 1.5% GPU utilization and <50MB RAM footprint, ensuring primary live media renderers (Resolume, ProPresenter, OBS, vMix, disguise) never drop a frame.
-* **100% Local-First & Zero-Telemetry:** No video frames or display data ever leave the local network. Secure and fully compliant with broadcast NDAs and GDPR.
+* **Universal Connection Support:** Automatically detects cameras over wired HDMI/SDI capture cards (Elgato Cam Link, Blackmagic DeckLink, AVerMedia, Magewell), USB cameras (Logitech Brio, Razer Kiyo), NDI IP streams, and wireless mobile links (Iriun 4K, DroidCam, Camo, EpocCam).
+* **Privacy Standby by Default:** Internal laptop webcams and software virtual drivers (OBS Virtual Camera, screen capture utilities) are automatically classified and placed into **Sensor Standby** with video streams detached so hardware privacy LEDs stay off.
+* **Camera Ingest Manager Drawer:** Dedicated side panel to view all connected video sources, unhide stage cameras, customize aliases, assign stage zones, and engage live video feeds.
 
 ---
 
-## 4. Documentation Index
+## 4. Mobile Companion (Local Untethered Wi-Fi Director)
 
-The complete software engineering, architectural, and operational specification suite is organized below:
+Walk the sanctuary, auditorium, or arena floor while controlling stage screens from your smartphone:
+
+* **Zero Internet Required:** Embedded high-performance HTTP/WebSocket server running on LAN port `8765` with PIN authentication.
+* **1-to-1 Parity with Live Monitor:** Synchronized screen numbering (**Screen 1**: Primary Workstation, **Screen 2**: Wireless Phone/External Display), custom aliases, stage zones, resolutions, and refresh rates.
+* **Instant Tactile Flash:** Tap **"⚡ Flash Screen"** on your mobile phone to pop the screen identifier overlay on the stage display.
+
+---
+
+## 5. Documentation Index
+
+The complete software engineering, architectural, and operational specification suite:
 
 | # | Document | Purpose & Key Topics |
 | :--- | :--- | :--- |
-| **01** | [**Project Initiation Document (PID)**](docs/01_PROJECT_INITIATION_DOCUMENT_PID.md) | Business case, ROI, target personas, dual-mode scope, StreamDeck/OSC integrations, and risk mitigation. |
-| **02** | [**Product Requirements Document (PRD)**](docs/02_PRODUCT_REQUIREMENTS_DOCUMENT_PRD.md) | 38 Functional Requirements (FR-01 to FR-38), NFRs, MoSCoW prioritization, distribution parsing, StreamDeck API, and `.xteon` format. |
-| **03** | [**System Architecture & Tech Stack**](docs/03_SYSTEM_ARCHITECTURE_AND_TECH_STACK.md) | Native OS capture engines (DXGI, SCK, PipeWire), EDID parser, MST tree discovery, OSC / REST server, Bandwidth Calculator engine, and Tauri v2 + Rust architecture. |
-| **04** | [**UI/UX Design Specification & Themes**](docs/04_UI_UX_DESIGN_SPECIFICATION.md) | Design system, FOH Stage Dark / Daylight themes, High-Performance SVG vectors, Dynamic LOD, Color-Blind Accessibility, and Mobile Companion UX. |
-| **05** | [**Security, Privacy & GDPR Compliance**](docs/05_SECURITY_PRIVACY_AND_GDPR_COMPLIANCE.md) | Local-first zero-telemetry policy, OS screen recording permission handling, local TLS/WSS PIN pairing, and GDPR/CCPA alignment. |
+| **01** | [**Project Initiation Document (PID)**](docs/01_PROJECT_INITIATION_DOCUMENT_PID.md) | Business case, ROI, target personas, 3-mode workflow, StreamDeck/OSC integrations, and roadmap. |
+| **02** | [**Product Requirements Document (PRD)**](docs/02_PRODUCT_REQUIREMENTS_DOCUMENT_PRD.md) | Functional Requirements (FR-01 to FR-42), NFRs, MoSCoW prioritization, StreamDeck API, and `.xteon` format. |
+| **03** | [**System Architecture & Tech Stack**](docs/03_SYSTEM_ARCHITECTURE_AND_TECH_STACK.md) | Native OS capture engines (DXGI, Cocoa NSScreen, PipeWire), EDID parser, Bandwidth Calculator, and Rust + Tauri v2 architecture. |
+| **04** | [**UI/UX Design Specification & Themes**](docs/04_UI_UX_DESIGN_SPECIFICATION.md) | Design system, FOH Stage Dark / Daylight themes, High-Performance SVG vectors, and Mobile Companion UX. |
+| **05** | [**Security, Privacy & GDPR Compliance**](docs/05_SECURITY_PRIVACY_AND_GDPR_COMPLIANCE.md) | Local-first zero-telemetry policy, camera sensor standby privacy, local LAN pairing, and GDPR/CCPA alignment. |
 | **06** | [**Legal Terms, EULA & Disclaimers**](docs/06_LEGAL_TERMS_AND_EULA.md) | End User License Agreement, Terms of Service, live broadcast liability disclaimers, and open-source attributions. |
-| **07** | [**Quality Assurance & Hardware Test Plan**](docs/07_QUALITY_ASSURANCE_AND_TEST_PLAN.md) | Multi-GPU matrix, distribution splitter testing, StreamDeck/OSC stress tests, global hotkey verification, and automated CI/CD pipeline. |
+| **07** | [**Quality Assurance & Hardware Test Plan**](docs/07_QUALITY_ASSURANCE_AND_TEST_PLAN.md) | Multi-GPU matrix, distribution splitter testing, 726 automated assertions, and CI/CD pipeline. |
 
 ---
 
-## 5. Technology Stack Summary
+## 6. Technology Stack Summary
 
-* **Backend / Host Layer:** Rust 2021, Tauri v2, Tokio, Axum (Local WebSocket/WebRTC Companion Server), `rosc` (Open Sound Control protocol).
-* **Native Capture Drivers:** 
-  * Windows: DirectX Desktop Duplication API (DXGI) & Windows Graphics Capture (WGC) + Win32 CCD API.
-  * macOS: ScreenCaptureKit (SCK) & IOKit / CoreGraphics.
-  * Linux: PipeWire (`xdg-desktop-portal`) & DRM/KMS / libdrm.
+* **Backend / Host Core:** Rust 2021, Tauri v2, Tokio, Axum (Local WebSocket/HTTP Mobile Server), `rosc` (Open Sound Control protocol).
+* **Native Capture & Monitor Drivers:** 
+  * Windows: DirectX Desktop Duplication (DXGI), Windows Graphics Capture (WGC), Win32 GDI, WASAPI Core Audio.
+  * macOS: Apple Quartz Display Services, Cocoa `NSScreen`, AVFoundation, Core Audio.
+  * Linux: PipeWire (`xdg-desktop-portal`), X11 XRandR, Wayland Output Management, Video4Linux2.
 * **Frontend Webview:** React 18, TypeScript, Tailwind CSS, Lucide Icons, React Flow (Infinite 2D Spatial Canvas & Planner Studio), Zustand (State Management).
-* **Calculation Engines:** AV Signal Bandwidth & Distance Calculator (Rust-compiled native core).
-* **Mobile Companion:** Progressive Web App (PWA) served locally over LAN Wi-Fi with QR code pairing and zero internet dependencies.
+* **Calculation Engines:** AV Signal Bandwidth & Distance Degradation Calculator (Rust-compiled native core).
+* **Mobile Companion:** Standalone responsive web application served directly from the local host machine over Wi-Fi.
 
 ---
 
-## 6. Installation & Multi-Platform Releases
+## 7. Installation & Multi-Platform Releases
 
 Xteon is packaged natively for Windows, macOS, and Linux with built-in auto-updates:
 
@@ -108,13 +120,59 @@ Xteon is packaged natively for Windows, macOS, and Linux with built-in auto-upda
 * **Installer:** Download `Xteon_1.2.0_x64-setup.exe` or `Xteon_1.2.0_x64_en-US.msi` from [Releases](https://github.com/patrickudo2004/xteon/releases).
 * **Direct Execution:** Standalone portable binary `xteon.exe` available with zero prerequisite installers.
 
-### 🍏 macOS (Apple Silicon M1/M2/M3 & Intel x86_64)
+### 🍏 macOS (Apple Silicon M1/M2/M3/M4 & Intel x86_64)
 * **Disk Image:** Download `Xteon_1.2.0_universal.dmg` from [Releases](https://github.com/patrickudo2004/xteon/releases).
 * Drag `Xteon.app` to your `/Applications` folder.
 
 ### 🐧 Linux (Ubuntu, Debian, Fedora, Arch)
 * **AppImage:** Download `Xteon_1.2.0_amd64.AppImage`, run `chmod +x Xteon_1.2.0_amd64.AppImage`, and execute.
 * **Debian / Ubuntu Package:** Download `xteon_1.2.0_amd64.deb` and install via `sudo dpkg -i xteon_1.2.0_amd64.deb`.
+
+---
+
+## 8. In-App Auto-Updater
+
+Xteon features automatic background update detection and cryptographic signature verification powered by the Tauri v2 Updater:
+1. Click the **Updates** button in the top navigation bar.
+2. Xteon connects to [patrickudo2004/xteon/releases](https://github.com/patrickudo2004/xteon/releases) to fetch release notes and version status.
+3. Download updates in-app with byte telemetry progress and click **Relaunch Now** to upgrade instantly.
+
+---
+
+## 9. Development & Building from Source
+
+### Prerequisites
+* **Node.js:** v18.0+ / v20.x
+* **Rust:** Stable toolchain (`rustup default stable`)
+* **Tauri CLI:** v2.x (`npm install -g @tauri-apps/cli`)
+
+### Setup Instructions
+```bash
+# Clone the repository
+git clone https://github.com/patrickudo2004/xteon.git
+cd xteon
+
+# Install frontend dependencies
+npm install
+
+# Run in Development Mode (Vite + Tauri)
+npm run tauri dev
+
+# Run Automated Pro AV QA Test Suite (726 Assertions across 8 Suites)
+npm test
+
+# Build Production Release Package for your current OS
+npm run build
+npx tauri build
+```
+
+---
+
+## 10. Author & License
+
+* **Project Owner & Lead:** Patrick Udoh ([patrickudo2004@gmail.com](mailto:patrickudo2004@gmail.com))
+* **GitHub Repository:** [https://github.com/patrickudo2004/xteon](https://github.com/patrickudo2004/xteon)
+* **License:** Proprietary / Commercial Pro AV License. All Rights Reserved.do dpkg -i xteon_1.2.0_amd64.deb`.
 
 ---
 
