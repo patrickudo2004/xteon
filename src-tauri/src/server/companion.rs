@@ -7,7 +7,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use std::net::UdpSocket;
-use std::sync::{Arc, Mutex, LazyLock};
+use std::sync::{Mutex, LazyLock};
 use tower_http::cors::{Any, CorsLayer};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

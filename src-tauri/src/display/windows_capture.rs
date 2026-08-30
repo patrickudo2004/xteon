@@ -80,9 +80,6 @@ pub fn enumerate_real_windows_displays() -> Vec<NativeDisplayInfo> {
                     "HDMI_2_0".to_string()
                 };
 
-                let os_index = dev_num + 1;
-                let display_id = format!("live-disp-{}", os_index);
-
                 let custom_alias = if is_primary {
                     "Host Workstation & Primary Screen".to_string()
                 } else if is_wireless {
@@ -116,13 +113,13 @@ pub fn enumerate_real_windows_displays() -> Vec<NativeDisplayInfo> {
                 } else if is_wireless {
                     "ASUS GlideX Virtual Display".to_string()
                 } else {
-                    format!("Direct GPU Display (Screen {})", os_index)
+                    format!("Direct GPU Display (Screen {})", dev_num + 1)
                 };
 
                 let serial = if !monitor_id.is_empty() {
                     monitor_id.split('\\').last().unwrap_or("WIN-MON").to_string()
                 } else {
-                    format!("WIN-MON-{}", os_index)
+                    format!("WIN-MON-{}", dev_num + 1)
                 };
 
                 result.push((is_primary, NativeDisplayInfo {
