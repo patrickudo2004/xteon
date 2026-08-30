@@ -23,8 +23,77 @@ fn sanitize_label(id: &str) -> String {
 }
 
 #[tauri::command]
-fn get_connected_displays() -> Vec<NativeDisplayInfo> {
-    enumerate_real_windows_displays()
+fn get_connected_displays(app: tauri::AppHandle) -> Vec<NativeDisplayInfo> {
+    #[cfg(windows)]
+    {
+        let displays = enumerate_real_windows_displays();
+        if !displays.is_empty() {
+            return displays;
+        }
+    }
+
+    // Native macOS (Cocoa NSScreen) and Linux (XRandR / Wayland) detection via Tauri
+    if let Ok(monitors) = app.available_monitors() {
+        let primary = app.primary_monitor().ok().flatten();
+        let primary_name = primary.as_ref().and_then(|p| p.name().cloned());
+
+        return monitors.into_iter().enumerate().map(|(idx, m)| {
+            let name = m.name().cloned().unwrap_or_else(|| format!("Display {}", idx + 1));
+            let is_primary = primary_name.as_deref() == Some(&name) || idx == 0;
+            let size = m.size();
+            let pos = m.position();
+
+            let port_type = if is_primary {
+                "DP_1_4".to_string()
+            } else if name.to_lowercase().contains("wireless") || name.to_lowercase().contains("airplay") || name.to_lowercase().contains("sidecar") {
+                "WIRELESS".to_string()
+            } else {
+                "HDMI_2_0".to_string()
+            };
+
+            let custom_alias = if is_primary {
+                "Host Workstation (Primary Screen)".to_string()
+            } else if port_type == "WIRELESS" {
+                "Wireless / Sidecar Display".to_string()
+            } else {
+                format!("External Stage Display {}", idx + 1)
+            };
+
+            let stage_zone = if is_primary {
+                "FOH Control Booth".to_string()
+            } else if port_type == "WIRELESS" {
+                "Mobile Director / Stage".to_string()
+            } else {
+                "Stage Area".to_string()
+            };
+
+            NativeDisplayInfo {
+                id: format!("live-disp-{}", idx + 1),
+                os_index: (idx + 1) as u32,
+                name: name.clone(),
+                custom_alias,
+                stage_zone,
+                port_type,
+                vendor: if cfg!(target_os = "macos") { "Apple / macOS".to_string() } else { "Linux / Wayland / X11".to_string() },
+                model: name,
+                serial: format!("MON-{}", idx + 1),
+                width: size.width,
+                height: size.height,
+                refresh_rate_hz: 60,
+                is_hdr: false,
+                color_space: "sRGB / Rec.709".to_string(),
+                status: "ONLINE".to_string(),
+                bounds: Some(display::types::NativeDisplayBounds {
+                    x: pos.x,
+                    y: pos.y,
+                    width: size.width,
+                    height: size.height,
+                }),
+            }
+        }).collect();
+    }
+
+    Vec::new()
 }
 
 #[tauri::command]

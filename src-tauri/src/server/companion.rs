@@ -265,9 +265,35 @@ async fn api_status(_state: State<AppState>) -> impl IntoResponse {
     Json(status)
 }
 
-async fn api_displays() -> impl IntoResponse {
-    let displays = get_synced_displays();
-    Json(displays)
+async fn api_displays(State(state): State<AppState>) -> impl IntoResponse {
+    if let Ok(lock) = SYNCED_DISPLAYS.lock() {
+        if !lock.is_empty() {
+            return Json(lock.clone());
+        }
+    }
+    if let Some(ref app) = state.app_handle {
+        let displays = crate::get_connected_displays(app.clone());
+        let payloads: Vec<CompanionDisplayPayload> = displays.into_iter().enumerate().map(|(idx, d)| {
+            let (bx, by) = if let Some(ref b) = d.bounds { (Some(b.x), Some(b.y)) } else { (None, None) };
+            CompanionDisplayPayload {
+                id: d.id,
+                os_index: (idx + 1) as u32,
+                name: d.name,
+                custom_alias: d.custom_alias,
+                stage_zone: d.stage_zone,
+                port_type: d.port_type,
+                width: d.width,
+                height: d.height,
+                refresh_rate_hz: d.refresh_rate_hz,
+                is_primary: idx == 0,
+                is_frozen: false,
+                bounds_x: bx,
+                bounds_y: by,
+            }
+        }).collect();
+        return Json(payloads);
+    }
+    Json(get_synced_displays())
 }
 
 async fn api_flash(Path(id): Path<String>, State(state): State<AppState>) -> impl IntoResponse {
