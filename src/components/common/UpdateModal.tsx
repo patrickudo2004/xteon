@@ -88,7 +88,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
           let downloaded = 0;
           let contentLength = 0;
 
-          await update.downloadAndInstall((event) => {
+          await update.downloadAndInstall((event: any) => {
             switch (event.event) {
               case 'Started':
                 contentLength = event.data.contentLength || 0;
