@@ -112,21 +112,19 @@ The complete software engineering, architectural, and operational specification 
 
 ---
 
-## 7. Installation & Multi-Platform Releases
+## 7. Multi-Platform Downloads & Installation Matrix
 
-Xteon is packaged natively for Windows, macOS, and Linux with built-in auto-updates:
+| Operating System | Architecture | Package Format | Direct Download Link | Instructions |
+| :--- | :--- | :--- | :--- | :--- |
+| **🪟 Windows 10 / 11** | 64-bit (`x64`) | **NSIS Installer (`.exe`)** | [⬇️ Download `Xteon_1.2.0_x64-setup.exe`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon_1.2.0_x64-setup.exe) | Standard installer with Start Menu & desktop shortcuts |
+| **🪟 Windows 10 / 11** | 64-bit (`x64`) | **Windows Installer (`.msi`)** | [⬇️ Download `Xteon_1.2.0_x64_en-US.msi`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon_1.2.0_x64_en-US.msi) | Enterprise / silent deployment package for AV IT managers |
+| **🍏 macOS** | Universal (`Apple Silicon M1-M4 & Intel x86_64`) | **Apple Disk Image (`.dmg`)** | [⬇️ Download `Xteon_1.2.0_universal.dmg`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon_1.2.0_universal.dmg) | Mount DMG and drag `Xteon.app` to `/Applications` |
+| **🍏 macOS** | Universal (`Apple Silicon & Intel`) | **Application Bundle (`.tar.gz`)** | [⬇️ Download `Xteon.app.tar.gz`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon.app.tar.gz) | Standalone app bundle for automated deployment / MDM |
+| **🐧 Linux (All Distros)** | 64-bit (`x86_64`) | **Universal Linux (`.AppImage`)** | [⬇️ Download `Xteon_1.2.0_amd64.AppImage`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon_1.2.0_amd64.AppImage) | Run `chmod +x Xteon_1.2.0_amd64.AppImage && ./Xteon_1.2.0_amd64.AppImage` |
+| **🐧 Linux (Debian / Ubuntu)** | 64-bit (`amd64`) | **Debian Package (`.deb`)** | [⬇️ Download `xteon_1.2.0_amd64.deb`](https://github.com/patrickudo2004/xteon/releases/latest/download/xteon_1.2.0_amd64.deb) | Install via `sudo dpkg -i xteon_1.2.0_amd64.deb` |
 
-### 🪟 Windows (10 / 11 64-bit)
-* **Installer:** Download `Xteon_1.2.0_x64-setup.exe` or `Xteon_1.2.0_x64_en-US.msi` from [Releases](https://github.com/patrickudo2004/xteon/releases).
-* **Direct Execution:** Standalone portable binary `xteon.exe` available with zero prerequisite installers.
-
-### 🍏 macOS (Apple Silicon M1/M2/M3/M4 & Intel x86_64)
-* **Disk Image:** Download `Xteon_1.2.0_universal.dmg` from [Releases](https://github.com/patrickudo2004/xteon/releases).
-* Drag `Xteon.app` to your `/Applications` folder.
-
-### 🐧 Linux (Ubuntu, Debian, Fedora, Arch)
-* **AppImage:** Download `Xteon_1.2.0_amd64.AppImage`, run `chmod +x Xteon_1.2.0_amd64.AppImage`, and execute.
-* **Debian / Ubuntu Package:** Download `xteon_1.2.0_amd64.deb` and install via `sudo dpkg -i xteon_1.2.0_amd64.deb`.
+> [!NOTE]
+> All releases, release notes, and cryptographic signing manifests (`latest.json`) are published on [GitHub Releases](https://github.com/patrickudo2004/xteon/releases).
 
 ---
 
@@ -169,52 +167,6 @@ npx tauri build
 ---
 
 ## 10. Author & License
-
-* **Project Owner & Lead:** Patrick Udoh ([patrickudo2004@gmail.com](mailto:patrickudo2004@gmail.com))
-* **GitHub Repository:** [https://github.com/patrickudo2004/xteon](https://github.com/patrickudo2004/xteon)
-* **License:** Proprietary / Commercial Pro AV License. All Rights Reserved.do dpkg -i xteon_1.2.0_amd64.deb`.
-
----
-
-## 7. In-App Auto-Updater
-
-Xteon features automatic background update detection and cryptographic signature verification powered by the Tauri v2 Updater:
-1. Click the **Updates** button in the top navigation bar or navigate to Settings.
-2. Xteon checks [patrickudo2004/xteon/releases](https://github.com/patrickudo2004/xteon/releases) for new version manifests (`latest.json`).
-3. View release notes, track real-time download progress, and click **Relaunch Now** to install seamlessly without losing canvas state.
-
----
-
-## 8. Development & Building from Source
-
-### Prerequisites
-* **Node.js:** v18.0+ / v20.x
-* **Rust:** Stable toolchain (`rustup default stable`)
-* **Tauri CLI:** v2.x (`npm install -g @tauri-apps/cli`)
-
-### Setup Instructions
-```bash
-# Clone the repository
-git clone https://github.com/patrickudo2004/xteon.git
-cd xteon
-
-# Install frontend dependencies
-npm install
-
-# Run in Development Mode (Vite + Tauri)
-npm run tauri dev
-
-# Run Automated Pro AV QA Test Suite (718 Assertions)
-npm test
-
-# Build Production Release Package for your current OS
-npm run build
-npx tauri build
-```
-
----
-
-## 9. Author & License
 
 * **Project Owner & Lead:** Patrick Udoh ([patrickudo2004@gmail.com](mailto:patrickudo2004@gmail.com))
 * **GitHub Repository:** [https://github.com/patrickudo2004/xteon](https://github.com/patrickudo2004/xteon)
