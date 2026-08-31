@@ -21,7 +21,8 @@ export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   build: {
     // Tauri uses Chromium on Windows and WebKit on macOS and Linux
-    target: process.env.TAURI_ENV_PLATFORM == 'windows' ? 'chrome105' : 'safari13',
+    // safari16 = macOS Ventura+ / iOS 16+ — minimum for Zustand v5 & @xyflow/react v12
+    target: process.env.TAURI_ENV_PLATFORM == 'windows' ? 'chrome105' : 'safari16',
     // don't minify for debug builds
     minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,
     // produce sourcemaps for debug builds

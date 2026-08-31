@@ -1,3 +1,6 @@
+/* ReactFlow base styles — imported here so WebKit loads them before React mounts */
+@import '@xyflow/react/dist/style.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

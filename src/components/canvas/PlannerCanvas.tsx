@@ -7,7 +7,8 @@ import {
   BackgroundVariant,
   Panel,
 } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
+// CSS loaded globally via index.css → @xyflow/react/dist/style.css
+
 
 import { useRigStore } from '../../store/useRigStore';
 import { DeviceNodeComponent } from '../nodes/DeviceNodeComponent';
