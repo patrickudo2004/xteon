@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSCameraUsageDescription</key>
+    <string>Xteon requires camera access to monitor and ingest live stage cameras, PTZ feeds, and capture cards.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Xteon requires microphone access to monitor system audio levels and display real-time live VU peak meters.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Xteon requires local network access for the Mobile Companion server and local Wi-Fi stage director control.</string>
+</dict>
+</plist>

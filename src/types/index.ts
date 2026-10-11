@@ -188,3 +188,58 @@ export interface BandwidthValidation {
   status: 'VALID' | 'WARNING_DISTANCE' | 'ERROR_BANDWIDTH';
   message: string;
 }
+
+export interface BranchedDownstreamDisplay {
+  id: string;
+  name: string;
+  customAlias: string;
+  stageZone: string;
+  portType: PortType;
+  cableLengthMeters: number;
+  notes?: string;
+}
+
+export interface VirtualDistributionBranch {
+  parentDisplayId: string;
+  splitterType: 'SPLITTER_1X2' | 'SPLITTER_1X4' | 'SPLITTER_1X8' | 'HDBASET_EXTENDER';
+  splitterModel: string;
+  cableMedium: 'DIRECT_HDMI' | 'CAT6_HDBASET' | 'OPTICAL_FIBER';
+  downstreamDisplays: BranchedDownstreamDisplay[];
+  enabled: boolean;
+}
+
+export interface AppSettings {
+  audioGuardEnabled: boolean;
+  audioGuardMode: 'NOTIFY' | 'STRICT_LOCK';
+  antiDimmingHeartbeatEnabled: boolean;
+  windowGuardianEnabled: boolean;
+  broadcastTelemetryWarnings: boolean;
+  alertOnDisplayMirroring?: boolean;
+  previewFps: number;
+  protectInternalCameras: boolean;
+  presentationKeepAwake: boolean;
+  companionPort: number;
+  companionPin: string;
+}
+
+export type EventLogLevel = 'INFO' | 'WARN' | 'CRITICAL';
+export type EventLogCategory = 'DISPLAY' | 'AUDIO' | 'CAMERA' | 'SYSTEM' | 'SECURITY' | 'SAFETY' | 'BRANCH';
+
+export interface ShowEventLogEntry {
+  id: string;
+  timestamp: string;
+  category: EventLogCategory;
+  level: EventLogLevel;
+  severity?: 'INFO' | 'WARN' | 'ERROR' | 'CRITICAL';
+  message: string;
+  details?: string;
+}
+
+export interface EventLogInput {
+  category: EventLogCategory;
+  level?: EventLogLevel;
+  severity?: 'INFO' | 'WARN' | 'ERROR' | 'CRITICAL';
+  message: string;
+  details?: string;
+}
+

@@ -65,4 +65,5 @@ jobs:
           releaseBody: 'See the assets to download the release binary for Windows (.exe/.msi), macOS (.dmg/.app), or Linux (.AppImage/.deb).'
           releaseDraft: false
           prerelease: false
+          includeUpdaterJson: true
           args: ${{ matrix.args }}

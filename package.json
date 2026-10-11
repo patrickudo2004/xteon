@@ -1,12 +1,12 @@
 {
   "name": "xteon",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "esbuild src/tests/qa_features_test.ts --bundle --platform=node --format=esm --outfile=dist/qa_test.mjs && node dist/qa_test.mjs",
+    "test": "esbuild src/tests/qa_features_test.ts --bundle --platform=node --format=esm --outfile=dist/qa_test.mjs && node dist/qa_test.mjs && esbuild src/tests/qa_pro_av_field_test.ts --bundle --platform=node --format=esm --outfile=dist/field_test.mjs && node dist/field_test.mjs",
     "preview": "vite preview",
     "tauri": "tauri"
   },

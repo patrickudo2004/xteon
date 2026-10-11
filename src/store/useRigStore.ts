@@ -15,6 +15,13 @@ import {
   BandwidthValidation,
   PortDefinition,
   LEDWallParams,
+  AppSettings,
+  ShowEventLogEntry,
+  EventLogLevel,
+  EventLogCategory,
+  EventLogInput,
+  VirtualDistributionBranch,
+  BranchedDownstreamDisplay,
 } from '../types';
 import { INDUSTRY_TEMPLATES } from '../utils/industryTemplates';
 
@@ -768,6 +775,42 @@ interface RigState {
   // Project Import/Export
   exportProject: () => RigProject;
   importProject: (proj: RigProject) => void;
+
+  // Centralized Preferences & Settings
+  appSettings: AppSettings;
+  updateSettings: (partial: Partial<AppSettings>) => void;
+  settingsModalOpen: boolean;
+  setSettingsModalOpen: (open: boolean) => void;
+
+  // Show Event Blackbox Flight Recorder
+  eventLogs: ShowEventLogEntry[];
+  addEventLog: (entry: EventLogInput) => void;
+  clearEventLogs: () => void;
+  eventLogDrawerOpen: boolean;
+  setEventLogDrawerOpen: (open: boolean) => void;
+
+  // Audio Route Guard Toast
+  audioNotification: { show: boolean; deviceName: string } | null;
+  dismissAudioNotification: () => void;
+
+  // Smart TV Pre-Flight Guide Modal
+  smartTvGuideModalOpen: boolean;
+  setSmartTvGuideModalOpen: (open: boolean) => void;
+
+  // Live Map Virtual Distribution Branching (Splitters & Extenders)
+  distributionBranches: Record<string, VirtualDistributionBranch>;
+  branchModalOpen: boolean;
+  activeBranchDisplayId: string | null;
+  openBranchModal: (displayId: string) => void;
+  setBranchModalOpen: (open: boolean) => void;
+  setDistributionBranch: (branch: VirtualDistributionBranch) => void;
+  removeDistributionBranch: (parentDisplayId: string) => void;
+
+  // Privacy & Presentation Shields
+  isMirroringDetected: boolean;
+  dismissMirroringAlert: () => void;
+  presentationKeepAwake: boolean;
+  toggleKeepAwake: () => void;
 }
 
 let isCapturingInProgress = false;
@@ -807,6 +850,28 @@ const computeConvergence = (nodes: Node<DeviceNodeData>[], liveDisplays: LiveDis
   });
 };
 
+const DEFAULT_APP_SETTINGS: AppSettings = {
+  audioGuardEnabled: false,
+  audioGuardMode: 'NOTIFY',
+  antiDimmingHeartbeatEnabled: false,
+  windowGuardianEnabled: true,
+  broadcastTelemetryWarnings: true,
+  alertOnDisplayMirroring: true,
+  previewFps: 20,
+  protectInternalCameras: true,
+  presentationKeepAwake: false,
+  companionPort: 8765,
+  companionPin: '842-190',
+};
+
+const getSavedAppSettings = (): AppSettings => {
+  try {
+    const raw = localStorage.getItem('xteon_app_settings');
+    if (raw) return { ...DEFAULT_APP_SETTINGS, ...JSON.parse(raw) };
+  } catch {}
+  return DEFAULT_APP_SETTINGS;
+};
+
 export const useRigStore = create<RigState>((set, get) => ({
   appMode: 'PLANNER',
   themeMode: 'DARK_FOH',
@@ -839,6 +904,117 @@ export const useRigStore = create<RigState>((set, get) => ({
   testPatternModalOpen: false,
   setTestPatternModalOpen: (open) => set({ testPatternModalOpen: open }),
   openTestPatternModal: (displayId) => set({ activeTestDisplayId: displayId, testPatternModalOpen: true }),
+
+  // Settings & Preferences
+  appSettings: getSavedAppSettings(),
+  updateSettings: (partial) => {
+    const updated = { ...get().appSettings, ...partial };
+    set({ appSettings: updated, presentationKeepAwake: updated.presentationKeepAwake });
+    try {
+      localStorage.setItem('xteon_app_settings', JSON.stringify(updated));
+    } catch {}
+    get().addEventLog({
+      category: 'SYSTEM',
+      level: 'INFO',
+      severity: 'INFO',
+      message: 'User updated application preferences',
+    });
+  },
+  settingsModalOpen: false,
+  setSettingsModalOpen: (open) => set({ settingsModalOpen: open }),
+
+  // Show Event Blackbox Flight Recorder
+  eventLogs: [
+    {
+      id: 'log-init',
+      timestamp: new Date().toLocaleTimeString(),
+      category: 'SYSTEM',
+      level: 'INFO',
+      severity: 'INFO',
+      message: 'Xteon Mission Control initialized. Hardware telemetry active.',
+    },
+  ],
+  addEventLog: (entry) => {
+    const rawLevel = (entry as any).level || (entry as any).severity;
+    const level: EventLogLevel = rawLevel === 'CRITICAL' || rawLevel === 'ERROR' ? 'CRITICAL' : rawLevel === 'WARN' ? 'WARN' : 'INFO';
+    const newEntry: ShowEventLogEntry = {
+      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      timestamp: new Date().toLocaleTimeString(),
+      category: entry.category,
+      level,
+      severity: (entry as any).severity || (level === 'CRITICAL' ? 'ERROR' : level),
+      message: entry.message,
+      details: entry.details,
+    };
+    set({ eventLogs: [newEntry, ...get().eventLogs].slice(0, 200) });
+  },
+  clearEventLogs: () => set({ eventLogs: [] }),
+  eventLogDrawerOpen: false,
+  setEventLogDrawerOpen: (open) => set({ eventLogDrawerOpen: open }),
+
+  // Audio Route Guard Toast
+  audioNotification: null,
+  dismissAudioNotification: () => set({ audioNotification: null }),
+
+  // Smart TV Pre-Flight Guide Modal
+  smartTvGuideModalOpen: false,
+  setSmartTvGuideModalOpen: (open) => set({ smartTvGuideModalOpen: open }),
+
+  // Live Map Virtual Distribution Branching (Splitters & Extenders)
+  distributionBranches: (() => {
+    try {
+      return JSON.parse(localStorage.getItem('xteon_distribution_branches') || '{}');
+    } catch {
+      return {};
+    }
+  })(),
+  branchModalOpen: false,
+  activeBranchDisplayId: null,
+  openBranchModal: (displayId) => set({ activeBranchDisplayId: displayId, branchModalOpen: true }),
+  setBranchModalOpen: (open) => set({ branchModalOpen: open }),
+  setDistributionBranch: (branch) => {
+    const current = { ...get().distributionBranches, [branch.parentDisplayId]: branch };
+    set({ distributionBranches: current });
+    try {
+      localStorage.setItem('xteon_distribution_branches', JSON.stringify(current));
+    } catch {}
+    get().addEventLog({
+      category: 'DISPLAY',
+      level: 'INFO',
+      severity: 'INFO',
+      message: `Added virtual distribution: ${branch.splitterModel} with ${branch.downstreamDisplays.length} outputs.`,
+    });
+  },
+  removeDistributionBranch: (parentDisplayId) => {
+    const current = { ...get().distributionBranches };
+    delete current[parentDisplayId];
+    set({ distributionBranches: current });
+    try {
+      localStorage.setItem('xteon_distribution_branches', JSON.stringify(current));
+    } catch {}
+    get().addEventLog({
+      category: 'DISPLAY',
+      level: 'INFO',
+      severity: 'INFO',
+      message: `Removed virtual distribution on display ${parentDisplayId}`,
+    });
+  },
+
+  // Privacy & Presentation Shields
+  isMirroringDetected: false,
+  dismissMirroringAlert: () => set({ isMirroringDetected: false }),
+  presentationKeepAwake: getSavedAppSettings().presentationKeepAwake,
+  toggleKeepAwake: () => {
+    const next = !get().presentationKeepAwake;
+    get().updateSettings({ presentationKeepAwake: next });
+    get().addEventLog({
+      category: 'SYSTEM',
+      level: next ? 'INFO' : 'WARN',
+      severity: next ? 'INFO' : 'WARN',
+      message: next ? 'Keep-Awake Presentation Shield engaged' : 'Keep-Awake Presentation Shield disengaged',
+    });
+  },
+
 
   setProjectName: (name) => set({ projectName: name, isDirty: true }),
   setProjectVenue: (venue) => set({ projectVenue: venue, isDirty: true }),
@@ -2185,9 +2361,24 @@ export const useRigStore = create<RigState>((set, get) => ({
           // Compute continuous convergence match between plan & real displays
           const convergedNodes = computeConvergence(get().nodes, mappedDisplays);
 
+          // Detect display mirroring (external display sharing 0,0 coordinates with primary)
+          const hasMultiple = mappedDisplays.length > 1;
+          const isMirrored = hasMultiple && mappedDisplays.slice(1).some((d) => d.bounds && d.bounds.x === 0 && d.bounds.y === 0);
+
+          if (mappedDisplays.length !== currentDisplays.length && currentDisplays.length > 0) {
+            get().addEventLog({
+              category: 'DISPLAY',
+              severity: mappedDisplays.length > currentDisplays.length ? 'INFO' : 'WARN',
+              message: mappedDisplays.length > currentDisplays.length 
+                ? `Display plugged in: Total ${mappedDisplays.length} screen(s) online.`
+                : `Display disconnected: Total ${mappedDisplays.length} screen(s) remaining.`,
+            });
+          }
+
           set({
             liveDisplays: mappedDisplays,
             nodes: convergedNodes,
+            isMirroringDetected: isMirrored,
           });
 
           pushDisplaysToCompanion(mappedDisplays);
@@ -2294,8 +2485,33 @@ if (typeof window !== 'undefined') {
     });
   }
 
-  // High-Speed 50ms polling loop (~20 FPS) for zero-lag mouse tracking
+  // High-Speed polling loop for live display previews
   setInterval(() => {
     useRigStore.getState().pollLiveThumbnails();
   }, 50);
+
+  // Anti-Dimming Heartbeat Runner (Defeats Samsung / LG TV Eco Sensor Dimming on Static Slides)
+  setInterval(() => {
+    const state = useRigStore.getState();
+    if (state.appSettings?.antiDimmingHeartbeatEnabled) {
+      let beacon = document.getElementById('xteon-anti-dim-beacon');
+      if (!beacon) {
+        beacon = document.createElement('div');
+        beacon.id = 'xteon-anti-dim-beacon';
+        beacon.style.position = 'fixed';
+        beacon.style.top = '0px';
+        beacon.style.left = '0px';
+        beacon.style.width = '1px';
+        beacon.style.height = '1px';
+        beacon.style.pointerEvents = 'none';
+        beacon.style.zIndex = '99999';
+        document.body.appendChild(beacon);
+      }
+      beacon.style.backgroundColor =
+        beacon.style.backgroundColor === 'rgba(0, 0, 0, 0.01)'
+          ? 'rgba(1, 1, 1, 0.02)'
+          : 'rgba(0, 0, 0, 0.01)';
+    }
+  }, 20000);
 }
+

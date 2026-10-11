@@ -59,10 +59,17 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
       }
     } catch (err: any) {
       console.warn('Update check failed:', err);
-      setErrorMsg(
-        err?.message ||
-          'Unable to reach GitHub Releases server. Please check your internet connection.'
-      );
+      const raw = (err?.message || '').toLowerCase();
+      if (raw.includes('404') || raw.includes('not found') || raw.includes('manifest')) {
+        setErrorMsg(
+          'No update manifest published on GitHub yet. You are running the latest installed version (v1.2.0).'
+        );
+      } else {
+        setErrorMsg(
+          err?.message ||
+            'Unable to reach GitHub Releases server. Please verify your internet connection or check GitHub directly.'
+        );
+      }
     } finally {
       setChecking(false);
     }

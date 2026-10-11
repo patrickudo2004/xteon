@@ -19,6 +19,9 @@ import {
   Pause,
   Eye,
   EyeOff,
+  Split,
+  Tv,
+  Sparkles,
 } from 'lucide-react';
 
 export const LiveMapInspector: React.FC = () => {
@@ -39,6 +42,10 @@ export const LiveMapInspector: React.FC = () => {
     flashDisplay,
     liveMapInspectorDockState,
     setLiveMapInspectorDockState,
+    distributionBranches,
+    openBranchModal,
+    removeDistributionBranch,
+    setSmartTvGuideModalOpen,
   } = useRigStore();
 
   if (!selectedLiveElement) return null;
@@ -372,6 +379,109 @@ export const LiveMapInspector: React.FC = () => {
             <div className="font-bold text-[var(--text-primary)] truncate">{display!.serial}</div>
           </div>
         </div>
+      </div>
+
+      {/* Hardware Distribution (Splitter / DA) */}
+      {(() => {
+        const branch = distributionBranches[display!.id];
+        return (
+          <div className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] uppercase font-bold text-amber-400 flex items-center gap-1.5">
+                <Split className="w-3.5 h-3.5" />
+                <span>Hardware Distribution (Splitter / DA)</span>
+              </div>
+              {branch && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+                  {branch.splitterType.replace('_', ' ')}
+                </span>
+              )}
+            </div>
+
+            {branch ? (
+              <div className="space-y-2.5">
+                <div className="text-[11px] font-bold text-[var(--text-primary)]">
+                  {branch.splitterModel}
+                </div>
+                <div className="text-[10px] text-[var(--text-muted)]">
+                  Medium: <span className="text-cyan-400 font-bold">{branch.cableMedium.replace('_', ' ')}</span> • {branch.downstreamDisplays.length} TVs Branched
+                </div>
+
+                {/* List Downstream TVs */}
+                <div className="space-y-1.5 pt-1">
+                  {branch.downstreamDisplays.map((tv) => (
+                    <div
+                      key={tv.id}
+                      className="p-2 rounded-lg bg-[var(--bg-subcard)] border border-[var(--border-color)] flex items-center justify-between text-[10px]"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Tv className="w-3.5 h-3.5 text-cyan-400" />
+                        <div>
+                          <div className="font-bold text-[var(--text-primary)]">{tv.customAlias || tv.name}</div>
+                          <div className="text-[9px] text-[var(--text-muted)]">📍 {tv.stageZone} • 📏 {tv.cableLengthMeters}m</div>
+                        </div>
+                      </div>
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-bold">
+                        MIRRORED
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={() => openBranchModal(display!.id)}
+                    className="flex-1 py-1.5 px-2 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] text-[var(--text-primary)] border border-[var(--border-color)] text-[10px] font-bold transition cursor-pointer"
+                  >
+                    Edit Splitter / Add TVs
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Remove virtual splitter branching on this feed?')) {
+                        removeDistributionBranch(display!.id);
+                      }
+                    }}
+                    className="py-1.5 px-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold transition cursor-pointer"
+                    title="Remove virtual branch"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
+                  Connected to a 1x2, 1x4 (e.g. Antiference), or 1x8 HDMI splitter? Since splitters isolate downstream TVs from your laptop GPU, branch this output to map and name all connected screens.
+                </p>
+                <button
+                  onClick={() => openBranchModal(display!.id)}
+                  className="w-full py-2 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-[11px] font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <Split className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Branch Output (Add Splitter / DA)</span>
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Smart TV Pre-Flight Setup Card */}
+      <div className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-2">
+        <div className="text-[10px] uppercase font-bold text-cyan-400 flex items-center gap-1.5">
+          <Tv className="w-3.5 h-3.5" />
+          <span>Smart TV Field Calibration</span>
+        </div>
+        <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
+          Prevent Samsung Multi View auto-shrink, auto-dimming on static slides, and edge cropping on venue screens.
+        </p>
+        <button
+          onClick={() => setSmartTvGuideModalOpen(true)}
+          className="w-full py-2 px-2 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] text-[var(--text-primary)] hover:text-cyan-400 border border-[var(--border-color)] text-[10px] font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <Sparkles className="w-3 h-3 text-cyan-400" />
+          <span>Open Smart TV Setup Guide</span>
+        </button>
       </div>
 
       {/* Direct Hardware Triggers */}

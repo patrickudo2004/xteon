@@ -11,8 +11,12 @@ import { TestPatternModal } from './components/modals/TestPatternModal';
 import { ReconciliationModal } from './components/modals/ReconciliationModal';
 import { MobileCompanionModal } from './components/modals/MobileCompanionModal';
 import { AudioConsentModal } from './components/modals/AudioConsentModal';
+import { SettingsModal } from './components/modals/SettingsModal';
+import { VirtualBranchModal } from './components/modals/VirtualBranchModal';
+import { SmartTvGuideModal } from './components/modals/SmartTvGuideModal';
+import { EventLogDrawer } from './components/modals/EventLogDrawer';
 import { FloatingPanelWrapper } from './components/common/FloatingPanelWrapper';
-import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
+import { PanelLeftOpen, PanelRightOpen, AlertTriangle, Volume2, X } from 'lucide-react';
 
 export const App: React.FC = () => {
   const {
@@ -22,6 +26,12 @@ export const App: React.FC = () => {
     setPaletteDockState,
     inspectorDockState,
     setInspectorDockState,
+    isMirroringDetected,
+    dismissMirroringAlert,
+    appSettings,
+    audioNotification,
+    dismissAudioNotification,
+    setSettingsModalOpen,
   } = useRigStore();
 
   const [leftWidth, setLeftWidth] = useState(300);
@@ -140,6 +150,60 @@ export const App: React.FC = () => {
       {/* Top Navbar */}
       <Navbar />
 
+      {/* Presentation Privacy Mirroring Alert Banner */}
+      {isMirroringDetected && (appSettings.alertOnDisplayMirroring ?? true) && (
+        <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between text-xs font-mono text-amber-300 z-20 shrink-0 animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+            <span>
+              <strong>PRIVACY WARNING: Display Mirroring (Clone) Active.</strong> Your internal screen is cloned to the external display. Audience can see desktop & private windows.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSettingsModalOpen(true)}
+              className="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-[11px] font-bold cursor-pointer transition"
+            >
+              Configure Guard
+            </button>
+            <button
+              onClick={dismissMirroringAlert}
+              className="p-1 rounded hover:bg-amber-500/20 text-amber-400 cursor-pointer transition"
+              title="Dismiss alert"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Audio Hijack Route Alert Banner */}
+      {audioNotification?.show && (
+        <div className="bg-indigo-500/15 border-b border-indigo-500/30 px-4 py-2 flex items-center justify-between text-xs font-mono text-indigo-300 z-20 shrink-0 animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <Volume2 className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span>
+              <strong>AUDIO ROUTING NOTICE: Audio redirected to "{audioNotification.deviceName}"</strong> via HDMI handshake.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSettingsModalOpen(true)}
+              className="px-2.5 py-1 rounded bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-[11px] font-bold cursor-pointer transition"
+            >
+              Audio Settings
+            </button>
+            <button
+              onClick={dismissAudioNotification}
+              className="p-1 rounded hover:bg-indigo-500/20 text-indigo-400 cursor-pointer transition"
+              title="Dismiss alert"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Workspace Body */}
       <main className="flex-1 flex overflow-hidden relative bg-[var(--bg-primary)]">
         {appMode === 'PLANNER' ? (
@@ -253,6 +317,10 @@ export const App: React.FC = () => {
       <ReconciliationModal />
       <MobileCompanionModal />
       <AudioConsentModal />
+      <SettingsModal />
+      <VirtualBranchModal />
+      <SmartTvGuideModal />
+      <EventLogDrawer />
     </div>
   );
 };

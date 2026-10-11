@@ -3,6 +3,8 @@ import { useRigStore } from '../../store/useRigStore';
 import { X, Sliders, Grid, Monitor, Eye, Check } from 'lucide-react';
 
 const testPatterns = [
+  { id: 'OVERSCAN', name: 'Overscan & Framing (100% Boundary / 95% / 90%)', desc: 'Verify consumer TV edge cropping, 1:1 pixel mapping & aspect ratio' },
+  { id: 'PLUGE', name: 'PLUGE Black Level Calibration (-4%, 0%, +4%)', desc: 'Calibrate Full RGB (0-255) vs Limited RGB (16-235) black clipping' },
   { id: 'SMPTE', name: 'SMPTE Color Bars (RP 219)', desc: 'Standard 75% color saturation calibration bars' },
   { id: 'GRID', name: 'Pixel Alignment Grid & Crosshairs', desc: '100px square grid for projector alignment and LED mapping' },
   { id: 'WHITE', name: '100% Solid White', desc: 'Panel brightness and backlight uniformity inspection' },
@@ -20,8 +22,9 @@ export const TestPatternModal: React.FC = () => {
     setTestPattern,
     testPatternModalOpen,
     setTestPatternModalOpen,
+    setSmartTvGuideModalOpen,
   } = useRigStore();
-  const [selectedPattern, setSelectedPattern] = useState(activeTestPattern || 'SMPTE');
+  const [selectedPattern, setSelectedPattern] = useState(activeTestPattern || 'OVERSCAN');
 
   if (!testPatternModalOpen) return null;
 
@@ -76,7 +79,38 @@ export const TestPatternModal: React.FC = () => {
           {/* Test Pattern Preview Window */}
           <div className="p-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
             <div className="text-[10px] font-mono text-[var(--text-muted)] uppercase mb-2">Live Raster Preview</div>
-            <div className="h-36 rounded-lg overflow-hidden border border-[var(--border-color)] flex items-center justify-center relative shadow-inner">
+            <div className="h-36 rounded-lg overflow-hidden border border-[var(--border-color)] flex items-center justify-center relative shadow-inner bg-black">
+              {selectedPattern === 'OVERSCAN' && (
+                <div className="w-full h-full relative border-2 border-white flex items-center justify-center bg-slate-950">
+                  <div className="absolute inset-[5%] border border-dashed border-emerald-400 flex items-center justify-center">
+                    <div className="absolute inset-[5%] border border-dashed border-amber-400 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full border border-cyan-400 flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 bg-rose-500 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="absolute top-1 left-2 text-[8px] font-mono text-white/70">100% RASTER EDGE</div>
+                  <div className="absolute bottom-1 right-2 text-[8px] font-mono text-amber-400/90">TITLE / ACTION SAFE</div>
+                </div>
+              )}
+              {selectedPattern === 'PLUGE' && (
+                <div className="w-full h-full flex flex-col bg-black">
+                  <div className="flex-1 flex w-full">
+                    <div className="w-[20%] bg-[#084453]" />
+                    <div className="w-[20%] bg-[#FFFFFF]" />
+                    <div className="w-[20%] bg-[#3A007D]" />
+                    <div className="w-[10%] bg-[#000000]" />
+                    <div className="w-[10%] bg-[#101010]" />
+                    <div className="w-[10%] bg-[#1c1c1c]" />
+                    <div className="flex-1 bg-[#282828]" />
+                  </div>
+                  <div className="h-5 bg-slate-900 border-t border-slate-800 flex items-center justify-around text-[7px] text-slate-400 font-mono">
+                    <span>SUPER-BLACK -4%</span>
+                    <span>REF BLACK 0%</span>
+                    <span>ABOVE BLACK +4%</span>
+                  </div>
+                </div>
+              )}
               {selectedPattern === 'SMPTE' && (
                 <div className="w-full h-full flex">
                   <div className="flex-1 bg-gray-300" />
@@ -105,8 +139,16 @@ export const TestPatternModal: React.FC = () => {
 
         {/* Modal Footer */}
         <div className="p-4 bg-[var(--bg-header)] border-t border-[var(--border-color)] flex items-center justify-between">
-          <div className="text-xs font-mono text-[var(--text-muted)]">
-            Overlays full-screen test pattern on target display output
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setTestPatternModalOpen(false);
+                setSmartTvGuideModalOpen(true);
+              }}
+              className="text-xs font-mono text-cyan-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
+            >
+              <span>📖 Smart TV Pre-Flight Setup Guide</span>
+            </button>
           </div>
           <div className="flex items-center gap-3">
             {activeTestPattern && (

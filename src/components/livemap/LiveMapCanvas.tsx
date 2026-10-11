@@ -13,7 +13,7 @@ import {
   useNodesState,
   useEdgesState,
 } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
+// Note: @xyflow/react/dist/style.css is imported globally in src/index.css per GEMINI.md
 import { useRigStore } from '../../store/useRigStore';
 import { getPortIcon } from '../common/SvgIcons';
 import { LiveMapInspector } from './LiveMapInspector';
@@ -33,6 +33,8 @@ import {
   RotateCcw,
   Camera,
   PanelRightOpen,
+  Split,
+  Tv,
 } from 'lucide-react';
 
 // Custom Live Camera Source Node Component
@@ -286,6 +288,17 @@ const LiveDisplayNode: React.FC<{ data: any }> = ({ data }) => {
         style={{ left: -7 }}
       />
 
+      {/* Outgoing Handle to Splitter if branched */}
+      {data.hasBranch && (
+        <Handle
+          type="source"
+          position={Position.Right}
+          id={`out-branch-${display.id}`}
+          className="!bg-amber-400 !border-2 !border-[var(--bg-card)] !w-3.5 !h-3.5"
+          style={{ right: -7 }}
+        />
+      )}
+
       {/* Card Header */}
       <div className="p-3.5 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -333,6 +346,19 @@ const LiveDisplayNode: React.FC<{ data: any }> = ({ data }) => {
           <span className="text-[10px] text-emerald-300 font-bold">60.00 FPS</span>
         </div>
 
+        {/* Virtual Splitter Badge */}
+        {data.hasBranch && data.branch && (
+          <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1.5 text-amber-400 font-bold truncate max-w-[190px]">
+              <Split className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{data.branch.splitterModel}</span>
+            </div>
+            <span className="text-[10px] text-amber-300 font-bold shrink-0">
+              {data.branch.downstreamDisplays.length} TVs
+            </span>
+          </div>
+        )}
+
         {/* Action Controls */}
         <div className="grid grid-cols-2 gap-2 pt-1">
           <button
@@ -362,10 +388,140 @@ const LiveDisplayNode: React.FC<{ data: any }> = ({ data }) => {
   );
 };
 
+// Custom Virtual Splitter / Distribution Amplifier Node Component
+const LiveSplitterNode: React.FC<{ data: any }> = ({ data }) => {
+  const { openBranchModal } = useRigStore();
+  const branch = data.branch;
+  if (!branch) return null;
+
+  return (
+    <div
+      onClick={() => openBranchModal(branch.parentDisplayId)}
+      className="w-72 rounded-2xl bg-[var(--bg-card)] border-2 border-amber-500/80 shadow-2xl overflow-hidden font-sans text-[var(--text-primary)] select-none relative cursor-pointer hover:border-amber-400 transition"
+    >
+      <Handle
+        type="target"
+        position={Position.Left}
+        id={`in-splitter-${branch.parentDisplayId}`}
+        className="!bg-amber-400 !border-2 !border-[var(--bg-card)] !w-3.5 !h-3.5"
+        style={{ left: -7 }}
+      />
+
+      <div className="p-3 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Split className="w-4 h-4 text-amber-400" />
+          <span className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
+            {branch.splitterType.replace('_', ' ')}
+          </span>
+        </div>
+        <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold uppercase border bg-amber-500/20 text-amber-400 border-amber-500/40">
+          SPLITTER / DA
+        </span>
+      </div>
+
+      <div className="p-3.5 space-y-2 font-mono">
+        <div className="font-bold text-xs text-[var(--text-primary)] truncate">
+          {branch.splitterModel}
+        </div>
+        <div className="text-[10px] text-[var(--text-muted)] flex items-center justify-between">
+          <span>Medium: {branch.cableMedium.replace('_', ' ')}</span>
+          <span className="text-amber-400 font-bold">{branch.downstreamDisplays.length} Outputs</span>
+        </div>
+        <div className="p-2 rounded-lg bg-amber-950/30 border border-amber-500/30 flex items-center justify-between text-[10px] text-amber-300">
+          <span>1 IN ➔ {branch.downstreamDisplays.length} OUT ACTIVE</span>
+        </div>
+      </div>
+
+      {branch.downstreamDisplays.map((tv: any, i: number) => (
+        <Handle
+          key={tv.id}
+          type="source"
+          position={Position.Right}
+          id={`out-tv-${tv.id}`}
+          className="!bg-amber-400 !border-2 !border-[var(--bg-card)] !w-3.5 !h-3.5"
+          style={{ right: -7, top: `${((i + 1) / (branch.downstreamDisplays.length + 1)) * 100}%` }}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Custom Branched Downstream Display Node Component
+const LiveDownstreamDisplayNode: React.FC<{ data: any }> = ({ data }) => {
+  const { flashDisplay, openTestPatternModal } = useRigStore();
+  const tv = data.tv;
+  const parentDisplay = data.parentDisplay;
+  if (!tv) return null;
+
+  return (
+    <div className="w-72 rounded-2xl bg-[var(--bg-card)] border-2 border-cyan-500/70 shadow-2xl overflow-hidden font-sans text-[var(--text-primary)] select-none relative">
+      <Handle
+        type="target"
+        position={Position.Left}
+        id={`in-downstream-${tv.id}`}
+        className="!bg-cyan-400 !border-2 !border-[var(--bg-card)] !w-3.5 !h-3.5"
+        style={{ left: -7 }}
+      />
+
+      <div className="p-3 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Tv className="w-4 h-4 text-cyan-400" />
+          <span className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-primary)] truncate max-w-[150px]">
+            {tv.customAlias || tv.name}
+          </span>
+        </div>
+        <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold uppercase border bg-cyan-500/20 text-cyan-400 border-cyan-500/40">
+          BRANCH TV
+        </span>
+      </div>
+
+      <div className="p-3.5 space-y-2.5 font-mono">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="text-[var(--text-muted)]">Stage Zone:</span>
+          <span className="font-bold text-[var(--text-primary)]">📍 {tv.stageZone}</span>
+        </div>
+
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="text-[var(--text-muted)]">Cable Run:</span>
+          <span className="font-bold text-amber-300">📏 {tv.cableLengthMeters}m ({tv.portType.replace('_', ' ')})</span>
+        </div>
+
+        <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between text-[10px] text-emerald-300">
+          <div className="flex items-center gap-1.5 font-bold">
+            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+            <span>MIRRORED SIGNAL</span>
+          </div>
+          <span className="text-[9px] text-[var(--text-muted)]">60.00 FPS</span>
+        </div>
+
+        {/* Action triggers */}
+        <div className="grid grid-cols-2 gap-1.5 pt-1">
+          <button
+            onClick={() => parentDisplay && flashDisplay(parentDisplay.id)}
+            className="py-1 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Zap className="w-3 h-3 text-amber-400" />
+            <span>Flash</span>
+          </button>
+          <button
+            onClick={() => parentDisplay && openTestPatternModal(parentDisplay.id)}
+            className="py-1 px-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Sparkles className="w-3 h-3 text-cyan-400" />
+            <span>Pattern</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const nodeTypes = {
   liveCameraNode: LiveCameraNode,
   liveHostNode: LiveHostNode,
   liveDisplayNode: LiveDisplayNode,
+  liveSplitterNode: LiveSplitterNode,
+  liveDownstreamNode: LiveDownstreamDisplayNode,
 };
 
 export const LiveMapCanvas: React.FC = () => {
@@ -380,6 +536,8 @@ export const LiveMapCanvas: React.FC = () => {
     selectedLiveElement,
     liveMapInspectorDockState,
     setLiveMapInspectorDockState,
+    distributionBranches,
+    openBranchModal,
   } = useRigStore();
 
   const [liveMapRightWidth, setLiveMapRightWidth] = React.useState(340);
@@ -477,9 +635,12 @@ export const LiveMapCanvas: React.FC = () => {
     // 3. External Displays (on the right)
     externalDisplays.forEach((disp, idx) => {
       const nodeId = `disp-node-${disp.id}`;
-      const defaultY = 80 + idx * 240;
+      const defaultY = 80 + idx * 260;
       const sinkX = visibleCameras.length > 0 ? 940 : 580;
       const pos = positionMap[nodeId] || { x: sinkX, y: defaultY };
+
+      const branch = distributionBranches[disp.id];
+      const hasBranch = Boolean(branch && branch.enabled && branch.downstreamDisplays && branch.downstreamDisplays.length > 0);
 
       newNodes.push({
         id: nodeId,
@@ -487,6 +648,8 @@ export const LiveMapCanvas: React.FC = () => {
         position: pos,
         data: {
           display: disp,
+          hasBranch,
+          branch,
         },
       });
 
@@ -512,11 +675,92 @@ export const LiveMapCanvas: React.FC = () => {
         labelBgPadding: [6, 3] as [number, number],
         labelBgBorderRadius: 4,
       });
+
+      // 4. If this display feed is branched (e.g. 1x4 Splitter over CAT6)
+      if (hasBranch && branch) {
+        const splitterNodeId = `splitter-node-${disp.id}`;
+        const splitterPos = positionMap[splitterNodeId] || { x: pos.x + 360, y: pos.y };
+
+        newNodes.push({
+          id: splitterNodeId,
+          type: 'liveSplitterNode',
+          position: splitterPos,
+          data: {
+            branch,
+            parentDisplay: disp,
+          },
+        });
+
+        // Edge from Display to Splitter
+        newEdges.push({
+          id: `edge-branch-${disp.id}`,
+          source: nodeId,
+          sourceHandle: `out-branch-${disp.id}`,
+          target: splitterNodeId,
+          targetHandle: `in-splitter-${disp.id}`,
+          animated: true,
+          style: {
+            stroke: '#F59E0B',
+            strokeWidth: 2.5,
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#F59E0B',
+          },
+          label: `Splitter Input (HDMI)`,
+          labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'monospace', fontWeight: 600 },
+          labelBgStyle: { fill: 'var(--bg-subcard)', fillOpacity: 0.95 },
+          labelBgPadding: [6, 3] as [number, number],
+          labelBgBorderRadius: 4,
+        });
+
+        // Downstream TVs connected to splitter outputs
+        const tvCount = branch.downstreamDisplays.length;
+        branch.downstreamDisplays.forEach((tv, tvIdx) => {
+          const tvNodeId = `downstream-node-${tv.id}`;
+          const vertOffset = (tvIdx - (tvCount - 1) / 2) * 230;
+          const tvPos = positionMap[tvNodeId] || { x: pos.x + 720, y: pos.y + vertOffset };
+
+          newNodes.push({
+            id: tvNodeId,
+            type: 'liveDownstreamNode',
+            position: tvPos,
+            data: {
+              tv,
+              parentDisplay: disp,
+              branch,
+            },
+          });
+
+          // Edge from Splitter to Downstream TV
+          newEdges.push({
+            id: `edge-splitter-to-${tv.id}`,
+            source: splitterNodeId,
+            sourceHandle: `out-tv-${tv.id}`,
+            target: tvNodeId,
+            targetHandle: `in-downstream-${tv.id}`,
+            animated: true,
+            style: {
+              stroke: '#10B981',
+              strokeWidth: 2,
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: '#10B981',
+            },
+            label: `${tv.cableLengthMeters}m ${branch.cableMedium.replace('_', ' ')}`,
+            labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'monospace', fontWeight: 600 },
+            labelBgStyle: { fill: 'var(--bg-subcard)', fillOpacity: 0.95 },
+            labelBgPadding: [6, 3] as [number, number],
+            labelBgBorderRadius: 4,
+          });
+        });
+      }
     });
 
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [liveDisplays, liveCameras]);
+  }, [liveDisplays, liveCameras, distributionBranches]);
 
   return (
     <div className="w-full h-full flex overflow-hidden relative bg-[var(--bg-primary)]">
@@ -532,6 +776,14 @@ export const LiveMapCanvas: React.FC = () => {
             if (node.id === 'host-pc') {
               const primary = liveDisplays.find((d) => d.customAlias.includes('Primary') || d.osIndex === 1) || liveDisplays[0];
               if (primary) selectLiveElement('node', primary.id);
+            } else if (node.id.startsWith('splitter-node-')) {
+              const dispId = node.id.replace('splitter-node-', '');
+              openBranchModal(dispId);
+            } else if (node.id.startsWith('downstream-node-')) {
+              const nodeData = node.data as { parentDisplay?: { id?: string } } | undefined;
+              if (nodeData?.parentDisplay?.id) {
+                selectLiveElement('node', `disp-node-${nodeData.parentDisplay.id}`);
+              }
             } else {
               selectLiveElement('node', node.id);
             }

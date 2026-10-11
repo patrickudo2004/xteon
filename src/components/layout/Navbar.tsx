@@ -31,6 +31,9 @@ import {
   Check,
   Edit2,
   ArrowUpCircle,
+  Coffee,
+  Settings,
+  AlertTriangle,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -54,6 +57,12 @@ export const Navbar: React.FC = () => {
     setMobileModalOpen,
     showCursorInPreviews,
     setShowCursorInPreviews,
+    presentationKeepAwake,
+    toggleKeepAwake,
+    setSettingsModalOpen,
+    eventLogs,
+    setEventLogDrawerOpen,
+    isMirroringDetected,
   } = useRigStore();
 
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
@@ -403,7 +412,49 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2">
+        {/* Mirroring Warning Indicator */}
+        {isMirroringDetected && (
+          <div
+            className="hidden lg:flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-mono font-bold animate-pulse"
+            title="Display Mirroring Active: Both laptop and external display show identical desktop (Presenter notes and private windows may be visible)"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            <span>MIRRORED</span>
+          </div>
+        )}
+
+        {/* Keep-Awake Caffeine Shield Toggle */}
+        <button
+          onClick={toggleKeepAwake}
+          className={`px-2.5 py-1.5 rounded-md border text-xs font-mono transition flex items-center gap-1.5 shadow-sm cursor-pointer ${
+            presentationKeepAwake
+              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 font-bold shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+              : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)] hover:bg-[var(--bg-subcard)] hover:text-[var(--text-primary)]'
+          }`}
+          title={
+            presentationKeepAwake
+              ? 'Keep-Awake Active: System sleep, display blackout, and screensaver locked out'
+              : 'Keep-Awake Inactive: Click to prevent laptop/display sleep during presentations'
+          }
+        >
+          <Coffee className={`w-3.5 h-3.5 ${presentationKeepAwake ? 'text-amber-400 animate-pulse' : 'text-[var(--text-muted)]'}`} />
+          <span className="hidden xl:inline">{presentationKeepAwake ? 'AWAKE: ON' : 'AWAKE'}</span>
+        </button>
+
+        {/* Flight Recorder / Event Logs Drawer Trigger */}
+        <button
+          onClick={() => setEventLogDrawerOpen(true)}
+          className="px-2.5 py-1.5 rounded-md bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono font-bold text-[var(--text-primary)] flex items-center gap-1.5 transition shadow-sm cursor-pointer hover:border-cyan-500/50 relative"
+          title="Open Blackbox Flight Recorder (Hardware Event Audit Log)"
+        >
+          <FileText className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="hidden md:inline">Logs</span>
+          {eventLogs.some((l) => l.level === 'CRITICAL' || l.level === 'WARN') && (
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          )}
+        </button>
+
         {/* Cursor Exposure Toggle */}
         <button
           onClick={() => setShowCursorInPreviews(!showCursorInPreviews)}
@@ -415,7 +466,16 @@ export const Navbar: React.FC = () => {
           title="Toggle cursor exposure in live preview feeds"
         >
           <MousePointer className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">Cursor: {showCursorInPreviews ? 'ON' : 'OFF'}</span>
+          <span className="hidden xl:inline">Cursor: {showCursorInPreviews ? 'ON' : 'OFF'}</span>
+        </button>
+
+        {/* Settings Modal Trigger */}
+        <button
+          onClick={() => setSettingsModalOpen(true)}
+          className="p-2 rounded-md bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)] hover:text-cyan-400 transition shadow-sm cursor-pointer"
+          title="Preferences & Show-Day Settings"
+        >
+          <Settings className="w-4 h-4" />
         </button>
 
         {/* Mobile Companion Trigger */}

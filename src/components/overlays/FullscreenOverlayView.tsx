@@ -120,8 +120,101 @@ export const FullscreenOverlayView: React.FC<{
       onClick={handleClose}
       className="w-screen h-screen relative select-none cursor-pointer overflow-hidden bg-black font-mono"
     >
+      {/* Overscan & Title Safe Pattern */}
+      {(currentPattern.toLowerCase() === 'overscan') && (
+        <div className="w-full h-full bg-slate-950 relative flex items-center justify-center p-0 overflow-hidden">
+          {/* 100% Raster Edge Border */}
+          <div className="absolute inset-0 border-[4px] border-white pointer-events-none" />
+
+          {/* Edge Warning Markers */}
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/90 px-4 py-1 rounded border border-white text-[11px] font-bold text-white uppercase tracking-wider">
+            ↑ 100% TOP RASTER EDGE (Must be visible - disable TV 16:9 Overscan)
+          </div>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/90 px-4 py-1 rounded border border-white text-[11px] font-bold text-white uppercase tracking-wider">
+            ↓ 100% BOTTOM RASTER EDGE
+          </div>
+          <div className="absolute left-2 top-1/2 -translate-y-1/2 [writing-mode:vertical-lr] bg-black/90 px-1 py-3 rounded border border-white text-[10px] font-bold text-white">
+            ← 100% LEFT EDGE
+          </div>
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 [writing-mode:vertical-lr] bg-black/90 px-1 py-3 rounded border border-white text-[10px] font-bold text-white">
+            100% RIGHT EDGE →
+          </div>
+
+          {/* 95% Action Safe Boundary */}
+          <div className="absolute inset-[2.5%] border-2 border-dashed border-emerald-400 pointer-events-none flex items-start justify-end p-2">
+            <span className="bg-emerald-950/80 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-500/30">
+              95% ACTION SAFE
+            </span>
+          </div>
+
+          {/* 90% Title Safe Boundary */}
+          <div className="absolute inset-[5%] border-2 border-dashed border-amber-400 pointer-events-none flex items-end justify-start p-2">
+            <span className="bg-amber-950/80 text-amber-400 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-500/30">
+              90% TITLE SAFE
+            </span>
+          </div>
+
+          {/* Center Target & Alignment Crosshairs */}
+          <div className="w-48 h-48 rounded-full border-2 border-cyan-400 flex items-center justify-center relative">
+            <div className="w-24 h-24 rounded-full border border-cyan-300/60" />
+            <div className="absolute w-full h-[1px] bg-cyan-400" />
+            <div className="absolute h-full w-[1px] bg-cyan-400" />
+            <div className="w-3 h-3 rounded-full bg-rose-500 z-10" />
+          </div>
+
+          {/* Diagnostic Info Pill */}
+          <div className="absolute bottom-16 bg-slate-900/90 border border-slate-700 p-3 rounded-xl text-center text-xs space-y-1 max-w-lg">
+            <div className="text-cyan-400 font-bold">1:1 PIXEL MAPPING VERIFICATION</div>
+            <div className="text-slate-300 text-[11px]">
+              If outer white borders are cut off, open TV remote: set Aspect Ratio to <strong>"Just Scan"</strong> (LG) or <strong>"Fit to Screen: ON"</strong> (Samsung) or <strong>"Full Pixel"</strong> (Sony).
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PLUGE Black Level Calibration Pattern */}
+      {(currentPattern.toLowerCase() === 'pluge') && (
+        <div className="w-full h-full bg-black relative flex flex-col justify-between p-8">
+          <div className="text-center space-y-1">
+            <div className="text-sm font-bold text-white uppercase tracking-wider">PLUGE Black Level Calibration</div>
+            <div className="text-[11px] text-slate-400">Calibrates Full RGB (0-255) vs Limited RGB (16-235) clipping on venue TVs</div>
+          </div>
+
+          {/* PLUGE Bars Center */}
+          <div className="h-64 w-full max-w-4xl mx-auto flex rounded-xl overflow-hidden border border-slate-800 shadow-2xl">
+            {/* -4% Super-Black (RGB 0) */}
+            <div className="flex-1 bg-[#000000] flex flex-col items-center justify-end pb-4 border-r border-slate-900">
+              <span className="text-[10px] text-slate-500 font-mono">SUPER-BLACK (-4%)</span>
+              <span className="text-[9px] text-slate-600">RGB #000000</span>
+            </div>
+            {/* 0% Reference Black (RGB 16) */}
+            <div className="flex-1 bg-[#101010] flex flex-col items-center justify-end pb-4 border-r border-slate-800">
+              <span className="text-[10px] text-slate-400 font-mono font-bold">REFERENCE (0%)</span>
+              <span className="text-[9px] text-slate-500">RGB #101010</span>
+            </div>
+            {/* +4% Above-Black (RGB 28) */}
+            <div className="flex-1 bg-[#1c1c1c] flex flex-col items-center justify-end pb-4 border-r border-slate-800">
+              <span className="text-[10px] text-slate-300 font-mono font-bold">ABOVE-BLACK (+4%)</span>
+              <span className="text-[9px] text-slate-400">RGB #1C1C1C</span>
+            </div>
+            {/* 50% Neutral Gray */}
+            <div className="flex-1 bg-[#808080] flex flex-col items-center justify-end pb-4 border-r border-slate-800">
+              <span className="text-[10px] text-slate-900 font-mono font-bold">50% GRAY</span>
+            </div>
+            {/* 100% Reference White */}
+            <div className="flex-1 bg-[#FFFFFF] flex flex-col items-center justify-end pb-4">
+              <span className="text-[10px] text-slate-900 font-mono font-bold">100% WHITE</span>
+            </div>
+          </div>
+
+          <div className="max-w-xl mx-auto bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-center text-[11px] text-slate-300">
+            <strong>Calibration Rule:</strong> Adjust TV Brightness until the <strong>Above-Black (+4%)</strong> bar is just barely visible, but the <strong>Super-Black (-4%)</strong> bar blends seamlessly with the background black.
+          </div>
+        </div>
+      )}
+
       {/* Pattern renderer */}
-      {currentPattern === 'smpte' && (
+      {currentPattern.toLowerCase() === 'smpte' && (
         <div className="w-full h-full flex flex-col">
           {/* Top 67% standard 7 bars */}
           <div className="flex-[2] flex w-full">
@@ -218,8 +311,20 @@ export const FullscreenOverlayView: React.FC<{
         className="absolute top-6 right-6 bg-black/90 text-white p-2 rounded-2xl border border-white/20 shadow-2xl flex items-center gap-1.5 z-50 text-xs backdrop-blur-md"
       >
         <button
+          onClick={() => setCurrentPattern('overscan')}
+          className={`px-3 py-1.5 rounded-lg transition ${currentPattern.toLowerCase() === 'overscan' ? 'bg-cyan-500 text-slate-950 font-bold' : 'hover:bg-white/10'}`}
+        >
+          Overscan Safe
+        </button>
+        <button
+          onClick={() => setCurrentPattern('pluge')}
+          className={`px-3 py-1.5 rounded-lg transition ${currentPattern.toLowerCase() === 'pluge' ? 'bg-cyan-500 text-slate-950 font-bold' : 'hover:bg-white/10'}`}
+        >
+          PLUGE Black
+        </button>
+        <button
           onClick={() => setCurrentPattern('smpte')}
-          className={`px-3 py-1.5 rounded-lg transition ${currentPattern === 'smpte' ? 'bg-cyan-500 text-slate-950 font-bold' : 'hover:bg-white/10'}`}
+          className={`px-3 py-1.5 rounded-lg transition ${currentPattern.toLowerCase() === 'smpte' ? 'bg-cyan-500 text-slate-950 font-bold' : 'hover:bg-white/10'}`}
         >
           SMPTE Bars
         </button>
