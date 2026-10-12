@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comprehensive User Guide & Field Manual | Xteon Pro AV</title>
+  <meta name="description" content="Step-by-step instructions and technical field manual for every feature in Xteon Pro AV: CAD signal routing, virtual distribution, cable label printing, acoustic delay, and protocol integrations." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #090d16; color: #cbd5e1; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .guide-step { counter-increment: step-counter; }
+    .step-number::before { content: counter(step-counter); }
+    html { scroll-behavior: smooth; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#090d16] text-slate-300 antialiased selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- Top Sticky Navigation -->
+  <header class="border-b border-slate-800 bg-[#090d16]/90 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="/" class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center font-mono font-black text-slate-950 text-sm shadow-[0_0_15px_rgba(6,182,212,0.4)] border border-cyan-400/40">
+            XT
+          </div>
+          <div>
+            <span class="font-mono text-base font-black tracking-wider text-white">XTEON</span>
+            <span class="text-[9px] ml-1.5 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 mono font-bold">MANUAL & HELP</span>
+          </div>
+        </a>
+      </div>
+
+      <div class="flex items-center gap-4 text-xs mono">
+        <a href="/" class="hover:text-cyan-400 transition">← Back to Home</a>
+        <a href="/cheat-sheets" class="hover:text-cyan-400 transition text-amber-400">Calibration Cheat Sheets</a>
+        <a href="/eula" class="hover:text-cyan-400 transition">EULA</a>
+        <a href="/#downloads" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 transition">
+          Download App
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container with Sidebar + Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 grid grid-cols-1 lg:grid-cols-4 gap-8">
+    
+    <!-- Left Sticky Table of Contents -->
+    <aside class="hidden lg:block col-span-1">
+      <div class="sticky top-24 space-y-4 text-xs mono bg-slate-900/50 p-5 rounded-2xl border border-slate-800">
+        <div class="text-white font-bold uppercase tracking-wider text-[11px] pb-2 border-b border-slate-800 flex items-center justify-between">
+          <span>Field Manual Index</span>
+          <span class="text-cyan-400 text-[10px]">v1.3.1</span>
+        </div>
+        <nav class="space-y-1.5 text-slate-400">
+          <a href="#quick-start" class="block hover:text-cyan-400 py-1 transition">1. Quick Start & Shortcuts</a>
+          <a href="#canvas-routing" class="block hover:text-cyan-400 py-1 transition">2. CAD Canvas & Routing</a>
+          <a href="#virtual-splitters" class="block hover:text-cyan-400 py-1 transition">3. Splitters & DAs</a>
+          <a href="#display-convergence" class="block hover:text-cyan-400 py-1 transition">4. Display Convergence</a>
+          <a href="#camera-ingest" class="block hover:text-cyan-400 py-1 transition">5. Camera Ingest & NDI</a>
+          <a href="#label-exporter" class="block hover:text-cyan-400 py-1 transition">6. Industrial Cable Labels</a>
+          <a href="#vector-blueprint" class="block hover:text-cyan-400 py-1 transition">7. Vector FOH Blueprint</a>
+          <a href="#acoustic-delay" class="block hover:text-cyan-400 py-1 transition">8. Acoustic Delay Physics</a>
+          <a href="#show-shields" class="block hover:text-cyan-400 py-1 transition">9. Show Shields & Blackbox</a>
+          <a href="#protocols" class="block hover:text-cyan-400 py-1 transition">10. Companion, OSC & OBS</a>
+          <a href="#templates" class="block hover:text-cyan-400 py-1 transition">11. Saving & Templates</a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Right Content Area -->
+    <main class="col-span-1 lg:col-span-3 space-y-12 text-sm leading-relaxed">
+      
+      <!-- Header Banner -->
+      <div class="border-b border-slate-800 pb-6">
+        <div class="text-cyan-400 text-xs uppercase mono font-bold tracking-widest mb-1">Official Operator Documentation</div>
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+          Xteon Pro AV Complete Field Manual
+        </h1>
+        <p class="text-slate-400 text-xs sm:text-sm mt-2">
+          Step-by-step operational workflows for Front of House (FOH) engineers, video directors, and stage technicians. Learn how to master every tool included in the v1.3.1 suite.
+        </p>
+      </div>
+
+      <!-- Section 1: Quick Start -->
+      <section id="quick-start" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">01</span>
+          <h2 class="text-xl font-bold text-white">Quick Start & Keyboard Shortcuts</h2>
+        </div>
+        <p class="text-xs text-slate-300">
+          Xteon operates as an offline, high-speed desktop CAD workstation. Familiarize yourself with the core navigational bindings:
+        </p>
+        <div class="grid sm:grid-cols-2 gap-3 text-xs mono">
+          <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex justify-between items-center">
+            <span class="text-slate-400">Pan Canvas</span>
+            <span class="text-cyan-400 font-bold">Space + Drag or Middle Mouse</span>
+          </div>
+          <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex justify-between items-center">
+            <span class="text-slate-400">Zoom In / Out</span>
+            <span class="text-cyan-400 font-bold">Scroll Wheel / Pinch</span>
+          </div>
+          <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex justify-between items-center">
+            <span class="text-slate-400">Save Project</span>
+            <span class="text-emerald-400 font-bold">Ctrl + S (Cmd + S on Mac)</span>
+          </div>
+          <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex justify-between items-center">
+            <span class="text-slate-400">Delete Node / Cable</span>
+            <span class="text-rose-400 font-bold">Delete or Backspace</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: CAD Routing -->
+      <section id="canvas-routing" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">02</span>
+          <h2 class="text-xl font-bold text-white">CAD Canvas, Device Nodes & Cable Routing</h2>
+        </div>
+        <div class="space-y-4 text-xs text-slate-300">
+          <div>
+            <h3 class="font-bold text-white text-sm mb-1">Step 1: Adding Hardware Nodes</h3>
+            <p>Click the <strong>Add Device</strong> dropdown in the top toolbar to instantiate hardware nodes. You can select from:</p>
+            <ul class="list-disc list-inside mt-1.5 space-y-1 text-slate-400 pl-2">
+              <li><strong>Sources:</strong> Media Servers (Disguise, Hippotizer, Resolume), Laptops (HDMI/Type-C), PTZ Cameras, SDI Routers.</li>
+              <li><strong>Processors:</strong> LED Processors (NovaStar MCTRL4K, Brompton Tessera SX40/S8), Video Switchers (Barco E2, Blackmagic ATEM), Decimator MD-HX Cross Converters.</li>
+              <li><strong>Sinks:</strong> LED Video Walls, Projectors, Commercial Smart TVs, Confidence Monitors (DSM).</li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-sm mb-1">Step 2: Drawing Cable Connections</h3>
+            <p>Hover over any <strong>Output Port Handle</strong> (right side of a device node), click and drag a bezier connection line to an <strong>Input Port Handle</strong> on a downstream destination node.</p>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-sm mb-1">Step 3: Real-Time Signal Validation</h3>
+            <p>Click on any drawn cable to inspect its parameters in the right-hand inspector panel. Xteon instantly calculates:</p>
+            <ul class="list-disc list-inside mt-1.5 space-y-1 text-slate-400 pl-2">
+              <li><strong>Calculated Bandwidth (Gbps):</strong> Evaluates resolution, frame rate (e.g. 59.94Hz), and color bit-depth.</li>
+              <li><strong>Distance Limits:</strong> Flags a <span class="text-rose-400 font-bold">CRITICAL WARNING</span> if you exceed copper limits (e.g., HDMI 2.0 copper over 5 meters) and suggests Fiber AOC or HDBaseT conversion.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Virtual Splitters -->
+      <section id="virtual-splitters" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">03</span>
+          <h2 class="text-xl font-bold text-white">Virtual Distribution Amplifiers & Splitter Branching</h2>
+        </div>
+        <p class="text-xs text-slate-300">
+          In live events, a single output from a video switcher often feeds an array of distributed TVs and confidence monitors via a 1x2, 1x4, or 1x8 Distribution Amplifier (DA).
+        </p>
+        <div class="space-y-3 text-xs text-slate-300">
+          <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
+            <strong class="text-white block mb-1">How to Configure a Splitter Branch:</strong>
+            <ol class="list-decimal list-inside space-y-1 text-slate-400">
+              <li>Add a <strong>Distribution Amp (Splitter)</strong> node to the canvas.</li>
+              <li>In the node inspector, choose your multiplier (e.g., <strong>1x4</strong> or <strong>1x8</strong>).</li>
+              <li>Connect your upstream source into the input port.</li>
+              <li>Connect the output ports to your stage TVs and confidence monitors.</li>
+              <li>Assign unique stage zone names (e.g., <em>"Stage Left Green Room"</em>, <em>"FOH VIP Lounge"</em>) to each downstream branch.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 4: Display Convergence -->
+      <section id="display-convergence" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">04</span>
+          <h2 class="text-xl font-bold text-white">Physical Display Discovery & Live Convergence</h2>
+        </div>
+        <div class="space-y-3 text-xs text-slate-300">
+          <p>
+            When operating in <strong>Live Map Mode</strong>, Xteon queries the operating system kernel to detect real physical displays plugged into your GPU outputs.
+          </p>
+          <ul class="list-disc list-inside space-y-1 text-slate-400 pl-2">
+            <li><strong>Auto-Reconciliation:</strong> Matches planned canvas nodes against physically plugged displays based on resolution, refresh rate, and display name.</li>
+            <li><strong>Mirroring Detection:</strong> Automatically flags accidental display mirroring (when an external projector shares 0,0 origin coordinates with the host laptop).</li>
+            <li><strong>Flash Display:</strong> Click the flash icon to flash a full-screen identification pattern on an external screen, confirming physical cable identity on stage.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 5: Camera Ingest -->
+      <section id="camera-ingest" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">05</span>
+          <h2 class="text-xl font-bold text-white">Live Camera Ingest & Multi-View Monitoring</h2>
+        </div>
+        <div class="space-y-3 text-xs text-slate-300">
+          <p>
+            Open the <strong>Camera Ingest Drawer</strong> from the top toolbar to monitor live stage video feeds inside Xteon:
+          </p>
+          <ul class="list-disc list-inside space-y-1.5 text-slate-400 pl-2">
+            <li><strong>Automatic Device Classification:</strong> Automatically sorts feeds into <em>External Pro</em> (HDMI/SDI capture cards like Elgato Cam Link, Blackmagic DeckLink), <em>Wireless Stage Cams</em> (Iriun 4K phone cams), and <em>Internal Webcams</em>.</li>
+            <li><strong>Privacy Standby Mode:</strong> Built-in webcams and virtual drivers remain in standby with zero sensor activation until explicitly engaged.</li>
+            <li><strong>Multi-View Grid:</strong> Monitor live frame previews, freeze incoming frames for inspection, and customize stage camera labels.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 6: Label Exporter -->
+      <section id="label-exporter" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">06</span>
+          <h2 class="text-xl font-bold text-white">Industrial Cable Label Printer Exporter (Brother & Brady)</h2>
+        </div>
+        <div class="space-y-3 text-xs text-slate-300">
+          <p>
+            Eliminate hand-written tape labels during load-in. Export formatted CSV label data directly into industrial label software:
+          </p>
+          <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 space-y-2">
+            <strong class="text-white block">Step-by-Step Label Printing Workflow:</strong>
+            <ol class="list-decimal list-inside space-y-1 text-slate-400">
+              <li>In the top navbar, click <strong>File</strong> → <strong>Export Outputs</strong> → <strong>Cable Labels (P-Touch/Brady CSV)</strong>.</li>
+              <li>A standardized RFC 4180 CSV file is downloaded to your machine.</li>
+              <li>Open <strong>Brother P-Touch Editor</strong> or <strong>Brady Workstation</strong>.</li>
+              <li>Choose <strong>File → Database → Connect</strong> and select the downloaded CSV.</li>
+              <li>Map the CSV fields: <code>Cable ID</code>, <code>Source Device</code>, <code>Target Device</code>, <code>Wire Color</code>, and <code>Length</code> to your wrap-around cable label template.</li>
+              <li>Print your entire show run-list in seconds!</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 7: Vector Blueprint -->
+      <section id="vector-blueprint" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">07</span>
+          <h2 class="text-xl font-bold text-white">Printable 11x17 Tabloid & A3 Vector Blueprint Schematic</h2>
+        </div>
+        <div class="space-y-3 text-xs text-slate-300">
+          <p>
+            Provide stage crew and Front-of-House leads with a crisp, physical vector schematic:
+          </p>
+          <ul class="list-disc list-inside space-y-1 text-slate-400 pl-2">
+            <li>Click <strong>File</strong> → <strong>Export Outputs</strong> → <strong>Print FOH Blueprint (Tabloid/A3)</strong>.</li>
+            <li>A full-screen print preview modal appears containing:
+              <ul class="list-circle list-inside pl-4 mt-1 space-y-0.5 text-slate-400">
+                <li>• Scalable vector SVG schematic diagram</li>
+                <li>• Bill of Materials (BOM) hardware inventory table</li>
+                <li>• Cable pull run-list with lengths and connector standards</li>
+                <li>• Embedded ANSI E1.21 entertainment rigging safety disclaimer</li>
+              </ul>
+            </li>
+            <li>Click <strong>Print / Save as PDF</strong> and select 11x17" Tabloid or A3 paper size in your print dialog.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 8: Acoustic Delay Physics -->
+      <section id="acoustic-delay" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">08</span>
+          <h2 class="text-xl font-bold text-white">Acoustic Audio-to-Video Delay Calculator</h2>
+        </div>
+        <div class="space-y-3 text-xs text-slate-300">
+          <p>
+            Align live Front-of-House sound waves with video screen photons:
+          </p>
+          <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 space-y-2">
+            <strong class="text-white block">Operating Procedure:</strong>
+            <ol class="list-decimal list-inside space-y-1 text-slate-400">
+              <li>Click the <strong>Audio Delay (⏱️)</strong> button on the primary toolbar.</li>
+              <li>Input the <strong>Ambient Venue Temperature</strong> in °C or °F (sound travels faster in warmer air).</li>
+              <li>Input the <strong>FOH / Audience Distance</strong> from the main PA speakers (in meters or feet).</li>
+              <li>Set the <strong>Video Processing Latency</strong> (typically 2 to 3 frames of switcher and processor delay).</li>
+              <li>Select your project frame rate (e.g., <strong>59.94 fps</strong> or <strong>60 fps</strong>).</li>
+              <li>Read the <strong>Recommended Console Matrix Delay (ms)</strong> and enter that exact value into your audio console's matrix outputs.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 9: Show Shields -->
+      <section id="show-shields" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">09</span>
+          <h2 class="text-xl font-bold text-white">Show Shields, Anti-Dimming & Flight Recorder</h2>
+        </div>
+        <div class="space-y-3 text-xs text-slate-300">
+          <p>
+            Access these mission-critical guards inside the <strong>Settings Modal</strong>:
+          </p>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
+              <strong class="text-cyan-400 block mb-1">Caffeine Keep-Awake Shield:</strong>
+              <p class="text-slate-400">Prevents the operating system from entering sleep mode or activating screen savers during live rehearsals and shows.</p>
+            </div>
+            <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
+              <strong class="text-cyan-400 block mb-1">Anti-Dimming Heartbeat:</strong>
+              <p class="text-slate-400">Emits an imperceptible 1-pixel micro-toggle beacon every 20 seconds to defeat Samsung and LG Eco Sensors on static keynote slides.</p>
+            </div>
+            <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
+              <strong class="text-cyan-400 block mb-1">Audio Level Guard:</strong>
+              <p class="text-slate-400">Monitors system WASAPI loopback audio and immediately warns you if an active presenter microphone drops silent.</p>
+            </div>
+            <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
+              <strong class="text-cyan-400 block mb-1">Blackbox Flight Recorder:</strong>
+              <p class="text-slate-400">Maintains a timestamped audit trail of all display connects, disconnects, resolution shifts, and audio anomalies.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 10: Protocols -->
+      <section id="protocols" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">10</span>
+          <h2 class="text-xl font-bold text-white">Hardware Protocols: Companion, OSC, ProPresenter & OBS</h2>
+        </div>
+        <div class="space-y-3 text-xs text-slate-300">
+          <p>
+            Connect Xteon to your venue's hardware control surfaces in <strong>Settings → Integrations</strong>:
+          </p>
+          <ul class="list-disc list-inside space-y-1.5 text-slate-400 pl-2">
+            <li><strong>Bitfocus Companion & Stream Deck (Port 8765):</strong> Connect your Stream Deck via WebSocket to trigger blackout modes, recall layout presets, and view live display tallies on LCD keys.</li>
+            <li><strong>Open Sound Control (OSC Port 8000 UDP):</strong> Listen for incoming cue strings from QLab, Resolume Arena, or lighting consoles (grandMA3).</li>
+            <li><strong>ProPresenter 7 Sync (Port 1025 REST):</strong> Automatically detect active Stage Screens and Audience Displays configured inside ProPresenter.</li>
+            <li><strong>OBS Studio & vMix (Ports 4455 / 8099):</strong> Bridge virtual camera sources and verify program feed health.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 11: Templates -->
+      <section id="templates" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">11</span>
+          <h2 class="text-xl font-bold text-white">Project File Management & Industry Starter Templates</h2>
+        </div>
+        <div class="space-y-3 text-xs text-slate-300">
+          <p>
+            Save, reload, and share your work using standard local files:
+          </p>
+          <ul class="list-disc list-inside space-y-1 text-slate-400 pl-2">
+            <li><strong>Save Project (Ctrl+S):</strong> Saves your schematic canvas, node positions, port custom names, and wire lengths into a portable <code class="mono text-cyan-300">.xteon</code> JSON project file.</li>
+            <li><strong>Starter Templates:</strong> Click <strong>File → Industry Templates</strong> to load pre-engineered reference topologies:
+              <ul class="list-circle list-inside pl-4 mt-1 space-y-0.5 text-slate-400">
+                <li>• <em>Corporate Keynote & Breakout Rig</em> (Laptop ingest, switcher, primary LED wall & DSM confidence monitor)</li>
+                <li>• <em>House of Worship Multi-Screen Setup</em> (ProPresenter, stage confidence monitors, broadcast livestream branch)</li>
+                <li>• <em>Arena Concert & Festival Video Rig</em> (Disguise media server, 12G-SDI routing, Brompton LED wall processing)</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 bg-[#060910] py-8 text-xs text-slate-500 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between mono">
+      <div>
+        Copyright © 2026 Patrick Udoh. All Rights Reserved. Xteon Pro AV Field Manual.
+      </div>
+      <div class="mt-2 sm:mt-0 flex gap-4">
+        <a href="/" class="hover:text-cyan-400">Home</a>
+        <a href="/cheat-sheets" class="hover:text-cyan-400">Cheat Sheets</a>
+        <a href="/eula" class="hover:text-cyan-400">EULA</a>
+        <a href="/privacy" class="hover:text-cyan-400">Privacy</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
