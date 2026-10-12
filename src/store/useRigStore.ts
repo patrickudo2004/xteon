@@ -2455,7 +2455,7 @@ export const useRigStore = create<RigState>((set, get) => ({
 
   exportProject: () => {
     return {
-      version: '1.3.0',
+      version: '1.3.1',
       meta: {
         projectName: 'Xteon Staging Rig Plan',
         venue: 'Main Stage',

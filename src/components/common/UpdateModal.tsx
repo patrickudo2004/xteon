@@ -25,7 +25,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
     body?: string;
     date?: string;
   } | null>(null);
-  const [installedVersion, setInstalledVersion] = useState<string>('1.3.0');
+  const [installedVersion, setInstalledVersion] = useState<string>('1.3.1');
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
   const [downloadedBytes, setDownloadedBytes] = useState<number>(0);
