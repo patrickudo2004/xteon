@@ -617,6 +617,10 @@ export const validateCableSignal = (
       maxPortGbps = 12.0;
       maxDistanceM = 30;
       break;
+    case 'INTERNAL_DISPLAY':
+      maxPortGbps = 40.0;
+      maxDistanceM = 0.5;
+      break;
     default:
       maxPortGbps = 18.0;
       maxDistanceM = 15;
@@ -1176,13 +1180,13 @@ export const useRigStore = create<RigState>((set, get) => ({
       return;
     }
 
-    const hostDisplay = displays.find((d) => d.customAlias.includes('Primary') || d.osIndex === 1) || displays[0] || {
+    const hostDisplay = displays.find((d) => d.customAlias.includes('Primary') || d.customAlias.includes('Host') || d.portType === 'INTERNAL_DISPLAY' || d.osIndex === 1) || displays[0] || {
       id: 'disp-host-default',
       osIndex: 1,
-      name: 'Host Workstation Display',
-      customAlias: 'Host Workstation Primary Screen',
+      name: 'Host Laptop Built-in Display',
+      customAlias: 'Host Laptop (Built-in Screen / eDP)',
       stageZone: 'FOH Control Booth',
-      portType: 'DP_1_4' as PortType,
+      portType: 'INTERNAL_DISPLAY' as PortType,
       vendor: 'Host PC',
       model: 'Primary Display',
       serial: 'HOST-01',
@@ -1207,7 +1211,7 @@ export const useRigStore = create<RigState>((set, get) => ({
       name: `GPU Out ${idx + 1} (${disp.portType.replace('_', ' ')})`,
       type: disp.portType as PortType,
       direction: 'OUTPUT',
-      maxBandwidthGbps: disp.portType === 'DP_1_4' ? 32.4 : disp.portType === 'HDMI_2_1' ? 48.0 : disp.portType === 'WIRELESS' ? 10.0 : 18.0,
+      maxBandwidthGbps: disp.portType === 'INTERNAL_DISPLAY' ? 40.0 : disp.portType === 'DP_1_4' ? 32.4 : disp.portType === 'HDMI_2_1' ? 48.0 : disp.portType === 'WIRELESS' ? 10.0 : 18.0,
     }));
 
     const hostX = cameras.length > 0 ? 460 : 80;
@@ -2344,8 +2348,9 @@ export const useRigStore = create<RigState>((set, get) => ({
           const mappedDisplays: LiveDisplay[] = sorted.map((d: any, idx: number) => {
             const existing = currentDisplays.find((c) => c.id === d.id);
             const isPrimary = idx === 0 || d.os_index === 1;
-            const defaultAlias = isPrimary
-              ? 'Host Workstation Primary Screen'
+            const isInternal = isPrimary || d.port_type === 'INTERNAL_DISPLAY';
+            const defaultAlias = isInternal
+              ? 'Host Laptop (Built-in Screen / eDP)'
               : d.port_type === 'WIRELESS'
               ? 'Wireless Screen / Phone'
               : `External Display ${idx + 1}`;

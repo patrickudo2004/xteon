@@ -343,7 +343,9 @@ const LiveDisplayNode: React.FC<{ data: any }> = ({ data }) => {
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span>SIGNAL LOCKED</span>
           </div>
-          <span className="text-[10px] text-emerald-300 font-bold">60.00 FPS</span>
+          <span className="text-[10px] text-emerald-300 font-bold">
+            {display.refreshRateHz ? `${display.refreshRateHz} Hz` : '60 Hz'}
+          </span>
         </div>
 
         {/* Virtual Splitter Badge */}
@@ -491,7 +493,9 @@ const LiveDownstreamDisplayNode: React.FC<{ data: any }> = ({ data }) => {
             <CheckCircle2 className="w-3 h-3 text-emerald-400" />
             <span>MIRRORED SIGNAL</span>
           </div>
-          <span className="text-[9px] text-[var(--text-muted)]">60.00 FPS</span>
+          <span className="text-[9px] text-[var(--text-muted)] font-mono">
+            {parentDisplay?.refreshRateHz ? `${parentDisplay.refreshRateHz} Hz` : '60 Hz'}
+          </span>
         </div>
 
         {/* Action triggers */}

@@ -2,6 +2,7 @@ export type AppMode = 'PLANNER' | 'LIVE_MAP' | 'LIVE';
 export type ThemeMode = 'DARK_FOH' | 'DAYLIGHT' | 'BROADCAST';
 
 export type PortType = 
+  | 'INTERNAL_DISPLAY'
   | 'HDMI_2_0' 
   | 'HDMI_2_1' 
   | 'DP_1_4' 

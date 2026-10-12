@@ -145,7 +145,9 @@ assertEqual(Number(v35.toFixed(2)), 352.51, 'Speed of sound at 35°C increases t
 console.log('\n--- TEST GROUP 3: Timestamp Parsing & Date Safeguard ---');
 
 function formatLogTime(ts: string) {
-  if (!ts) return '';
+  if (!ts || ts === 'Invalid Date') {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
   if (ts.includes(':') && !ts.includes('T') && !ts.includes('-')) {
     return ts;
   }
@@ -155,14 +157,25 @@ function formatLogTime(ts: string) {
       return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
   } catch {}
-  return ts;
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 const isoSample = '2026-10-12T20:29:11.000Z';
 const legacyTimeSample = '8:29:11 PM';
+const corruptedSample = 'Invalid Date';
 
 assert(formatLogTime(isoSample) !== 'Invalid Date', 'ISO 8601 timestamp does not produce Invalid Date');
 assert(formatLogTime(legacyTimeSample) === '8:29:11 PM', 'Legacy time string safely preserved without Invalid Date crash');
+assert(formatLogTime(corruptedSample) !== 'Invalid Date', 'Corrupted Invalid Date string converted to active timestamp');
+
+// --- TEST GROUP 4: INTERNAL_DISPLAY BANDWIDTH & VALIDATION ---
+console.log('\n--- TEST GROUP 4: Internal Display Port & Signal Validation ---');
+
+import { validateCableSignal } from '../store/useRigStore';
+const internalValidation = validateCableSignal(1920, 1080, 60, 8, 'INTERNAL_DISPLAY', 0.2);
+assertEqual(internalValidation.status, 'VALID', 'Internal laptop screen signal status is VALID');
+assertEqual(internalValidation.maxPortGbps, 40.0, 'Internal display eDP bus capacity is 40.0 Gbps');
+assertEqual(internalValidation.maxDistanceMeters, 0.5, 'Internal display max bus ribbon distance is 0.5m');
 
 console.log(`\n================================================================`);
 console.log(`  QA SUMMARY: ${passedTests}/${totalTests} ASSERTIONS PASSED (100%)`);

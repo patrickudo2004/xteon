@@ -72,26 +72,36 @@ pub fn enumerate_real_windows_displays() -> Vec<NativeDisplayInfo> {
                     || all_info.contains("virtual")
                     || all_info.contains("idd");
 
+                let is_explicit_hdmi = all_info.contains("hdmi");
+                let is_explicit_dp = all_info.contains("displayport") || all_info.contains("dp_");
+                let is_explicit_usbc = all_info.contains("usb-c") || all_info.contains("type-c");
+
                 let port_type = if is_wireless {
                     "WIRELESS".to_string()
-                } else if is_primary {
+                } else if is_explicit_hdmi {
+                    "HDMI_2_0".to_string()
+                } else if is_explicit_dp {
                     "DP_1_4".to_string()
+                } else if is_explicit_usbc {
+                    "USB_C_DP".to_string()
+                } else if is_primary {
+                    "INTERNAL_DISPLAY".to_string()
                 } else {
                     "HDMI_2_0".to_string()
                 };
 
-                let custom_alias = if is_primary {
-                    "Host Workstation & Primary Screen".to_string()
-                } else if is_wireless {
-                    "Phone / Tablet (ASUS GlideX Wireless)".to_string()
+                let custom_alias = if is_wireless {
+                    "Phone / Tablet (Wireless Display)".to_string()
+                } else if is_primary || port_type == "INTERNAL_DISPLAY" {
+                    "Host Laptop (Built-in Screen / eDP)".to_string()
                 } else {
                     format!("External Stage Display {}", dev_num + 1)
                 };
 
-                let stage_zone = if is_primary {
-                    "FOH Booth".to_string()
-                } else if is_wireless {
+                let stage_zone = if is_wireless {
                     "Mobile Director / Stage".to_string()
+                } else if is_primary || port_type == "INTERNAL_DISPLAY" {
+                    "FOH Control Booth".to_string()
                 } else {
                     "Stage Area".to_string()
                 };
@@ -167,8 +177,8 @@ pub fn enumerate_real_windows_displays() -> Vec<NativeDisplayInfo> {
         let seq_num = (idx + 1) as u32;
         d.os_index = seq_num;
         d.id = format!("live-disp-{}", seq_num);
-        if is_primary {
-            d.custom_alias = "Host Workstation (Primary Screen)".to_string();
+        if is_primary || d.port_type == "INTERNAL_DISPLAY" {
+            d.custom_alias = "Host Laptop (Built-in Screen / eDP)".to_string();
             d.stage_zone = "FOH Control Booth".to_string();
         } else if d.port_type == "WIRELESS" {
             d.custom_alias = "Phone / Tablet (Wireless Display)".to_string();

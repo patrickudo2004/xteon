@@ -44,15 +44,15 @@ fn get_connected_displays(app: tauri::AppHandle) -> Vec<NativeDisplayInfo> {
             let pos = m.position();
 
             let port_type = if is_primary {
-                "DP_1_4".to_string()
+                "INTERNAL_DISPLAY".to_string()
             } else if name.to_lowercase().contains("wireless") || name.to_lowercase().contains("airplay") || name.to_lowercase().contains("sidecar") {
                 "WIRELESS".to_string()
             } else {
                 "HDMI_2_0".to_string()
             };
 
-            let custom_alias = if is_primary {
-                "Host Workstation (Primary Screen)".to_string()
+            let custom_alias = if is_primary || port_type == "INTERNAL_DISPLAY" {
+                "Host Laptop / Workstation (Built-in Screen)".to_string()
             } else if port_type == "WIRELESS" {
                 "Wireless / Sidecar Display".to_string()
             } else {

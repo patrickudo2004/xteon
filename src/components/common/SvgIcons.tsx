@@ -100,6 +100,8 @@ export const WirelessPortIcon: React.FC<IconProps> = ({ className, size = 16, co
 // Helper function to return the correct SVG icon for any PortType
 export const getPortIcon = (type: PortType, className = "w-4 h-4", size = 16) => {
   switch (type) {
+    case 'INTERNAL_DISPLAY':
+      return <DisplayPortIcon className={className} size={size} color="#38BDF8" />;
     case 'HDMI_2_0':
     case 'HDMI_2_1':
       return <HdmiIcon className={className} size={size} color="#A78BFA" />;

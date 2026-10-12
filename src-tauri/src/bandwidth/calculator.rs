@@ -23,6 +23,7 @@ pub fn calculate_signal_bandwidth(
     let bandwidth_gbps = (raw_bits_per_sec / 1_000_000_000.0 * 100.0).round() / 100.0;
 
     let (max_port_gbps, max_distance_meters) = match cable_type {
+        "INTERNAL_DISPLAY" => (40.0, 0.5),
         "HDMI_2_0" => (18.0, 10.0),
         "HDMI_2_1" => (48.0, 5.0),
         "FIBER_HDMI" => (48.0, 300.0),

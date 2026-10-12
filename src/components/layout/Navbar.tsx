@@ -127,6 +127,13 @@ export const Navbar: React.FC = () => {
           <div className="font-mono text-sm font-black tracking-wider text-[var(--text-primary)] flex items-center gap-1.5">
             <span>XTEON</span>
             <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-normal">PRO</span>
+            <button
+              onClick={() => setUpdateModalOpen(true)}
+              className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono font-bold hover:bg-emerald-500/30 transition cursor-pointer"
+              title="Installed Version: v1.3.2 (Click to check updates)"
+            >
+              v1.3.2
+            </button>
           </div>
         </div>
 

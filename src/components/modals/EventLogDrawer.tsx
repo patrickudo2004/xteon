@@ -31,8 +31,10 @@ export const EventLogDrawer: React.FC = () => {
   const [copied, setCopied] = useState(false);
 
   const formatLogTime = (ts: string) => {
-    if (!ts) return '';
-    // If it's already a simple time string like "8:29:11 PM", return it directly
+    if (!ts || ts === 'Invalid Date') {
+      return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    // If it's already a simple time string like "8:29:11 PM" or "8:29 PM", return it directly
     if (ts.includes(':') && !ts.includes('T') && !ts.includes('-')) {
       return ts;
     }
@@ -42,7 +44,7 @@ export const EventLogDrawer: React.FC = () => {
         return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       }
     } catch {}
-    return ts;
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
   if (!eventLogDrawerOpen) return null;

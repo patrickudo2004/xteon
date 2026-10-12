@@ -566,7 +566,7 @@ export const LiveMonitorView: React.FC = () => {
 
                       <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[10px] font-mono text-[var(--text-primary)]">
                         {getPortIcon(disp.portType, 'w-3.5 h-3.5')}
-                        <span>{disp.portType.replace('_', ' ')}</span>
+                        <span>{disp.portType === 'INTERNAL_DISPLAY' ? 'INTERNAL (eDP)' : disp.portType.replace('_', ' ')}</span>
                       </div>
                       <StatusShapeIcon status={disp.status} className="w-3.5 h-3.5" />
                     </div>
@@ -588,7 +588,7 @@ export const LiveMonitorView: React.FC = () => {
                             {disp.customAlias}
                           </div>
                           <div className="text-[11px] font-mono text-[var(--text-muted)] mt-0.5">
-                            {disp.activeResolution.width} × {disp.activeResolution.height} @ {disp.refreshRateHz}Hz • {disp.portType.replace('_', ' ')}
+                            {disp.activeResolution.width} × {disp.activeResolution.height} @ {disp.refreshRateHz}Hz • {disp.portType === 'INTERNAL_DISPLAY' ? 'Internal (eDP)' : disp.portType.replace('_', ' ')}
                           </div>
                         </div>
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[10px] font-mono text-[var(--text-muted)]">

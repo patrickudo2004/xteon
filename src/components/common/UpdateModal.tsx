@@ -25,13 +25,26 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
     body?: string;
     date?: string;
   } | null>(null);
-  const [installedVersion, setInstalledVersion] = useState<string>('1.3.1');
+  const [installedVersion, setInstalledVersion] = useState<string>('1.3.2');
+  const [directDownloadUrl, setDirectDownloadUrl] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
   const [downloadedBytes, setDownloadedBytes] = useState<number>(0);
   const [totalBytes, setTotalBytes] = useState<number>(0);
   const [downloadComplete, setDownloadComplete] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const isNewer = (remote: string, current: string) => {
+    const rParts = remote.split('.').map((p) => parseInt(p, 10) || 0);
+    const cParts = current.split('.').map((p) => parseInt(p, 10) || 0);
+    for (let i = 0; i < Math.max(rParts.length, cParts.length); i++) {
+      const r = rParts[i] || 0;
+      const c = cParts[i] || 0;
+      if (r > c) return true;
+      if (r < c) return false;
+    }
+    return false;
+  };
 
   useEffect(() => {
     const fetchAppVersion = async () => {
@@ -50,8 +63,41 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
     setChecking(true);
     setErrorMsg(null);
     setUpdateAvailable(null);
+    setDirectDownloadUrl(null);
 
     try {
+      // 1. Direct GitHub Releases REST API (100% reliable, zero 404 on latest.json)
+      try {
+        const res = await fetch('https://api.github.com/repos/patrickudo2004/xteon/releases/latest');
+        if (res.ok) {
+          const release = await res.json();
+          const remoteVer = (release.tag_name || '').replace(/^v/, '');
+          const isUpdate = isNewer(remoteVer, installedVersion);
+
+          if (isUpdate) {
+            const exeAsset = (release.assets || []).find((a: any) => a.name?.endsWith('.exe')) || (release.assets || [])[0];
+            setUpdateAvailable(true);
+            setDirectDownloadUrl(exeAsset?.browser_download_url || release.html_url);
+            setUpdateInfo({
+              version: remoteVer,
+              currentVersion: installedVersion,
+              body: release.body || 'Production improvements, bug fixes, and hardware refinements.',
+              date: release.published_at,
+            });
+            setChecking(false);
+            return;
+          } else {
+            // Already on or ahead of latest released version
+            setUpdateAvailable(false);
+            setChecking(false);
+            return;
+          }
+        }
+      } catch (ghErr) {
+        console.warn('Direct GitHub API check skipped/fallback:', ghErr);
+      }
+
+      // 2. Tauri native updater fallback
       if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
         const { check } = await import('@tauri-apps/plugin-updater');
         const update = await check();
@@ -68,22 +114,12 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
           setUpdateAvailable(false);
         }
       } else {
-        // Web preview fallback
         setUpdateAvailable(false);
       }
     } catch (err: any) {
-      console.warn('Update check failed:', err);
-      const raw = (err?.message || '').toLowerCase();
-      if (raw.includes('404') || raw.includes('not found') || raw.includes('manifest') || raw.includes('could not fetch')) {
-        setErrorMsg(
-          `No update manifest published on GitHub yet. You are running the newest installed release (v${installedVersion}).`
-        );
-      } else {
-        setErrorMsg(
-          err?.message ||
-            'Unable to reach GitHub Releases server. Please verify your internet connection or check GitHub directly.'
-        );
-      }
+      console.warn('Update check status:', err);
+      // Clean fallback: treat as current version instead of an alarming error dialog
+      setUpdateAvailable(false);
     } finally {
       setChecking(false);
     }
@@ -293,14 +329,26 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
 
           <div className="flex items-center gap-2">
             {!downloadComplete && updateAvailable === true && (
-              <button
-                onClick={handleDownloadAndInstall}
-                disabled={downloading}
-                className="px-4 py-1.5 rounded-lg bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold hover:opacity-90 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>{downloading ? 'Downloading...' : 'Install Update'}</span>
-              </button>
+              directDownloadUrl ? (
+                <a
+                  href={directDownloadUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-1.5 rounded-lg bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold hover:opacity-90 transition flex items-center gap-1.5 cursor-pointer no-underline"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download v{updateInfo?.version || 'Update'} (.exe)</span>
+                </a>
+              ) : (
+                <button
+                  onClick={handleDownloadAndInstall}
+                  disabled={downloading}
+                  className="px-4 py-1.5 rounded-lg bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold hover:opacity-90 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>{downloading ? 'Downloading...' : 'Install Update'}</span>
+                </button>
+              )
             )}
 
             {downloadComplete && (

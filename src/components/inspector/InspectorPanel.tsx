@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 const cableTypeOptions: { value: PortType; label: string; maxLen: number; maxG: number }[] = [
+  { value: 'INTERNAL_DISPLAY', label: 'Internal Laptop Bus / eDP (40 Gbps)', maxLen: 0.5, maxG: 40.0 },
   { value: 'HDMI_2_0', label: 'Copper HDMI 2.0 (18 Gbps)', maxLen: 10.0, maxG: 18.0 },
   { value: 'HDMI_2_1', label: 'Copper HDMI 2.1 Ultra (48 Gbps)', maxLen: 5.0, maxG: 48.0 },
   { value: 'FIBER_HDMI', label: 'Active Fiber Optic HDMI (48 Gbps)', maxLen: 300.0, maxG: 48.0 },

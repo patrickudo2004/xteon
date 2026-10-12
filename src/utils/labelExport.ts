@@ -31,6 +31,8 @@ export const generateCableLabelCSV = (project: RigProject): string => {
 
   const getSignalStandard = (cableType: string) => {
     switch (cableType) {
+      case 'INTERNAL_DISPLAY':
+        return 'Internal Bus eDP (40Gbps)';
       case 'HDMI_2_0':
         return '4K60 UHD (18Gbps)';
       case 'HDMI_2_1':
@@ -54,6 +56,8 @@ export const generateCableLabelCSV = (project: RigProject): string => {
 
   const getColorFlag = (cableType: string) => {
     switch (cableType) {
+      case 'INTERNAL_DISPLAY':
+        return 'CYAN'; // Internal host display
       case 'HDMI_2_0':
       case 'HDMI_2_1':
       case 'FIBER_HDMI':
