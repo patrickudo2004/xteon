@@ -15,6 +15,11 @@ import {
   Sliders,
   Smartphone,
   Lock,
+  Radio,
+  ShieldAlert,
+  FileCheck,
+  ExternalLink,
+  Layers,
 } from 'lucide-react';
 
 export const SettingsModal: React.FC = () => {
@@ -27,7 +32,7 @@ export const SettingsModal: React.FC = () => {
     setShowCursorInPreviews,
   } = useRigStore();
 
-  const [activeTab, setActiveTab] = useState<'AUDIO' | 'DISPLAYS' | 'PERFORMANCE' | 'PRIVACY'>('AUDIO');
+  const [activeTab, setActiveTab] = useState<'AUDIO' | 'DISPLAYS' | 'PERFORMANCE' | 'PRIVACY' | 'INTEGRATIONS' | 'LEGAL'>('AUDIO');
 
   if (!settingsModalOpen) return null;
 
@@ -110,7 +115,31 @@ export const SettingsModal: React.FC = () => {
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>Privacy & Companion</span>
+            <span>Privacy</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('INTEGRATIONS')}
+            className={`py-3 px-3 border-b-2 font-bold flex items-center gap-2 transition cursor-pointer ${
+              activeTab === 'INTEGRATIONS'
+                ? 'border-cyan-400 text-cyan-400'
+                : 'border-transparent text-[var(--text-muted)] hover:text-slate-300'
+            }`}
+          >
+            <Radio className="w-4 h-4" />
+            <span>Integrations (OSC / Deck)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('LEGAL')}
+            className={`py-3 px-3 border-b-2 font-bold flex items-center gap-2 transition cursor-pointer ${
+              activeTab === 'LEGAL'
+                ? 'border-cyan-400 text-cyan-400'
+                : 'border-transparent text-[var(--text-muted)] hover:text-slate-300'
+            }`}
+          >
+            <FileCheck className="w-4 h-4" />
+            <span>Legal & EULA</span>
           </button>
         </div>
 
@@ -396,6 +425,197 @@ export const SettingsModal: React.FC = () => {
                       className="w-full px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-white text-xs font-mono"
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: INTEGRATIONS */}
+          {activeTab === 'INTEGRATIONS' && (
+            <div className="space-y-4">
+              {/* Bitfocus Companion & Stream Deck */}
+              <div className="p-4 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-purple-400 font-bold text-xs">
+                      🎛️
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-[var(--text-primary)]">
+                        Bitfocus Companion & Elgato Stream Deck
+                      </div>
+                      <div className="text-[11px] text-[var(--text-muted)]">
+                        Local WebSocket hub on port {appSettings.companionPort || 8765}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                    ACTIVE (LAN :8765)
+                  </span>
+                </div>
+
+                <div className="text-[11px] text-slate-300 leading-relaxed bg-[var(--bg-card)] p-3 rounded-lg border border-[var(--border-color)]">
+                  <div className="font-bold text-cyan-400 mb-1">Supported Stream Deck Actions & Tally Feedback:</div>
+                  <ul className="list-disc list-inside space-y-0.5 text-[10px] text-[var(--text-muted)]">
+                    <li><strong className="text-white">Emergency Master Blackout:</strong> Instant panic blanking of all stage displays</li>
+                    <li><strong className="text-white">Flash Screen [1-8]:</strong> Momentary high-visibility identification flash card</li>
+                    <li><strong className="text-white">Pattern Switcher:</strong> Cycle SMPTE Color Bars, Overscan, and PLUGE Super-Black</li>
+                    <li><strong className="text-white">Caffeine Lock:</strong> Toggle Keep-Awake presentation shield with glowing LED feedback</li>
+                    <li><strong className="text-white">Two-Way LCD Feedback:</strong> Key glows Green (All screens healthy), Yellow (Warning), Red (Cable drop)</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Open Sound Control (OSC) UDP Engine */}
+              <div className="p-4 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-sm text-[var(--text-primary)] flex items-center gap-2">
+                      <span>Open Sound Control (OSC) UDP Receiver</span>
+                      {appSettings.oscEnabled && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-bold">
+                          UDP :8000
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                      Show-control cue automation for QLab 5, Resolume Arena, TouchDesigner, and digital audio desks.
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={appSettings.oscEnabled ?? true}
+                      onChange={(e) => updateSettings({ oscEnabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="text-[10px] text-[var(--text-muted)] uppercase font-bold block mb-1">
+                      OSC Inbound UDP Port
+                    </label>
+                    <input
+                      type="number"
+                      value={appSettings.oscPort || 8000}
+                      onChange={(e) => updateSettings({ oscPort: Number(e.target.value) || 8000 })}
+                      className="w-full px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-white text-xs font-mono"
+                    />
+                  </div>
+                  <div className="text-[10px] text-[var(--text-muted)] flex flex-col justify-center">
+                    <div>Path: <code className="text-cyan-300">/xteon/blackout [1/0]</code></div>
+                    <div>Path: <code className="text-cyan-300">/xteon/pattern [string]</code></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ProPresenter 7 Live Synchronizer */}
+              <div className="p-4 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-sm text-[var(--text-primary)]">
+                      ProPresenter 7 REST API Synchronizer
+                    </div>
+                    <div className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                      Detects active worship lyric, audience, and stage confidence screens.
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={appSettings.propresenterSyncEnabled ?? false}
+                      onChange={(e) => updateSettings({ propresenterSyncEnabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                  </label>
+                </div>
+
+                {appSettings.propresenterSyncEnabled && (
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="text-[10px] text-[var(--text-muted)] uppercase font-bold block mb-1">
+                        Host Address
+                      </label>
+                      <input
+                        type="text"
+                        value={appSettings.propresenterHost || '127.0.0.1'}
+                        onChange={(e) => updateSettings({ propresenterHost: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-white text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-[var(--text-muted)] uppercase font-bold block mb-1">
+                        HTTP API Port
+                      </label>
+                      <input
+                        type="number"
+                        value={appSettings.propresenterPort || 1025}
+                        onChange={(e) => updateSettings({ propresenterPort: Number(e.target.value) || 1025 })}
+                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-white text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: LEGAL & EULA */}
+          {activeTab === 'LEGAL' && (
+            <div className="space-y-4">
+              {/* Rigging & Structural Disclaimer */}
+              <div className="p-4 rounded-xl bg-slate-900 border border-slate-700/80 space-y-2">
+                <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
+                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                  <span>1. Structural Rigging & Electrical Safety Disclaimer</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Xteon is exclusively a logical pre-production workflow planner and hardware monitor. It does <strong>NOT</strong> perform structural engineering calculations, truss weight load ratings, rigging point certifications, or electrical ampacity sizing.
+                </p>
+                <p className="text-[10px] text-slate-400">
+                  All physical hardware installation, cable truss suspension, and power distribution must be verified and approved on-site by certified ETCP rigging engineers and licensed master electricians. The user assumes all risk and liability for physical equipment rigging.
+                </p>
+              </div>
+
+              {/* Show Outage & Downtime Indemnity */}
+              <div className="p-4 rounded-xl bg-slate-900 border border-slate-700/80 space-y-2">
+                <div className="flex items-center gap-2 text-rose-400 font-bold text-xs uppercase tracking-wider">
+                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                  <span>2. Live Event Interruption & Signal Outage Indemnity</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Under no circumstances shall the developer, copyright holder, or affiliated entities be liable for direct, indirect, incidental, punitive, or consequential damages resulting from signal loss, broadcast interruptions, display blackouts, hardware damage, or show downtime during live events, broadcasts, concerts, or keynotes.
+                </p>
+                <p className="text-[10px] text-slate-400">
+                  Xteon is provided strictly <strong>"AS-IS"</strong> without warranty of any kind, express or implied.
+                </p>
+              </div>
+
+              {/* Presentation Privacy Disclaimer */}
+              <div className="p-4 rounded-xl bg-slate-900 border border-slate-700/80 space-y-2">
+                <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs uppercase tracking-wider">
+                  <FileCheck className="w-4 h-4 shrink-0" />
+                  <span>3. Presentation Privacy & Screen Cloning Waiver</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Audio Route Guard, Keep-Awake Caffeine Shield, and Mirroring Alerts are auxiliary software notifications and do not substitute for physical hardware isolation switches or operating system display verification. The presenter retains sole responsibility for verifying screen cloning before presenting sensitive material.
+                </p>
+              </div>
+
+              {/* Copyright & Commercial License */}
+              <div className="p-3 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[10px] text-[var(--text-muted)] flex items-center justify-between">
+                <div>
+                  <strong>Xteon Pro AV Rig Planner & Hardware Intelligence Workspace</strong>
+                  <div>Copyright © 2026 Patrick Udoh (patrickudo2004@gmail.com). All Rights Reserved.</div>
+                </div>
+                <div className="text-right">
+                  <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold">
+                    Commercial License
+                  </span>
                 </div>
               </div>
             </div>

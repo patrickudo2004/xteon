@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pro AV Field Calibration Cheat Sheets | Xteon</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #090d16; color: #cbd5e1; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-[#090d16]/90 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center font-mono font-black text-slate-950 text-sm shadow-[0_0_15px_rgba(6,182,212,0.4)] border border-cyan-400/40">
+          XT
+        </div>
+        <span class="font-mono text-sm font-black tracking-wider text-white">XTEON</span>
+        <span class="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 mono">FIELD GUIDES</span>
+      </a>
+      <div class="flex items-center gap-4 text-xs mono">
+        <a href="/" class="hover:text-cyan-400 transition">← Back to Home</a>
+        <a href="/eula" class="hover:text-cyan-400 transition">EULA</a>
+        <a href="/terms" class="hover:text-cyan-400 transition">Terms</a>
+        <a href="/privacy" class="hover:text-cyan-400 transition">Privacy</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content Container -->
+  <main class="flex-1 max-w-5xl mx-auto px-4 py-12">
+    <div class="mb-10 border-b border-slate-800 pb-6">
+      <div class="text-cyan-400 text-xs uppercase mono font-bold tracking-widest mb-2">Field Engineering Reference</div>
+      <h1 class="text-3xl font-extrabold text-white tracking-tight">Pro AV Hardware Calibration & Field Cheat Sheets</h1>
+      <p class="text-sm text-slate-400 mt-2">
+        Instant reference guides for AV technicians, FOH engineers, and video leads. Eliminate overscan cropping, eradicate motion-smoothing latency, decode hardware DIP switches, and verify transmission limits on site.
+      </p>
+    </div>
+
+    <!-- Quick Jump Nav -->
+    <div class="flex flex-wrap gap-2 mb-8 text-xs mono">
+      <a href="#smart-tvs" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">Smart TV Setup (Samsung/LG/Sony)</a>
+      <a href="#decimator" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">Decimator MD-HX DIP Switches</a>
+      <a href="#cables" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">SDI & HDMI Distance Limits</a>
+      <a href="#audio-delay" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">Speed of Sound Delay Physics</a>
+    </div>
+
+    <div class="space-y-12">
+      <!-- Section: Smart TV Calibration -->
+      <section id="smart-tvs" class="space-y-6">
+        <div class="border-b border-slate-800 pb-3">
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <span class="w-3 h-3 rounded bg-cyan-400"></span>
+            1. Consumer & Commercial Smart TV Calibration for Live Events
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Prevent unexpected sleep timeouts, distorted aspect ratios, and 80ms+ motion smoothing latency.</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6">
+          <!-- Samsung -->
+          <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="font-bold text-white text-base">Samsung Display</h3>
+                <span class="text-[10px] mono bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30">Tizen / Crystal</span>
+              </div>
+              <ul class="text-xs space-y-2.5 text-slate-300">
+                <li>
+                  <strong class="text-white block">1. Force PC Mode:</strong>
+                  Sources → Edit Device Type → Select <span class="text-cyan-300 mono font-semibold">"PC"</span>. Unlocks 4:4:4 chroma subsampling and completely bypasses heavy image processing.
+                </li>
+                <li>
+                  <strong class="text-white block">2. Disable Eco Sensor:</strong>
+                  General → Eco Solution → Turn <span class="text-rose-400 font-bold">OFF</span> Ambient Light Detection, Eco Sensor, and Auto Power Off.
+                </li>
+                <li>
+                  <strong class="text-white block">3. Eliminate Overscan:</strong>
+                  Picture → Picture Size Settings → Set to <span class="text-cyan-300 mono font-semibold">"Custom"</span> and enable <span class="text-emerald-400 font-bold">Fit to Screen: ON</span>.
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- LG -->
+          <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="font-bold text-white text-base">LG Commercial & OLED</h3>
+                <span class="text-[10px] mono bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded border border-rose-500/30">webOS</span>
+              </div>
+              <ul class="text-xs space-y-2.5 text-slate-300">
+                <li>
+                  <strong class="text-white block">1. Relabel Input to PC:</strong>
+                  Home Dashboard → Edit Input → Change HDMI icon to <span class="text-cyan-300 mono font-semibold">"PC"</span>. Drops input lag from ~85ms down to &lt;12ms.
+                </li>
+                <li>
+                  <strong class="text-white block">2. Enable Just Scan:</strong>
+                  Picture → Aspect Ratio → Set <span class="text-emerald-400 font-bold">Just Scan = ON</span> (never Auto). Guarantees pixel-perfect 1:1 computer desktop mapping.
+                </li>
+                <li>
+                  <strong class="text-white block">3. Kill Energy Saving:</strong>
+                  General → Energy Saving → Turn <span class="text-rose-400 font-bold">OFF</span> to prevent stage lighting from triggering dimming.
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Sony -->
+          <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="font-bold text-white text-base">Sony BRAVIA Pro</h3>
+                <span class="text-[10px] mono bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded border border-purple-500/30">Google TV</span>
+              </div>
+              <ul class="text-xs space-y-2.5 text-slate-300">
+                <li>
+                  <strong class="text-white block">1. Picture Mode "Graphics":</strong>
+                  Picture Settings → Mode → Select <span class="text-cyan-300 mono font-semibold">"Graphics"</span> or "Game" for 0ms frame interpolation delay.
+                </li>
+                <li>
+                  <strong class="text-white block">2. Screen Area Full Pixel:</strong>
+                  Display & Sound → Screen → Wide Mode = "Full", Display Area = <span class="text-emerald-400 font-bold">"Full Pixel"</span> (or +1).
+                </li>
+                <li>
+                  <strong class="text-white block">3. Disable Idle Standby:</strong>
+                  Power & Energy → Turn <span class="text-rose-400 font-bold">OFF</span> "Idle TV Standby" and "Auto Shut-off after inactivity".
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Decimator MD-HX -->
+      <section id="decimator" class="space-y-4">
+        <div class="border-b border-slate-800 pb-3">
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <span class="w-3 h-3 rounded bg-amber-400"></span>
+            2. Decimator MD-HX Cross Converter DIP Switch Matrix
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">The indispensable field converter: HDMI ⇄ SDI, Frame Rate Conversion & Resolution Scaling.</p>
+        </div>
+
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 overflow-x-auto">
+          <table class="w-full text-xs text-left">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 mono">
+                <th class="py-2.5 px-3">Switch Position</th>
+                <th class="py-2.5 px-3">Switch UP (0)</th>
+                <th class="py-2.5 px-3">Switch DOWN (1)</th>
+                <th class="py-2.5 px-3">Pro AV Live Production Use Case</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 font-mono text-slate-300">
+              <tr>
+                <td class="py-3 px-3 font-bold text-white">SW 1 (HDMI Out Src)</td>
+                <td>Scaler Output</td>
+                <td class="text-cyan-400">Direct SDI In (Loop)</td>
+                <td class="font-sans text-slate-300">Down for zero-latency SDI-to-HDMI confidence monitor loop</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-3 font-bold text-white">SW 2 (SDI Out 1..4)</td>
+                <td>Scaler Output</td>
+                <td class="text-cyan-400">Direct HDMI In</td>
+                <td class="font-sans text-slate-300">Down for immediate HDMI-to-SDI conversion without scaling</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-3 font-bold text-white">SW 3 (Scaler In Src)</td>
+                <td class="text-amber-300">SDI Input</td>
+                <td class="text-blue-300">HDMI Input</td>
+                <td class="font-sans text-slate-300">Up = Scale incoming SDI; Down = Scale incoming HDMI (Laptop)</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-3 font-bold text-white">SW 4 (Scaler Ref)</td>
+                <td>Free Run (Internal)</td>
+                <td class="text-emerald-400">Source Lock / Ext Genlock</td>
+                <td class="font-sans text-slate-300">Set Down to lock frame rate to incoming source without frame drop</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="mt-4 p-3 rounded-lg bg-slate-950/60 border border-slate-800 text-[11px] mono text-slate-400 flex items-center justify-between">
+            <span><strong>Pro Tip:</strong> Hold down both rotary buttons for 3 seconds to restore MD-HX factory defaults when on-screen menu is corrupted.</span>
+            <span class="text-cyan-400">Status LED Green = Valid Signal Lock</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Cable Distance Specs -->
+      <section id="cables" class="space-y-4">
+        <div class="border-b border-slate-800 pb-3">
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <span class="w-3 h-3 rounded bg-emerald-400"></span>
+            3. SDI, HDMI & Network Distance Limits
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Know your physical copper vs fiber boundaries before running cable drops.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <!-- SDI Standards -->
+          <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5">
+            <h3 class="font-bold text-white text-sm mb-3 mono flex items-center justify-between">
+              <span>Coaxial BNC / SDI Transmission</span>
+              <span class="text-slate-400 text-xs">Belden 1694A / RG6</span>
+            </h3>
+            <div class="space-y-2 text-xs mono">
+              <div class="flex justify-between p-2 rounded bg-slate-950/50 border border-slate-800/80">
+                <span class="text-slate-300">HD-SDI (1.5G • 1080i/720p)</span>
+                <span class="text-emerald-400 font-bold">100m (328 ft)</span>
+              </div>
+              <div class="flex justify-between p-2 rounded bg-slate-950/50 border border-slate-800/80">
+                <span class="text-slate-300">3G-SDI (3.0G • 1080p60)</span>
+                <span class="text-emerald-400 font-bold">80m (262 ft)</span>
+              </div>
+              <div class="flex justify-between p-2 rounded bg-slate-950/50 border border-slate-800/80">
+                <span class="text-slate-300">6G-SDI (6.0G • 4K30)</span>
+                <span class="text-amber-400 font-bold">60m (197 ft)</span>
+              </div>
+              <div class="flex justify-between p-2 rounded bg-slate-950/50 border border-slate-800/80">
+                <span class="text-slate-300">12G-SDI (12.0G • 4K60 4:2:2)</span>
+                <span class="text-rose-400 font-bold">50m (164 ft)*</span>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-2">*For 12G-SDI runs over 50m, specify Belden 4794R (up to 75m) or single-mode optical fiber converters.</p>
+          </div>
+
+          <!-- HDMI & Cat6 -->
+          <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5">
+            <h3 class="font-bold text-white text-sm mb-3 mono flex items-center justify-between">
+              <span>HDMI, HDBaseT & Optical Standards</span>
+              <span class="text-slate-400 text-xs">Copper vs AOC</span>
+            </h3>
+            <div class="space-y-2 text-xs mono">
+              <div class="flex justify-between p-2 rounded bg-slate-950/50 border border-slate-800/80">
+                <span class="text-slate-300">Passive Copper HDMI 2.0 (4K60)</span>
+                <span class="text-rose-400 font-bold">Max 5m (16 ft)</span>
+              </div>
+              <div class="flex justify-between p-2 rounded bg-slate-950/50 border border-slate-800/80">
+                <span class="text-slate-300">AOC Hybrid Fiber HDMI 2.0/2.1</span>
+                <span class="text-emerald-400 font-bold">Up to 100m (328 ft)</span>
+              </div>
+              <div class="flex justify-between p-2 rounded bg-slate-950/50 border border-slate-800/80">
+                <span class="text-slate-300">HDBaseT Cat6A Shielded (1080p)</span>
+                <span class="text-emerald-400 font-bold">100m (328 ft)</span>
+              </div>
+              <div class="flex justify-between p-2 rounded bg-slate-950/50 border border-slate-800/80">
+                <span class="text-slate-300">HDBaseT Cat6A Shielded (4K60 4:2:0)</span>
+                <span class="text-amber-400 font-bold">70m (230 ft)</span>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-2"><strong>Golden Rule:</strong> Never run unshielded UTP cable near high-voltage motor feeds or 3-phase lighting distros.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Audio-to-Video Delay Physics -->
+      <section id="audio-delay" class="space-y-4">
+        <div class="border-b border-slate-800 pb-3">
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <span class="w-3 h-3 rounded bg-indigo-400"></span>
+            4. Speed of Sound & Video Latency Synchronization Physics
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Formula: \( v = 331.3 + 0.606 \times T \) (where T is temperature in °C). At 20°C, sound travels at 343.4 m/s.</p>
+        </div>
+
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
+          <div class="grid md:grid-cols-4 gap-4 text-center mono text-xs mb-6">
+            <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
+              <div class="text-slate-400 text-[10px] uppercase">Rule of Thumb (Distance)</div>
+              <div class="text-lg font-bold text-cyan-400 mt-1">~1 ms / ft</div>
+              <div class="text-slate-500 text-[10px]">or 2.91 ms per meter</div>
+            </div>
+            <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
+              <div class="text-slate-400 text-[10px] uppercase">Video Switcher Delay</div>
+              <div class="text-lg font-bold text-amber-400 mt-1">1 - 2 Frames</div>
+              <div class="text-slate-500 text-[10px]">33.3ms to 66.7ms @ 60fps</div>
+            </div>
+            <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
+              <div class="text-slate-400 text-[10px] uppercase">Projector Processing</div>
+              <div class="text-lg font-bold text-rose-400 mt-1">2 - 3 Frames</div>
+              <div class="text-slate-500 text-[10px]">Warping / Geometric Blending</div>
+            </div>
+            <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
+              <div class="text-slate-400 text-[10px] uppercase">Audience Lip-Sync Window</div>
+              <div class="text-lg font-bold text-emerald-400 mt-1">-20ms / +40ms</div>
+              <div class="text-slate-500 text-[10px]">ITU-R BT.1359 Standard</div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            <strong>FOH Live Audio Alignment Strategy:</strong> Video processing introduces inherent latency (cameras, scalers, switchers, and projection mapping warp engines take 50ms - 150ms). Delay your live audio feed at the mixing console matrix so the acoustic wavefront arrives at the audience precisely synchronized with the video display photons.
+          </p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500 mono">
+    <p>Copyright © 2026 Patrick Udoh. All Rights Reserved. Xteon Pro AV CAD & Display Intelligence.</p>
+  </footer>
+</body>
+</html>

@@ -3,9 +3,12 @@ import { useRigStore } from '../../store/useRigStore';
 import { AppMode, ThemeMode } from '../../types';
 import { exportCablePatchSheetPdf, exportEquipmentBomPdf, downloadProjectJson } from '../exports/PatchSheetExporter';
 import { downloadCablePullListCSV } from '../../utils/csvExport';
+import { downloadCableLabelCSV } from '../../utils/labelExport';
 import { exportCanvasToPNG } from '../../utils/imageExport';
 import { INDUSTRY_TEMPLATES } from '../../utils/industryTemplates';
 import { UpdateModal } from '../common/UpdateModal';
+import { AudioDelayModal } from '../modals/AudioDelayModal';
+import { PrintableBlueprintModal } from '../exports/PrintableBlueprintModal';
 import {
   Layers,
   Monitor,
@@ -34,6 +37,8 @@ import {
   Coffee,
   Settings,
   AlertTriangle,
+  Tag,
+  Printer,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -63,6 +68,10 @@ export const Navbar: React.FC = () => {
     eventLogs,
     setEventLogDrawerOpen,
     isMirroringDetected,
+    audioDelayModalOpen,
+    setAudioDelayModalOpen,
+    printableBlueprintModalOpen,
+    setPrintableBlueprintModalOpen,
   } = useRigStore();
 
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
@@ -292,6 +301,17 @@ export const Navbar: React.FC = () => {
                   <div className="absolute left-full top-0 ml-1 w-64 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xl p-1.5 space-y-1 z-50">
                     <button
                       onClick={() => {
+                        setPrintableBlueprintModalOpen(true);
+                        setFileMenuOpen(false);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded hover:bg-[var(--bg-subcard)] text-left flex items-center gap-2 transition cursor-pointer"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Print FOH Blueprint (Tabloid/A3)</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
                         exportCablePatchSheetPdf(nodes, edges);
                         setFileMenuOpen(false);
                       }}
@@ -314,6 +334,17 @@ export const Navbar: React.FC = () => {
 
                     <button
                       onClick={() => {
+                        downloadCableLabelCSV(exportProject());
+                        setFileMenuOpen(false);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded hover:bg-[var(--bg-subcard)] text-left flex items-center gap-2 transition cursor-pointer"
+                    >
+                      <Tag className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Cable Labels (P-Touch/Brady CSV)</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
                         exportCanvasToPNG(projectName);
                         setFileMenuOpen(false);
                       }}
@@ -330,7 +361,7 @@ export const Navbar: React.FC = () => {
                       }}
                       className="w-full px-2.5 py-1.5 rounded hover:bg-[var(--bg-subcard)] text-left flex items-center gap-2 transition cursor-pointer"
                     >
-                      <Package className="w-3.5 h-3.5 text-amber-400" />
+                      <Package className="w-3.5 h-3.5 text-orange-400" />
                       <span>Equipment BOM (PDF)</span>
                     </button>
                   </div>
@@ -455,6 +486,16 @@ export const Navbar: React.FC = () => {
           )}
         </button>
 
+        {/* Acoustic Audio Delay Calculator Trigger */}
+        <button
+          onClick={() => setAudioDelayModalOpen(true)}
+          className="px-2.5 py-1.5 rounded-md bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono font-bold text-[var(--text-primary)] hover:text-indigo-400 flex items-center gap-1.5 transition shadow-sm cursor-pointer hover:border-indigo-500/50"
+          title="Acoustic Audio-to-Video Delay Calculator (Speed of Sound Compensation)"
+        >
+          <Clock className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="hidden lg:inline">Delay</span>
+        </button>
+
         {/* Cursor Exposure Toggle */}
         <button
           onClick={() => setShowCursorInPreviews(!showCursorInPreviews)}
@@ -565,6 +606,18 @@ export const Navbar: React.FC = () => {
       <UpdateModal
         isOpen={updateModalOpen}
         onClose={() => setUpdateModalOpen(false)}
+      />
+
+      {/* Acoustic Audio-to-Video Delay Calculator Modal */}
+      <AudioDelayModal
+        isOpen={audioDelayModalOpen}
+        onClose={() => setAudioDelayModalOpen(false)}
+      />
+
+      {/* Printable FOH Vector Blueprint Schematic Modal */}
+      <PrintableBlueprintModal
+        isOpen={printableBlueprintModalOpen}
+        onClose={() => setPrintableBlueprintModalOpen(false)}
       />
     </header>
   );

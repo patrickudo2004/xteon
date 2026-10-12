@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Xteon Pro AV | Mission-Critical AV Rig Architecture & Signal Flow Planner</title>
+  <meta name="description" content="Design complex video signal chains, prevent live show blackouts with EDID & HDCP Shields, export industrial cable labels, and calculate acoustic delay in one unified engineering suite." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #090d16; color: #cbd5e1; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .glow-cyan { box-shadow: 0 0 25px rgba(6, 182, 212, 0.25); }
+    .glow-blue { box-shadow: 0 0 30px rgba(59, 130, 246, 0.25); }
+    .grid-bg {
+      background-image: radial-gradient(rgba(30, 41, 59, 0.5) 1px, transparent 0);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#090d16] text-slate-300 antialiased selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- Top Sticky Navigation -->
+  <header class="border-b border-slate-800 bg-[#090d16]/90 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center font-mono font-black text-slate-950 text-sm shadow-[0_0_15px_rgba(6,182,212,0.4)] border border-cyan-400/40">
+          XT
+        </div>
+        <div>
+          <span class="font-mono text-base font-black tracking-wider text-white">XTEON</span>
+          <span class="text-[9px] ml-1.5 px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 mono font-bold">PRO AV v1.3.1</span>
+        </div>
+      </div>
+
+      <!-- Center Links -->
+      <nav class="hidden md:flex items-center gap-6 text-xs mono text-slate-400">
+        <a href="#features" class="hover:text-cyan-400 transition">Features</a>
+        <a href="#field-tools" class="hover:text-cyan-400 transition">Field Tools</a>
+        <a href="#protocols" class="hover:text-cyan-400 transition">Protocols</a>
+        <a href="/cheat-sheets" class="hover:text-cyan-400 transition text-amber-400">Calibration Guides</a>
+        <a href="#pricing" class="hover:text-cyan-400 transition">Pricing</a>
+      </nav>
+
+      <!-- Right CTAs -->
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/patrickudo2004/xteon" target="_blank" rel="noopener" class="hidden sm:inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition mono">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          GitHub
+        </a>
+        <a href="#downloads" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs mono tracking-wider shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-1.5">
+          <span>DOWNLOAD</span>
+          <span class="text-[10px] opacity-75">FREE BETA</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="relative pt-16 pb-24 overflow-hidden grid-bg border-b border-slate-800">
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-[#090d16]/70 to-[#090d16] pointer-events-none"></div>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 text-xs mono mb-8 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+        <span>ENGINEERED FOR LIVE CONCERTS, CORPORATE KEYNOTES & BROADCAST</span>
+      </div>
+
+      <!-- Main Headline -->
+      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight max-w-5xl mx-auto leading-[1.1]">
+        Mission-Critical AV Rig Architecture & <span class="bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">Signal Flow Planner</span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="mt-6 text-base sm:text-lg text-slate-400 max-w-3xl mx-auto leading-relaxed">
+        Eliminate show blackouts, prevent EDID renegotiation loops, export industrial cable labels for Brother & Brady printers, and calculate speed-of-sound acoustic delay in one unified, offline-first engineering workstation.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
+        <a href="#downloads" class="px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-sm mono tracking-wide shadow-xl shadow-cyan-500/25 transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z"/><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z"/></svg>
+          DOWNLOAD DESKTOP APP (v1.3.1)
+        </a>
+        <a href="/cheat-sheets" class="px-6 py-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-white font-semibold text-sm mono border border-slate-700 hover:border-slate-600 transition flex items-center gap-2">
+          <span>FIELD CALIBRATION CHEAT SHEETS</span>
+          <span class="text-amber-400">→</span>
+        </a>
+      </div>
+
+      <!-- Feature Pill Badges -->
+      <div class="mt-12 flex flex-wrap justify-center items-center gap-6 text-xs mono text-slate-400">
+        <div class="flex items-center gap-2">
+          <span class="text-cyan-400">✓</span> 100% Offline-First
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-cyan-400">✓</span> Zero Cloud Telemetry
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-cyan-400">✓</span> Windows • macOS • Linux
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-cyan-400">✓</span> Brother & Brady Label Export
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-cyan-400">✓</span> Bitfocus Companion & Stream Deck
+        </div>
+      </div>
+
+      <!-- Interactive Signal Topology Mockup -->
+      <div class="mt-14 max-w-5xl mx-auto rounded-2xl border border-slate-800 bg-slate-950/80 p-4 shadow-2xl glow-blue">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4 text-xs mono">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-rose-500/80"></span>
+            <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
+            <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
+            <span class="ml-2 text-slate-400">MAIN RIG: KEYNOTE ARENA SHOW [12G-SDI & FIBER]</span>
+          </div>
+          <div class="flex items-center gap-3 text-[11px]">
+            <span class="text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/30">EDID LOCKED</span>
+            <span class="text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">HDCP SHIELD PASS</span>
+            <span class="text-slate-400">LATENCY: 1.2ms</span>
+          </div>
+        </div>
+
+        <!-- Visual Signal Flow Node Diagram -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 text-xs mono">
+          <!-- Node 1 -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+            <div>
+              <div class="text-[10px] text-cyan-400 font-bold uppercase mb-1">Source Ingest</div>
+              <div class="text-sm font-bold text-white">Media Server Primary</div>
+              <div class="text-[11px] text-slate-400 mt-1">Disguise vx4+ (12G-SDI)</div>
+            </div>
+            <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between text-[10px]">
+              <span class="text-slate-400">3840×2160@59.94</span>
+              <span class="text-emerald-400 font-bold">12.0 Gbps</span>
+            </div>
+          </div>
+
+          <!-- Node 2 -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+            <div>
+              <div class="text-[10px] text-amber-400 font-bold uppercase mb-1">Conversion & Sync</div>
+              <div class="text-sm font-bold text-white">Decimator MD-HX</div>
+              <div class="text-[11px] text-slate-400 mt-1">DIP: SW1-UP • SW4-DN</div>
+            </div>
+            <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between text-[10px]">
+              <span class="text-slate-400">Genlock: Locked</span>
+              <span class="text-cyan-400 font-bold">0 Drop Frames</span>
+            </div>
+          </div>
+
+          <!-- Node 3 -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+            <div>
+              <div class="text-[10px] text-blue-400 font-bold uppercase mb-1">Matrix Switching</div>
+              <div class="text-sm font-bold text-white">Barco Event Master E2</div>
+              <div class="text-[11px] text-slate-400 mt-1">4K Tri-Combo Fiber</div>
+            </div>
+            <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between text-[10px]">
+              <span class="text-slate-400">Companion WS: 8765</span>
+              <span class="text-emerald-400 font-bold">ONLINE</span>
+            </div>
+          </div>
+
+          <!-- Node 4 -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+            <div>
+              <div class="text-[10px] text-emerald-400 font-bold uppercase mb-1">Display Delivery</div>
+              <div class="text-sm font-bold text-white">Roe Black Pearl 2.8</div>
+              <div class="text-[11px] text-slate-400 mt-1">Brompton SX40 Processors</div>
+            </div>
+            <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between text-[10px]">
+              <span class="text-slate-400">Total Delay: 33.3ms</span>
+              <span class="text-emerald-400 font-bold">SYNCED</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- High-Value Field Tools Section -->
+  <section id="field-tools" class="py-20 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <span class="text-cyan-400 text-xs uppercase mono font-bold tracking-widest">Built For Real-World Event Rigors</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-2">
+          Specialized Field Tools You Won't Find in Generic CAD
+        </h2>
+        <p class="mt-4 text-slate-400 max-w-2xl mx-auto text-sm leading-relaxed">
+          Xteon bridges the gap between software schematics and physical stage hands. Turn your digital canvas into physical cable labels, printable blueprints, and delay calculations.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- Tool 1: Industrial Label Exporter -->
+        <div class="bg-slate-900/60 border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-6 transition duration-300 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-mono text-xl mb-5">
+              🏷️
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Industrial Cable Label Printer CSV Exporter</h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">
+              Instantly export standardized cable run schedules directly into <strong>Brother P-Touch Editor</strong> and <strong>Brady Workstation</strong>.
+            </p>
+            <ul class="text-xs space-y-2 text-slate-300 mono">
+              <li>• Auto-formatted Wire ID & Connector specs</li>
+              <li>• Source Node & Destination Port mapping</li>
+              <li>• Cable length & standard color coding</li>
+              <li>• Embedded electrical/rigging safety disclaimer</li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800 text-[11px] mono text-cyan-400">
+            Export Format: RFC 4180 CSV
+          </div>
+        </div>
+
+        <!-- Tool 2: Printable Blueprint -->
+        <div class="bg-slate-900/60 border border-slate-800 hover:border-blue-500/50 rounded-2xl p-6 transition duration-300 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-blue-950/60 border border-blue-500/40 flex items-center justify-center text-blue-400 font-mono text-xl mb-5">
+              📐
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Printable 11x17 Tabloid Vector Blueprint</h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">
+              Generate high-resolution vector PDF schematics formatted for <strong>11×17 Tabloid (ANSI B)</strong> and <strong>A3</strong> paper sizes for FOH and tech tables.
+            </p>
+            <ul class="text-xs space-y-2 text-slate-300 mono">
+              <li>• Complete Bill of Materials (BOM) inventory</li>
+              <li>• Cable pull schedule with wire lengths</li>
+              <li>• ANSI E1.21 Rigging disclaimer block</li>
+              <li>• Pure offline vector SVG rendering</li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800 text-[11px] mono text-blue-400">
+            Target Print: Tabloid (11×17") / A3
+          </div>
+        </div>
+
+        <!-- Tool 3: Acoustic Delay Calculator -->
+        <div class="bg-slate-900/60 border border-slate-800 hover:border-indigo-500/50 rounded-2xl p-6 transition duration-300 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-indigo-950/60 border border-indigo-500/40 flex items-center justify-center text-indigo-400 font-mono text-xl mb-5">
+              ⏱️
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Speed of Sound & Video Latency Calculator</h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">
+              Eliminate jarring lip-sync mismatch between IMAG camera screens and the arena acoustic wavefront.
+            </p>
+            <ul class="text-xs space-y-2 text-slate-300 mono">
+              <li>• Temperature physics: \(v = 331.3 + 0.606 \times T\)</li>
+              <li>• Switcher & processor frame offset (24–60fps)</li>
+              <li>• Metric (meters) & Imperial (feet) input</li>
+              <li>• Instant millisecond audio delay recommendation</li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800 text-[11px] mono text-indigo-400">
+            Standard: ITU-R BT.1359 Lip-Sync
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- External Protocol Integration Hub -->
+  <section id="protocols" class="py-20 border-b border-slate-800 bg-slate-950/40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <span class="text-indigo-400 text-xs uppercase mono font-bold tracking-widest">Two-Way Show Control</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-2">
+          Universal Protocol & Hardware Control Hub
+        </h2>
+        <p class="mt-4 text-slate-400 max-w-2xl mx-auto text-sm leading-relaxed">
+          Xteon communicates directly with the industry-standard software and control surfaces operating your venue.
+        </p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+          <div class="text-cyan-400 font-bold mono text-sm mb-1">Bitfocus Companion</div>
+          <div class="text-xs text-slate-400 mb-3">Port 8765 WebSocket / HTTP</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Trigger layout presets, mute audio feeds, trigger blackout shields, and stream tally state directly to Stream Deck surfaces.
+          </p>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+          <div class="text-amber-400 font-bold mono text-sm mb-1">Open Sound Control (OSC)</div>
+          <div class="text-xs text-slate-400 mb-3">Port 8000 UDP Receiver</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Seamlessly receive cue triggers from QLab, Resolume Arena, grandMA3, and Yamaha/DiGiCo mixing consoles during live shows.
+          </p>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+          <div class="text-rose-400 font-bold mono text-sm mb-1">ProPresenter 7 Sync</div>
+          <div class="text-xs text-slate-400 mb-3">Port 1025 REST API</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Automatically discover active Stage Screens, Audience Displays, and NDI targets configured within Renewed Vision ProPresenter.
+          </p>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+          <div class="text-emerald-400 font-bold mono text-sm mb-1">OBS & vMix WebSockets</div>
+          <div class="text-xs text-slate-400 mb-3">Port 4455 / 8099 Bridge</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Monitor virtual capture outputs, sync scene changes, and verify virtual audio and video routing paths before pushing stream live.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section id="features" class="py-20 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <span class="text-cyan-400 text-xs uppercase mono font-bold tracking-widest">End-to-End Capabilities</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-2">
+          Designed By AV Engineers, For AV Engineers
+        </h2>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6 text-xs leading-relaxed">
+        <div class="bg-slate-900/40 border border-slate-800/80 p-5 rounded-2xl">
+          <h4 class="font-bold text-white text-sm mb-2 text-cyan-400 mono">CAD Topology Canvas</h4>
+          <p class="text-slate-400">High-performance React Flow v12 canvas with smooth bezier routing, custom node categorizations, and infinite zoom capability.</p>
+        </div>
+        <div class="bg-slate-900/40 border border-slate-800/80 p-5 rounded-2xl">
+          <h4 class="font-bold text-white text-sm mb-2 text-cyan-400 mono">EDID & HDCP Shields</h4>
+          <p class="text-slate-400">Identify potential handshake failures, HDCP 2.2 revoking traps, and resolution mismatch before cables are even plugged in.</p>
+        </div>
+        <div class="bg-slate-900/40 border border-slate-800/80 p-5 rounded-2xl">
+          <h4 class="font-bold text-white text-sm mb-2 text-cyan-400 mono">Camera Ingest & Multi-View</h4>
+          <p class="text-slate-400">Ingest live USB capture cards, NDI inputs, and webcams directly on the canvas to monitor physical confidence feeds in real-time.</p>
+        </div>
+        <div class="bg-slate-900/40 border border-slate-800/80 p-5 rounded-2xl">
+          <h4 class="font-bold text-white text-sm mb-2 text-cyan-400 mono">Smart TV Calibration</h4>
+          <p class="text-slate-400">Instant presets for Samsung PC Mode, LG Just Scan, and Sony Full Pixel to banish overscan cropping and motion smoothing lag.</p>
+        </div>
+        <div class="bg-slate-900/40 border border-slate-800/80 p-5 rounded-2xl">
+          <h4 class="font-bold text-white text-sm mb-2 text-cyan-400 mono">Strict Privacy / Zero Cloud</h4>
+          <p class="text-slate-400">Your signal schematics, project files, and client venue details never leave your machine. No telemetry, no accounts required.</p>
+        </div>
+        <div class="bg-slate-900/40 border border-slate-800/80 p-5 rounded-2xl">
+          <h4 class="font-bold text-white text-sm mb-2 text-cyan-400 mono">Native Cross-Platform</h4>
+          <p class="text-slate-400">Packaged with modern Tauri v2 architecture for blistering performance and negligible memory footprint on Windows, macOS, and Linux.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Matrix Section -->
+  <section id="downloads" class="py-20 border-b border-slate-800 bg-slate-950/60">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <span class="text-cyan-400 text-xs uppercase mono font-bold tracking-widest">Get The Desktop Suite</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-2">
+        Download Xteon Pro AV v1.3.1
+      </h2>
+      <p class="mt-3 text-slate-400 text-xs mono">
+        Latest Release: v1.3.1 • Updated: October 2026 • 100% Virus & Malware Free
+      </p>
+
+      <!-- Multi-OS Download Cards -->
+      <div class="mt-10 grid sm:grid-cols-3 gap-6 text-left">
+        <!-- Windows Card -->
+        <div class="bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-6 transition flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-2xl">🪟</span>
+              <span class="text-[10px] mono bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30">Windows 10/11</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-1">Windows</h3>
+            <p class="text-xs text-slate-400 mb-4">64-bit Installer & Standalone MSI</p>
+          </div>
+          <div class="space-y-2">
+            <a href="https://github.com/patrickudo2004/xteon/releases/download/v1.3.0/Xteon_1.3.0_x64-setup.exe" class="block w-full py-2.5 px-3 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:text-cyan-300 text-xs font-bold mono text-center transition">
+              Download .EXE Installer
+            </a>
+            <a href="https://github.com/patrickudo2004/xteon/releases/download/v1.3.0/Xteon_1.3.0_x64_en-US.msi" class="block w-full py-2 px-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-300 text-[11px] mono text-center transition">
+              Enterprise .MSI Package
+            </a>
+          </div>
+        </div>
+
+        <!-- macOS Card -->
+        <div class="bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-6 transition flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-2xl">🍎</span>
+              <span class="text-[10px] mono bg-slate-500/20 text-slate-300 px-2 py-0.5 rounded border border-slate-500/30">macOS 12+</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-1">macOS Universal</h3>
+            <p class="text-xs text-slate-400 mb-4">Apple Silicon (M1/M2/M3/M4) & Intel</p>
+          </div>
+          <div class="space-y-2">
+            <a href="https://github.com/patrickudo2004/xteon/releases/download/v1.3.0/Xteon_1.3.0_aarch64.dmg" class="block w-full py-2.5 px-3 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:text-cyan-300 text-xs font-bold mono text-center transition">
+              Download Apple Silicon .DMG
+            </a>
+            <a href="https://github.com/patrickudo2004/xteon/releases/download/v1.3.0/Xteon_1.3.0_x64.dmg" class="block w-full py-2 px-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-300 text-[11px] mono text-center transition">
+              Intel x64 .DMG
+            </a>
+          </div>
+        </div>
+
+        <!-- Linux Card -->
+        <div class="bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-6 transition flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-2xl">🐧</span>
+              <span class="text-[10px] mono bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/30">Linux x86_64</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-1">Linux</h3>
+            <p class="text-xs text-slate-400 mb-4">AppImage & Debian/Ubuntu Package</p>
+          </div>
+          <div class="space-y-2">
+            <a href="https://github.com/patrickudo2004/xteon/releases/download/v1.3.0/Xteon_1.3.0_amd64.AppImage" class="block w-full py-2.5 px-3 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:text-cyan-300 text-xs font-bold mono text-center transition">
+              Download .AppImage
+            </a>
+            <a href="https://github.com/patrickudo2004/xteon/releases/download/v1.3.0/xteon_1.3.0_amd64.deb" class="block w-full py-2 px-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-300 text-[11px] mono text-center transition">
+              Debian (.deb)
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing & Licensing Section -->
+  <section id="pricing" class="py-20 border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <span class="text-cyan-400 text-xs uppercase mono font-bold tracking-widest">Transparent Licensing</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-2">
+          Simple One-Time Ownership
+        </h2>
+        <p class="mt-3 text-slate-400 max-w-xl mx-auto text-xs">
+          No monthly subscription taxes. No per-seat cloud traps. Own your engineering workstation for life.
+        </p>
+
+        <!-- Beta Notice Pill -->
+        <div class="mt-6 inline-block px-4 py-2 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-300 text-xs mono">
+          🚀 <strong>Public Beta Evaluation Notice:</strong> All Free, Pro, and Venue capabilities are currently <strong>100% unlocked</strong> in the v1.3.1 build for full field testing.
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- Community -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+          <div>
+            <div class="text-cyan-400 font-bold mono text-xs uppercase tracking-wider mb-2">Community</div>
+            <div class="text-3xl font-black text-white">$0</div>
+            <div class="text-[11px] text-slate-400 mt-1 mb-6">Free forever for students & hobbyists</div>
+            <ul class="text-xs space-y-3 text-slate-300">
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✓</span> Full CAD Signal Topology Canvas</li>
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✓</span> Standard AV Node Library</li>
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✓</span> JSON Project Export & Import</li>
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✓</span> Offline-First Local Storage</li>
+            </ul>
+          </div>
+          <div class="mt-8 pt-4 border-t border-slate-800">
+            <a href="#downloads" class="block w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs mono text-center transition">
+              Download Free
+            </a>
+          </div>
+        </div>
+
+        <!-- Pro Solo -->
+        <div class="bg-slate-900 border-2 border-cyan-500/60 rounded-2xl p-6 flex flex-col justify-between relative shadow-xl glow-cyan">
+          <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider mono">
+            Most Popular
+          </div>
+          <div>
+            <div class="text-cyan-400 font-bold mono text-xs uppercase tracking-wider mb-2">Pro Solo</div>
+            <div class="text-3xl font-black text-white">$79 <span class="text-xs font-normal text-slate-400">one-time</span></div>
+            <div class="text-[11px] text-slate-400 mt-1 mb-6">For freelance video leads & FOH engineers</div>
+            <ul class="text-xs space-y-3 text-slate-300">
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✓</span> Everything in Community</li>
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✓</span> <strong>Industrial Cable Label CSV Exporter</strong></li>
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✓</span> <strong>11×17 Tabloid Vector Blueprint PDF</strong></li>
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✓</span> <strong>Speed-of-Sound Acoustic Delay Tool</strong></li>
+              <li class="flex items-center gap-2"><span class="text-cyan-400">✓</span> Bitfocus Companion & Stream Deck WS</li>
+            </ul>
+          </div>
+          <div class="mt-8 pt-4 border-t border-slate-800">
+            <a href="#downloads" class="block w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs mono text-center transition">
+              Get Pro (Free in Beta)
+            </a>
+          </div>
+        </div>
+
+        <!-- Venue / Enterprise -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+          <div>
+            <div class="text-indigo-400 font-bold mono text-xs uppercase tracking-wider mb-2">Venue & Touring</div>
+            <div class="text-3xl font-black text-white">$299 <span class="text-xs font-normal text-slate-400">one-time</span></div>
+            <div class="text-[11px] text-slate-400 mt-1 mb-6">For rental houses, broadcast trucks & venues</div>
+            <ul class="text-xs space-y-3 text-slate-300">
+              <li class="flex items-center gap-2"><span class="text-indigo-400">✓</span> Everything in Pro Solo</li>
+              <li class="flex items-center gap-2"><span class="text-indigo-400">✓</span> <strong>OSC UDP Listener (Port 8000)</strong></li>
+              <li class="flex items-center gap-2"><span class="text-indigo-400">✓</span> <strong>ProPresenter 7 REST API Integration</strong></li>
+              <li class="flex items-center gap-2"><span class="text-indigo-400">✓</span> <strong>OBS & vMix WebSocket Bridge</strong></li>
+              <li class="flex items-center gap-2"><span class="text-indigo-400">✓</span> Multi-seat commercial venue deployment</li>
+            </ul>
+          </div>
+          <div class="mt-8 pt-4 border-t border-slate-800">
+            <a href="#downloads" class="block w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs mono text-center transition">
+              Deploy Venue
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Legal & Regulatory Footer Notice -->
+  <footer class="border-t border-slate-800 bg-[#060910] py-12 text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <div>
+          <h5 class="text-white font-bold mono text-xs mb-3">Product</h5>
+          <ul class="space-y-2 mono text-[11px]">
+            <li><a href="#downloads" class="hover:text-cyan-400 transition">Download Suite</a></li>
+            <li><a href="#field-tools" class="hover:text-cyan-400 transition">Field Tools</a></li>
+            <li><a href="#protocols" class="hover:text-cyan-400 transition">Protocols & Control</a></li>
+            <li><a href="#pricing" class="hover:text-cyan-400 transition">Commercial Licensing</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5 class="text-white font-bold mono text-xs mb-3">Field Engineering</h5>
+          <ul class="space-y-2 mono text-[11px]">
+            <li><a href="/cheat-sheets" class="hover:text-cyan-400 transition">Calibration Cheat Sheets</a></li>
+            <li><a href="/cheat-sheets#smart-tvs" class="hover:text-cyan-400 transition">Smart TV PC Mode</a></li>
+            <li><a href="/cheat-sheets#decimator" class="hover:text-cyan-400 transition">Decimator MD-HX DIPs</a></li>
+            <li><a href="/cheat-sheets#cables" class="hover:text-cyan-400 transition">SDI / HDMI Distance Limits</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5 class="text-white font-bold mono text-xs mb-3">Legal & Governance</h5>
+          <ul class="space-y-2 mono text-[11px]">
+            <li><a href="/eula" class="hover:text-cyan-400 transition">End User License Agreement</a></li>
+            <li><a href="/terms" class="hover:text-cyan-400 transition">Terms of Service</a></li>
+            <li><a href="/privacy" class="hover:text-cyan-400 transition">Privacy Policy</a></li>
+            <li><a href="/eula#rigging" class="hover:text-amber-400 transition">Rigging & Power Disclaimers</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5 class="text-white font-bold mono text-xs mb-3">Community & Source</h5>
+          <ul class="space-y-2 mono text-[11px]">
+            <li><a href="https://github.com/patrickudo2004/xteon" target="_blank" rel="noopener" class="hover:text-cyan-400 transition">GitHub Repository</a></li>
+            <li><a href="https://github.com/patrickudo2004/xteon/issues" target="_blank" rel="noopener" class="hover:text-cyan-400 transition">Report Field Issue</a></li>
+            <li><a href="https://github.com/patrickudo2004/xteon/releases" target="_blank" rel="noopener" class="hover:text-cyan-400 transition">Release Notes (Changelog)</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-800/80 pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] mono">
+        <div>
+          Copyright © 2026 Patrick Udoh. All Rights Reserved. Xteon Pro AV CAD & Display Intelligence.
+        </div>
+        <div class="mt-2 sm:mt-0 text-slate-500">
+          Strictly Offline-First • Zero Cloud Surveillance • ANSI E1.21 Disclaimers Apply
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

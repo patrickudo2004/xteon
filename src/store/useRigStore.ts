@@ -797,6 +797,14 @@ interface RigState {
   smartTvGuideModalOpen: boolean;
   setSmartTvGuideModalOpen: (open: boolean) => void;
 
+  // Audio Delay Calculator Modal
+  audioDelayModalOpen: boolean;
+  setAudioDelayModalOpen: (open: boolean) => void;
+
+  // Printable Blueprint Schematic Modal
+  printableBlueprintModalOpen: boolean;
+  setPrintableBlueprintModalOpen: (open: boolean) => void;
+
   // Live Map Virtual Distribution Branching (Splitters & Extenders)
   distributionBranches: Record<string, VirtualDistributionBranch>;
   branchModalOpen: boolean;
@@ -862,6 +870,12 @@ const DEFAULT_APP_SETTINGS: AppSettings = {
   presentationKeepAwake: false,
   companionPort: 8765,
   companionPin: '842-190',
+  oscEnabled: true,
+  oscPort: 8000,
+  propresenterSyncEnabled: false,
+  propresenterHost: '127.0.0.1',
+  propresenterPort: 1025,
+  obsWebSocketEnabled: false,
 };
 
 const getSavedAppSettings = (): AppSettings => {
@@ -927,7 +941,7 @@ export const useRigStore = create<RigState>((set, get) => ({
   eventLogs: [
     {
       id: 'log-init',
-      timestamp: new Date().toLocaleTimeString(),
+      timestamp: new Date().toISOString(),
       category: 'SYSTEM',
       level: 'INFO',
       severity: 'INFO',
@@ -939,7 +953,7 @@ export const useRigStore = create<RigState>((set, get) => ({
     const level: EventLogLevel = rawLevel === 'CRITICAL' || rawLevel === 'ERROR' ? 'CRITICAL' : rawLevel === 'WARN' ? 'WARN' : 'INFO';
     const newEntry: ShowEventLogEntry = {
       id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      timestamp: new Date().toLocaleTimeString(),
+      timestamp: new Date().toISOString(),
       category: entry.category,
       level,
       severity: (entry as any).severity || (level === 'CRITICAL' ? 'ERROR' : level),
@@ -959,6 +973,14 @@ export const useRigStore = create<RigState>((set, get) => ({
   // Smart TV Pre-Flight Guide Modal
   smartTvGuideModalOpen: false,
   setSmartTvGuideModalOpen: (open) => set({ smartTvGuideModalOpen: open }),
+
+  // Audio Delay Calculator Modal
+  audioDelayModalOpen: false,
+  setAudioDelayModalOpen: (open) => set({ audioDelayModalOpen: open }),
+
+  // Printable Blueprint Schematic Modal
+  printableBlueprintModalOpen: false,
+  setPrintableBlueprintModalOpen: (open) => set({ printableBlueprintModalOpen: open }),
 
   // Live Map Virtual Distribution Branching (Splitters & Extenders)
   distributionBranches: (() => {
@@ -2433,7 +2455,7 @@ export const useRigStore = create<RigState>((set, get) => ({
 
   exportProject: () => {
     return {
-      version: '1.2.0',
+      version: '1.3.0',
       meta: {
         projectName: 'Xteon Staging Rig Plan',
         venue: 'Main Stage',

@@ -25,12 +25,26 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
     body?: string;
     date?: string;
   } | null>(null);
+  const [installedVersion, setInstalledVersion] = useState<string>('1.3.0');
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
   const [downloadedBytes, setDownloadedBytes] = useState<number>(0);
   const [totalBytes, setTotalBytes] = useState<number>(0);
   const [downloadComplete, setDownloadComplete] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAppVersion = async () => {
+      try {
+        if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+          const { getVersion } = await import('@tauri-apps/api/app');
+          const v = await getVersion();
+          if (v) setInstalledVersion(v);
+        }
+      } catch {}
+    };
+    fetchAppVersion();
+  }, []);
 
   const checkForUpdates = async () => {
     setChecking(true);
@@ -46,7 +60,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
           setUpdateAvailable(true);
           setUpdateInfo({
             version: update.version,
-            currentVersion: update.currentVersion,
+            currentVersion: update.currentVersion || installedVersion,
             body: update.body || 'Performance enhancements, new pro AV feature modules, and bug fixes.',
             date: update.date,
           });
@@ -60,9 +74,9 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
     } catch (err: any) {
       console.warn('Update check failed:', err);
       const raw = (err?.message || '').toLowerCase();
-      if (raw.includes('404') || raw.includes('not found') || raw.includes('manifest')) {
+      if (raw.includes('404') || raw.includes('not found') || raw.includes('manifest') || raw.includes('could not fetch')) {
         setErrorMsg(
-          'No update manifest published on GitHub yet. You are running the latest installed version (v1.2.0).'
+          `No update manifest published on GitHub yet. You are running the newest installed release (v${installedVersion}).`
         );
       } else {
         setErrorMsg(
@@ -152,7 +166,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
                 XTEON AUTO-UPDATER
               </h2>
               <p className="font-mono text-[11px] text-[var(--text-muted)]">
-                Official GitHub Release Channel • v1.2.0
+                Official GitHub Release Channel • v{installedVersion}
               </p>
             </div>
           </div>
@@ -189,7 +203,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
                   You're Up to Date!
                 </div>
                 <div className="text-[11px] text-[var(--text-muted)] mt-1">
-                  Xteon v1.2.0 is currently the newest available production version.
+                  Xteon v{installedVersion} is currently the newest available production version.
                 </div>
               </div>
               <div className="pt-2 flex items-center gap-1 text-[10px] text-slate-400">
@@ -209,7 +223,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose }) => 
                   </span>
                 </div>
                 <div className="text-[11px] text-[var(--text-muted)]">
-                  Current installed version: <span className="text-slate-300">v{updateInfo.currentVersion || '1.2.0'}</span>
+                  Current installed version: <span className="text-slate-300">v{updateInfo.currentVersion || installedVersion}</span>
                 </div>
               </div>
 

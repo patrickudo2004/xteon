@@ -220,6 +220,12 @@ export interface AppSettings {
   presentationKeepAwake: boolean;
   companionPort: number;
   companionPin: string;
+  oscEnabled?: boolean;
+  oscPort?: number;
+  propresenterSyncEnabled?: boolean;
+  propresenterHost?: string;
+  propresenterPort?: number;
+  obsWebSocketEnabled?: boolean;
 }
 
 export type EventLogLevel = 'INFO' | 'WARN' | 'CRITICAL';

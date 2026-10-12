@@ -30,6 +30,21 @@ export const EventLogDrawer: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
   const [copied, setCopied] = useState(false);
 
+  const formatLogTime = (ts: string) => {
+    if (!ts) return '';
+    // If it's already a simple time string like "8:29:11 PM", return it directly
+    if (ts.includes(':') && !ts.includes('T') && !ts.includes('-')) {
+      return ts;
+    }
+    try {
+      const d = new Date(ts);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+    } catch {}
+    return ts;
+  };
+
   if (!eventLogDrawerOpen) return null;
 
   const filteredLogs = eventLogs.filter((log) => {
@@ -43,7 +58,7 @@ export const EventLogDrawer: React.FC = () => {
     const body = eventLogs
       .map(
         (l) =>
-          `[${new Date(l.timestamp).toLocaleTimeString()}] [${l.level}] [${l.category}] ${l.message}${l.details ? ` - ${l.details}` : ''}`
+          `[${formatLogTime(l.timestamp)}] [${l.level}] [${l.category}] ${l.message}${l.details ? ` - ${l.details}` : ''}`
       )
       .join('\n');
     
@@ -226,7 +241,7 @@ export const EventLogDrawer: React.FC = () => {
                   <div className="flex items-center gap-1.5">
                     {getCategoryIcon(log.category)}
                     <span className="text-[var(--text-muted)] font-mono">
-                      {new Date(log.timestamp).toLocaleTimeString()}
+                      {formatLogTime(log.timestamp)}
                     </span>
                   </div>
                   <div>{getLevelBadge(log.level)}</div>
