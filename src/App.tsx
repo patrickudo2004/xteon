@@ -17,6 +17,7 @@ import { SmartTvGuideModal } from './components/modals/SmartTvGuideModal';
 import { EventLogDrawer } from './components/modals/EventLogDrawer';
 import { FloatingPanelWrapper } from './components/common/FloatingPanelWrapper';
 import { PanelLeftOpen, PanelRightOpen, AlertTriangle, Volume2, X } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 
 export const App: React.FC = () => {
   const {
@@ -321,6 +322,9 @@ export const App: React.FC = () => {
       <VirtualBranchModal />
       <SmartTvGuideModal />
       <EventLogDrawer />
+      
+      {/* Vercel Web Analytics */}
+      <Analytics />
     </div>
   );
 };
