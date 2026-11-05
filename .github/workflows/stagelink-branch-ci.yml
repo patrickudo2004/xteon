@@ -78,11 +78,11 @@ jobs:
         shell: bash
         run: |
           python3 -c "
-with open('cargo_test.log', 'r', encoding='utf-8', errors='ignore') as f:
-    matched = [line.strip() for line in f if any(k in line.lower() for k in ['fail', 'panic', 'error', 'fatal', 'abort', 'cannot', 'unresolved', 'undefined'])]
-for line in matched[:30]:
-    print(f'::error title=LogMatch::{line}')
-"
+          with open('cargo_test.log', 'r', encoding='utf-8', errors='ignore') as f:
+              matched = [line.strip() for line in f if any(k in line.lower() for k in ['fail', 'panic', 'error', 'fatal', 'abort', 'cannot', 'unresolved', 'undefined'])]
+          for line in matched[:30]:
+              print(f'::error title=LogMatch::{line}')
+          "
           exit 1
 
       - name: Upload Test Logs on Failure
