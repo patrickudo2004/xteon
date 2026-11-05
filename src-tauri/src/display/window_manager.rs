@@ -58,19 +58,22 @@ static PINNED_STAGE_WINDOWS: LazyLock<Mutex<HashSet<String>>> =
 pub fn fnv1a_hash_64(bytes: &[u8]) -> u64 {
     let mut hash: u64 = 0xcbf29ce484222325;
     let len = bytes.len();
+    let step = if len > 1024 { 12 } else { 3 };
     let mut i = 0;
     while i + 2 < len {
         // Sample all 3 channels (R, G, B) of pixel so green/cyan/amber countdown clock changes are reliably detected
         let chunk = (bytes[i] as u64) | ((bytes[i + 1] as u64) << 8) | ((bytes[i + 2] as u64) << 16);
         hash ^= chunk;
         hash = hash.wrapping_mul(0x100000001b3);
-        i += 12; // Sample every 4th pixel across all color channels
+        i += step;
     }
-    while i < len {
-        hash ^= bytes[i] as u64;
+    // Fold tail bytes and length into hash so short slices or partial chunks are never skipped
+    for &b in &bytes[len.saturating_sub(12)..] {
+        hash ^= b as u64;
         hash = hash.wrapping_mul(0x100000001b3);
-        i += 1;
     }
+    hash ^= len as u64;
+    hash = hash.wrapping_mul(0x100000001b3);
     hash
 }
 

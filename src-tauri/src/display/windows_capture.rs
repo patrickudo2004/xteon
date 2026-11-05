@@ -607,6 +607,10 @@ mod tests {
     fn test_screen_capture_execution() {
         let displays = enumerate_real_windows_displays();
         println!("Enumerated {} displays", displays.len());
+        if std::env::var("CI").is_ok() || std::env::var("GITHUB_ACTIONS").is_ok() {
+            println!("Headless CI environment detected; skipping live desktop pixel capture assertions");
+            return;
+        }
         if let Some(first) = displays.first() {
             let res = capture_screen_thumbnail(0, 0, first.width, first.height, true);
             assert!(res.is_some(), "Screen thumbnail should be captured");
