@@ -67,37 +67,7 @@ jobs:
         run: npm run build
 
       - name: Run Cargo Unit Tests
-        id: cargo_tests
-        continue-on-error: true
-        shell: bash
-        run: |
-          cargo test --manifest-path src-tauri/Cargo.toml --lib -- --nocapture 2>&1 | tee cargo_test.log
-
-      - name: Print Failure to Step Summary
-        if: steps.cargo_tests.outcome == 'failure'
-        shell: bash
-        run: |
-          python3 -c "
-          import re
-          with open('cargo_test.log', 'r', encoding='utf-8', errors='ignore') as f:
-              raw = f.read()
-          ansi = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-          text = ansi.sub('', raw)
-          lines = [l.strip() for l in text.splitlines() if l.strip()]
-          filtered = [l for l in lines if not any(l.startswith(p) for p in ['Compiling', 'Downloaded', 'Checking', 'Finished', 'Updating', 'Blocking'])]
-          for line in filtered[-30:]:
-              clean = line.replace('::', '__')
-              print(f'::error title=CleanDiag::{clean}')
-          "
-          exit 1
-
-      - name: Upload Test Logs on Failure
-        if: steps.cargo_tests.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: cargo-test-log-${{ matrix.platform }}
-          path: cargo_test.log
-          if-no-files-found: ignore
+        run: cargo test --manifest-path src-tauri/Cargo.toml --lib
 
       - name: Build Windows Preview Installer
         if: matrix.build-artifact == true

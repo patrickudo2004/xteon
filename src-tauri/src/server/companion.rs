@@ -196,6 +196,75 @@ fn check_query_auth(params: &HashMap<String, String>) -> Result<(), (StatusCode,
         ))
     }
 }
+
+async fn serve_mobile_ui() -> Html<&'static str> {
+    Html(render_companion_director_html())
+}
+
+async fn serve_stage_ui(Path(slot_id): Path<String>) -> Html<String> {
+    Html(render_stage_receiver_html(&slot_id))
+}
+
+async fn ws_stage_handler(
+    Path(slot_id): Path<String>,
+    Query(params): Query<HashMap<String, String>>,
+    ws: WebSocketUpgrade,
+) -> impl IntoResponse {
+    let key = params.get("key").map(|s| s.as_str()).unwrap_or("");
+    if !verify_access_key_or_pin(key) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            "PIN or QR Session Key required",
+        )
+            .into_response();
+    }
+    let cid = params.get("cid").cloned().unwrap_or_else(|| "guest".to_string());
+    ws.on_upgrade(move |socket| handle_stage_ws(socket, slot_id, cid))
+        .into_response()
+}
+
+async fn handle_stage_ws(mut socket: WebSocket, slot_id: String, cid: String) {
+    let Some(rt) = get_slot_runtime(&slot_id) else {
+        return;
+    };
+    ensure_slot_worker_running(&rt);
+    let mut rx = rt.tx.subscribe();
+
+    // Send initial slot state immediately
+    if let Ok(slot) = rt.slot.lock() {
+        let mut public_slot = slot.clone();
+        public_slot.preview_data_url = None;
+        let payload = serde_json::json!({
+            "type": "slot_state",
+            "slot": public_slot,
+        });
+        let _ = socket.send(Message::Text(payload.to_string())).await;
+    }
+
+    loop {
+        record_companion_heartbeat(&cid);
+        tokio::select! {
+            packet = rx.recv() => {
+                match packet {
+                    Ok(StageBroadcastPacket::JpegBinary(bytes)) => {
+                        if socket.send(Message::Binary(bytes)).await.is_err() {
+                            break;
+                        }
+                    }
+                    Ok(StageBroadcastPacket::JsonText(txt)) => {
+                        if socket.send(Message::Text(txt)).await.is_err() {
+                            break;
+                        }
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
+                        // Drop lagged frames to keep latency under 100ms
+                        continue;
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                        break;
+                    }
+                }
+            }
             client_msg = socket.recv() => {
                 match client_msg {
                     Some(Ok(Message::Ping(p))) => {
