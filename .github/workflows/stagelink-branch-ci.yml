@@ -80,9 +80,10 @@ jobs:
           python3 -c "
           with open('cargo_test.log', 'r', encoding='utf-8', errors='ignore') as f:
               lines = f.readlines()
-          filtered = [l.strip() for l in lines if not any(l.strip().startswith(p) for p in ['Compiling ', 'Downloaded ', 'Checking ', 'Finished ']) and l.strip()]
-          for line in filtered[-30:]:
-              print(f'::error title=CargoDiag::{line}')
+          for l in lines[-25:]:
+              l_clean = l.strip().replace('::', '__')
+              if l_clean:
+                  print(f'::error title=RawEnd::{l_clean}')
           "
           exit 1
 
