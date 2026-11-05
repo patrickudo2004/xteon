@@ -77,10 +77,9 @@ jobs:
         if: steps.cargo_tests.outcome == 'failure'
         shell: bash
         run: |
-          echo "## Cargo Test Error Log (${{ matrix.platform }})" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          cat cargo_test.log >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          tail -n 35 cargo_test.log | while IFS= read -r line; do
+            echo "::error title=CargoLog::$line"
+          done
           exit 1
 
       - name: Upload Test Logs on Failure
