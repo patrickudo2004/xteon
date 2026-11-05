@@ -77,8 +77,8 @@ jobs:
         if: steps.cargo_tests.outcome == 'failure'
         shell: bash
         run: |
-          tail -n 35 cargo_test.log | while IFS= read -r line; do
-            echo "::error title=CargoLog::$line"
+          grep -B 1 -A 8 -E "(error\[E[0-9]+\]|error:)" cargo_test.log | head -n 35 | while IFS= read -r line; do
+            echo "::error title=RustError::$line"
           done
           exit 1
 
