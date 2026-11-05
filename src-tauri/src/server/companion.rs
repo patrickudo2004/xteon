@@ -23,7 +23,7 @@ use super::stagelink::{
     clear_stage_whisper, ensure_slot_worker_running, get_security_config, get_slot_runtime,
     get_total_live_client_count, list_stage_slots, record_companion_heartbeat, remove_stage_slot,
     send_stage_whisper, set_slot_blackout, set_slot_freeze, trigger_slot_flash, upsert_stage_slot,
-    verify_access_key_or_pin, CreateOrUpdateSlotInput, SlotRuntime, StageBroadcastPacket,
+    verify_access_key_or_pin, CreateOrUpdateSlotInput, StageBroadcastPacket,
 };
 use super::web_views::{render_companion_director_html, render_stage_receiver_html};
 
@@ -227,7 +227,7 @@ async fn handle_stage_ws(mut socket: WebSocket, slot_id: String, cid: String) {
     let Some(rt) = get_slot_runtime(&slot_id) else {
         return;
     };
-    ensure_slot_worker_running(&rt);
+    ensure_slot_worker_running(rt.clone());
     let mut rx = rt.tx.subscribe();
 
     // Send initial slot state immediately
@@ -246,8 +246,8 @@ async fn handle_stage_ws(mut socket: WebSocket, slot_id: String, cid: String) {
         tokio::select! {
             packet = rx.recv() => {
                 match packet {
-                    Ok(StageBroadcastPacket::JpegBinary(bytes)) => {
-                        if socket.send(Message::Binary(bytes)).await.is_err() {
+                    Ok(StageBroadcastPacket::BinaryFrame(bytes)) => {
+                        if socket.send(Message::Binary((*bytes).clone())).await.is_err() {
                             break;
                         }
                     }
