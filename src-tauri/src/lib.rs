@@ -11,6 +11,16 @@ use display::windows_capture::{
     CaptureDisplayTarget, CapturedFrameResult,
 };
 use server::companion::{get_companion_status, start_companion_server_with_handle, CompanionServerStatus};
+use server::network::{list_network_interfaces, NetworkAdapterInfo};
+use server::stagelink::{
+    clear_stage_whisper, list_stage_slots, refresh_all_slot_previews, remove_stage_slot,
+    send_stage_whisper, set_security_pin, set_slot_blackout, set_slot_freeze, trigger_slot_flash,
+    upsert_stage_slot, CreateOrUpdateSlotInput, StageLinkSlot,
+};
+use display::window_manager::{
+    list_capturable_windows, recall_stray_windows_to_primary, restore_window_behind,
+    route_window_to_display, set_window_pinned_stage, unroute_window_to_primary, CapturableWindow,
+};
 use tauri::Manager;
 
 fn sanitize_label(id: &str) -> String {
@@ -281,6 +291,139 @@ fn close_all_overlays(app: tauri::AppHandle) -> bool {
     true
 }
 
+#[tauri::command]
+async fn list_os_windows(app: tauri::AppHandle) -> Vec<CapturableWindow> {
+    let displays = get_connected_displays(app);
+    tokio::task::spawn_blocking(move || list_capturable_windows(Some(displays)))
+        .await
+        .unwrap_or_default()
+}
+
+#[tauri::command]
+async fn route_os_window(
+    app: tauri::AppHandle,
+    hwnd_id: String,
+    display_id: String,
+    borderless_fullscreen: bool,
+    pin_to_stage: bool,
+) -> Result<String, String> {
+    let displays = get_connected_displays(app);
+    let target = displays
+        .iter()
+        .find(|d| d.id == display_id || d.os_index.to_string() == display_id)
+        .cloned()
+        .ok_or_else(|| format!("Target display {display_id} not found"))?;
+
+    let (tx, ty, tw, th) = if let Some(ref b) = target.bounds {
+        (b.x, b.y, b.width, b.height)
+    } else {
+        (0, 0, target.width, target.height)
+    };
+
+    tokio::task::spawn_blocking(move || {
+        route_window_to_display(&hwnd_id, tx, ty, tw, th, borderless_fullscreen, pin_to_stage)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn unroute_os_window(app: tauri::AppHandle, hwnd_id: String) -> Result<String, String> {
+    let displays = get_connected_displays(app);
+    tokio::task::spawn_blocking(move || unroute_window_to_primary(&hwnd_id, &displays))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn set_os_window_pinned(hwnd_id: String, pinned: bool) -> bool {
+    set_window_pinned_stage(&hwnd_id, pinned)
+}
+
+#[tauri::command]
+async fn restore_os_window_behind(hwnd_id: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || restore_window_behind(&hwnd_id))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn recall_stray_os_windows(app: tauri::AppHandle) -> Result<usize, String> {
+    let displays = get_connected_displays(app);
+    tokio::task::spawn_blocking(move || recall_stray_windows_to_primary(&displays))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn get_network_interfaces() -> Vec<NetworkAdapterInfo> {
+    list_network_interfaces()
+}
+
+#[tauri::command]
+fn configure_companion_security(
+    pin: Option<String>,
+    pin_lock_enabled: Option<bool>,
+) -> CompanionServerStatus {
+    let _ = set_security_pin(pin, pin_lock_enabled);
+    get_companion_status()
+}
+
+#[tauri::command]
+async fn get_stagelink_slots(refresh_previews: bool) -> Vec<StageLinkSlot> {
+    tokio::task::spawn_blocking(move || {
+        if refresh_previews {
+            refresh_all_slot_previews()
+        } else {
+            list_stage_slots(true)
+        }
+    })
+    .await
+    .unwrap_or_default()
+}
+
+#[tauri::command]
+async fn upsert_stagelink_slot(input: CreateOrUpdateSlotInput) -> StageLinkSlot {
+    tokio::task::spawn_blocking(move || upsert_stage_slot(input))
+        .await
+        .expect("upsert_stagelink_slot worker failed")
+}
+
+#[tauri::command]
+async fn delete_stagelink_slot(slot_id: String) -> bool {
+    remove_stage_slot(&slot_id)
+}
+
+#[tauri::command]
+async fn set_stagelink_slot_freeze(slot_id: String, frozen: bool) -> Option<StageLinkSlot> {
+    set_slot_freeze(&slot_id, frozen)
+}
+
+#[tauri::command]
+async fn set_stagelink_slot_blackout(slot_id: String, blackout: bool) -> Option<StageLinkSlot> {
+    set_slot_blackout(&slot_id, blackout)
+}
+
+#[tauri::command]
+async fn flash_stagelink_slot(slot_id: String) -> Option<StageLinkSlot> {
+    trigger_slot_flash(&slot_id)
+}
+
+#[tauri::command]
+async fn send_stagelink_whisper(
+    slot_id: String,
+    message: String,
+    tone: String,
+    duration_seconds: Option<u32>,
+) -> Option<StageLinkSlot> {
+    send_stage_whisper(&slot_id, message, tone, duration_seconds)
+}
+
+#[tauri::command]
+async fn clear_stagelink_whisper(slot_id: String) -> Option<StageLinkSlot> {
+    clear_stage_whisper(&slot_id)
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -321,7 +464,23 @@ pub fn run() {
             close_flash,
             show_test_pattern,
             close_test_pattern,
-            close_all_overlays
+            close_all_overlays,
+            list_os_windows,
+            route_os_window,
+            unroute_os_window,
+            set_os_window_pinned,
+            restore_os_window_behind,
+            recall_stray_os_windows,
+            get_network_interfaces,
+            configure_companion_security,
+            get_stagelink_slots,
+            upsert_stagelink_slot,
+            delete_stagelink_slot,
+            set_stagelink_slot_freeze,
+            set_stagelink_slot_blackout,
+            flash_stagelink_slot,
+            send_stagelink_whisper,
+            clear_stagelink_whisper
         ])
         .run(tauri::generate_context!())
         .expect("error while running xteon application");

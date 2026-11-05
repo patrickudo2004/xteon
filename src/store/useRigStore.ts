@@ -22,6 +22,14 @@ import {
   EventLogInput,
   VirtualDistributionBranch,
   BranchedDownstreamDisplay,
+  NetworkAdapterInfo,
+  CompanionServerStatus,
+  CapturableWindow,
+  StageWhisperPayload,
+  StageLinkSourceMode,
+  StageSplitLayout,
+  StageLinkSlot,
+  UpsertStageSlotInput,
 } from '../types';
 import { INDUSTRY_TEMPLATES } from '../utils/industryTemplates';
 
@@ -823,6 +831,46 @@ interface RigState {
   dismissMirroringAlert: () => void;
   presentationKeepAwake: boolean;
   toggleKeepAwake: () => void;
+
+  // Wireless StageLink & OS Window Director
+  osWindows: CapturableWindow[];
+  stageLinkSlots: StageLinkSlot[];
+  companionStatus: CompanionServerStatus | null;
+  stageLinkModalOpen: boolean;
+  editingStageSlotId: string | null;
+  qrStageSlotId: string | null;
+
+  openStageLinkModal: (slotId?: string | null) => void;
+  closeStageLinkModal: () => void;
+  openQrForStageSlot: (slotId: string | null) => void;
+
+  refreshOsWindows: () => Promise<void>;
+  routeOsWindow: (
+    hwndId: string,
+    targetDisplayId: string,
+    borderlessFullscreen?: boolean,
+    pinToStage?: boolean
+  ) => Promise<boolean>;
+  unrouteOsWindow: (hwnd: string) => Promise<boolean>;
+  setOsWindowPinned: (hwnd: string, pinned: boolean) => Promise<boolean>;
+  restoreOsWindowBehind: (hwnd: string) => Promise<boolean>;
+  recallStrayOsWindows: () => Promise<number>;
+
+  refreshCompanionStatus: () => Promise<void>;
+  configureCompanionSecurity: (pinLockEnabled: boolean, customPin?: string) => Promise<void>;
+  refreshStageLinkSlots: (includePreviews?: boolean) => Promise<void>;
+  upsertStageLinkSlot: (input: UpsertStageSlotInput) => Promise<StageLinkSlot | null>;
+  deleteStageLinkSlot: (slotId: string) => Promise<void>;
+  setStageLinkSlotFreeze: (slotId: string, frozen: boolean) => Promise<void>;
+  setStageLinkSlotBlackout: (slotId: string, blackout: boolean) => Promise<void>;
+  flashStageLinkSlot: (slotId: string) => Promise<void>;
+  sendStageLinkWhisper: (
+    slotId: string,
+    text: string,
+    tone: 'INFO' | 'WARN' | 'CRITICAL',
+    durationSecs?: number
+  ) => Promise<void>;
+  clearStageLinkWhisper: (slotId: string) => Promise<void>;
 }
 
 let isCapturingInProgress = false;
@@ -873,7 +921,8 @@ const DEFAULT_APP_SETTINGS: AppSettings = {
   protectInternalCameras: true,
   presentationKeepAwake: false,
   companionPort: 8765,
-  companionPin: '842-190',
+  companionPin: '',
+  companionPinLockEnabled: true,
   oscEnabled: true,
   oscPort: 8000,
   propresenterSyncEnabled: false,
@@ -885,7 +934,13 @@ const DEFAULT_APP_SETTINGS: AppSettings = {
 const getSavedAppSettings = (): AppSettings => {
   try {
     const raw = localStorage.getItem('xteon_app_settings');
-    if (raw) return { ...DEFAULT_APP_SETTINGS, ...JSON.parse(raw) };
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.companionPin === '842-190') {
+        parsed.companionPin = '';
+      }
+      return { ...DEFAULT_APP_SETTINGS, ...parsed };
+    }
   } catch {}
   return DEFAULT_APP_SETTINGS;
 };
@@ -1175,7 +1230,7 @@ export const useRigStore = create<RigState>((set, get) => ({
     const displays = get().liveDisplays;
     const cameras = get().liveCameras.filter((c) => !c.isHidden);
 
-    if ((!displays || displays.length === 0) && (!cameras || cameras.length === 0)) {
+    if ((!displays || displays.length === 0) && (!cameras || cameras.length === 0) && get().stageLinkSlots.length === 0) {
       alert('No live displays or active cameras detected to fork.');
       return;
     }
@@ -1206,16 +1261,26 @@ export const useRigStore = create<RigState>((set, get) => ({
       maxBandwidthGbps: cam.portType === 'SDI_12G' ? 12.0 : cam.portType === 'HDMI_2_0' ? 18.0 : 10.0,
     }));
 
-    const hostOutputPorts: PortDefinition[] = externalDisplays.map((disp, idx) => ({
-      id: `host-out-${disp.id}`,
-      name: `GPU Out ${idx + 1} (${disp.portType.replace('_', ' ')})`,
-      type: disp.portType as PortType,
-      direction: 'OUTPUT',
-      maxBandwidthGbps: disp.portType === 'INTERNAL_DISPLAY' ? 40.0 : disp.portType === 'DP_1_4' ? 32.4 : disp.portType === 'HDMI_2_1' ? 48.0 : disp.portType === 'WIRELESS' ? 10.0 : 18.0,
-    }));
+    const stageSlots = get().stageLinkSlots;
+    const hostOutputPorts: PortDefinition[] = [
+      ...externalDisplays.map((disp, idx) => ({
+        id: `host-out-${disp.id}`,
+        name: `GPU Out ${idx + 1} (${disp.portType.replace("_", " ")})`,
+        type: disp.portType as PortType,
+        direction: "OUTPUT" as const,
+        maxBandwidthGbps: disp.portType === "INTERNAL_DISPLAY" ? 40.0 : disp.portType === "DP_1_4" ? 32.4 : disp.portType === "HDMI_2_1" ? 48.0 : disp.portType === "WIRELESS" ? 10.0 : 18.0,
+      })),
+      ...stageSlots.map((slot) => ({
+        id: `host-out-stage-${slot.id}`,
+        name: `StageLink Wi-Fi (${slot.name})`,
+        type: "WIRELESS" as PortType,
+        direction: "OUTPUT" as const,
+        maxBandwidthGbps: 12.0,
+      })),
+    ];
 
     const hostX = cameras.length > 0 ? 460 : 80;
-    const hostY = Math.max(120, Math.max(externalDisplays.length, cameras.length) * 90);
+    const hostY = Math.max(120, Math.max(externalDisplays.length + stageSlots.length, cameras.length) * 90);
 
     const hostNode: Node<DeviceNodeData> = {
       id: 'forked-host-pc',
@@ -1230,7 +1295,7 @@ export const useRigStore = create<RigState>((set, get) => ({
         stageZone: hostDisplay.stageZone || 'FOH Control Booth',
         inputPorts: hostInputPorts,
         outputPorts: hostOutputPorts,
-        resolution: hostDisplay.activeResolution,
+        resolution: hostDisplay.activeResolution || { width: (hostDisplay as any).width || 1920, height: (hostDisplay as any).height || 1080 },
         refreshRateHz: hostDisplay.refreshRateHz,
         matchedLiveDisplayId: hostDisplay.id,
         convergenceStatus: 'MATCHED',
@@ -1336,7 +1401,7 @@ export const useRigStore = create<RigState>((set, get) => ({
           stageZone: disp.stageZone,
           inputPorts: [inputPort],
           outputPorts: [],
-          resolution: disp.activeResolution,
+          resolution: disp.activeResolution || { width: (disp as any).width || 1920, height: (disp as any).height || 1080 },
           refreshRateHz: disp.refreshRateHz,
           matchedLiveDisplayId: disp.id,
           convergenceStatus: 'MATCHED',
@@ -1345,10 +1410,12 @@ export const useRigStore = create<RigState>((set, get) => ({
 
       const cableType: PortType = disp.portType as PortType;
       const lengthM = disp.portType === 'WIRELESS' ? 15 : 10;
+      const dispW = disp.activeResolution?.width || (disp as any).width || 1920;
+      const dispH = disp.activeResolution?.height || (disp as any).height || 1080;
       const val = validateCableSignal(
-        disp.activeResolution.width,
-        disp.activeResolution.height,
-        disp.refreshRateHz,
+        dispW,
+        dispH,
+        disp.refreshRateHz || 60,
         8,
         cableType,
         lengthM
@@ -1377,8 +1444,64 @@ export const useRigStore = create<RigState>((set, get) => ({
     });
 
     set({
-      nodes: newNodes,
-      edges: newEdges,
+      nodes: [
+        ...newNodes,
+        ...stageSlots.map((slot, sIdx) => ({
+          id: `forked-stage-${slot.id}`,
+          type: 'deviceNode',
+          position: { x: cameras.length > 0 ? 880 : 580, y: 80 + (externalDisplays.length + sIdx) * 190 },
+          data: {
+            id: `forked-stage-${slot.id}`,
+            category: 'SINK' as DeviceCategory,
+            deviceType: 'CONFIDENCE_MONITOR' as DeviceType,
+            label: slot.name,
+            customModelName: `Xteon Wireless StageLink (${slot.source_mode})`,
+            stageZone: slot.stage_zone || 'Pulpit / Stage',
+            inputPorts: [
+              {
+                id: `sink-in-stage-${slot.id}`,
+                name: 'StageLink Wi-Fi Stream',
+                type: 'WIRELESS' as PortType,
+                direction: 'INPUT' as const,
+                maxBandwidthGbps: 12.0,
+              },
+            ],
+            outputPorts: [],
+            resolution: { width: slot.max_width || 1280, height: (slot.max_width || 1280) >= 1920 ? 1080 : 720 },
+            refreshRateHz: slot.target_fps || 20,
+            convergenceStatus: 'MATCHED' as const,
+          },
+        })),
+      ],
+      edges: [
+        ...newEdges,
+        ...stageSlots.map((slot) => {
+          const w = slot.max_width || 1280;
+          const h = w >= 1920 ? 1080 : 720;
+          const fps = slot.target_fps || 20;
+          const val = validateCableSignal(w, h, fps, 8, 'WIRELESS', 15);
+          return {
+            id: `edge-fork-stage-${slot.id}`,
+            source: 'forked-host-pc',
+            target: `forked-stage-${slot.id}`,
+            sourceHandle: `host-out-stage-${slot.id}`,
+            targetHandle: `sink-in-stage-${slot.id}`,
+            type: 'customCable',
+            data: {
+              id: `edge-fork-stage-${slot.id}`,
+              sourceNodeId: 'forked-host-pc',
+              sourcePortId: `host-out-stage-${slot.id}`,
+              targetNodeId: `forked-stage-${slot.id}`,
+              targetPortId: `sink-in-stage-${slot.id}`,
+              cableType: 'WIRELESS' as PortType,
+              lengthMeters: 15,
+              calculatedBandwidthGbps: val.bandwidthGbps,
+              status: val.status,
+              warningMessage: val.message,
+            },
+          };
+        }),
+      ],
       appMode: 'PLANNER',
       selectedElement: null,
       isDirty: true,
@@ -2327,7 +2450,7 @@ export const useRigStore = create<RigState>((set, get) => ({
   },
 
   setReconciliationModalOpen: (open) => set({ reconciliationModalOpen: open }),
-  setMobileModalOpen: (open) => set({ mobileModalOpen: open }),
+  setMobileModalOpen: (open) => set({ mobileModalOpen: open, ...(open ? {} : { qrStageSlotId: null }) }),
 
   refreshLiveDisplays: async () => {
     try {
@@ -2484,6 +2607,322 @@ export const useRigStore = create<RigState>((set, get) => ({
     };
   },
 
+  // --- WIRELESS STAGELINK & OS WINDOW DIRECTOR ---
+  osWindows: [],
+  stageLinkSlots: [],
+  companionStatus: null,
+  stageLinkModalOpen: false,
+  editingStageSlotId: null,
+  qrStageSlotId: null,
+
+  openStageLinkModal: (slotId = null) => {
+    set({ stageLinkModalOpen: true, editingStageSlotId: slotId });
+    get().refreshOsWindows();
+  },
+  closeStageLinkModal: () => set({ stageLinkModalOpen: false, editingStageSlotId: null }),
+  openQrForStageSlot: (slotId) => {
+    set({ qrStageSlotId: slotId, mobileModalOpen: true });
+    get().refreshCompanionStatus();
+  },
+
+  refreshOsWindows: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const wins: CapturableWindow[] = await invoke('list_os_windows');
+        if (Array.isArray(wins)) {
+          set({ osWindows: wins });
+        }
+      } catch (_) {}
+    }
+  },
+
+  routeOsWindow: async (hwndId, targetDisplayId, borderlessFullscreen = false, pinToStage = true) => {
+    const targetDisp = get().liveDisplays.find((d) => d.id === targetDisplayId);
+    if (!targetDisp) return false;
+
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('route_os_window', {
+          hwndId,
+          displayId: targetDisplayId,
+          borderlessFullscreen,
+          pinToStage,
+        });
+        const winObj = get().osWindows.find((w) => w.hwnd_id === hwndId);
+        get().addEventLog({
+          category: 'DISPLAY',
+          level: 'INFO',
+          severity: 'INFO',
+          message: `Routed window "${winObj?.title || hwndId}" → ${targetDisp.customAlias}${borderlessFullscreen ? ' (Borderless Stage Fullscreen)' : ''}`,
+        });
+        await get().refreshOsWindows();
+        return true;
+      } catch (err) {
+        console.warn('route_os_window error:', err);
+      }
+    }
+    return false;
+  },
+
+  unrouteOsWindow: async (hwndId) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('unroute_os_window', { hwndId });
+        const winObj = get().osWindows.find((w) => w.hwnd_id === hwndId);
+        get().addEventLog({
+          category: 'DISPLAY',
+          level: 'INFO',
+          severity: 'INFO',
+          message: `Returned window "${winObj?.title || hwndId}" to FOH primary workspace`,
+        });
+        await get().refreshOsWindows();
+        return true;
+      } catch (err) {
+        console.warn('unroute_os_window error:', err);
+      }
+    }
+    return false;
+  },
+
+  setOsWindowPinned: async (hwndId, pinned) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('set_os_window_pinned', { hwndId, pinned });
+        await get().refreshOsWindows();
+        return true;
+      } catch (_) {}
+    }
+    return false;
+  },
+
+  restoreOsWindowBehind: async (hwndId) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('restore_os_window_behind', { hwndId });
+        const winObj = get().osWindows.find((w) => w.hwnd_id === hwndId);
+        get().addEventLog({
+          category: 'DISPLAY',
+          level: 'INFO',
+          severity: 'INFO',
+          message: `Restored minimized stage window "${winObj?.title || hwndId}" behind FOH focus`,
+        });
+        await get().refreshOsWindows();
+        return true;
+      } catch (_) {}
+    }
+    return false;
+  },
+
+  recallStrayOsWindows: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const recalled: number = await invoke('recall_stray_os_windows');
+        get().addEventLog({
+          category: 'DISPLAY',
+          level: recalled > 0 ? 'WARN' : 'INFO',
+          severity: recalled > 0 ? 'WARN' : 'INFO',
+          message:
+            recalled > 0
+              ? `Emergency Recall pulled ${recalled} unpinned window(s) back to FOH primary screen`
+              : 'Emergency Recall checked stage displays: zero stray windows found',
+        });
+        await get().refreshOsWindows();
+        return recalled;
+      } catch (_) {}
+    }
+    return 0;
+  },
+
+  refreshCompanionStatus: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const status: CompanionServerStatus = await invoke('get_mobile_companion_status');
+        if (status) {
+          set({ companionStatus: status });
+          const curSettings = get().appSettings;
+          if (!curSettings.companionPin && status.active_pin) {
+            set({
+              appSettings: {
+                ...curSettings,
+                companionPin: status.active_pin,
+                companionPinLockEnabled: status.pin_lock_enabled,
+              },
+            });
+          }
+        }
+      } catch (_) {}
+    }
+  },
+
+  configureCompanionSecurity: async (pinLockEnabled, customPin) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const status: CompanionServerStatus = await invoke('configure_companion_security', {
+          pin: customPin && customPin.trim() ? customPin.trim() : null,
+          pinLockEnabled,
+        });
+        if (status) {
+          set({ companionStatus: status });
+          get().updateSettings({
+            companionPin: status.active_pin,
+            companionPinLockEnabled: status.pin_lock_enabled,
+          });
+        }
+      } catch (_) {}
+    } else {
+      get().updateSettings({
+        companionPinLockEnabled: pinLockEnabled,
+        ...(customPin !== undefined ? { companionPin: customPin } : {}),
+      });
+    }
+  },
+
+  refreshStageLinkSlots: async (refreshPreviews = false) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const slots: StageLinkSlot[] = await invoke('get_stagelink_slots', { refreshPreviews });
+        if (Array.isArray(slots)) {
+          const prevMap = new Map(get().stageLinkSlots.map((s) => [s.id, s.preview_data_url]));
+          const merged = slots.map((s) => ({
+            ...s,
+            preview_data_url: s.preview_data_url || prevMap.get(s.id),
+          }));
+          set({ stageLinkSlots: merged });
+        }
+      } catch (_) {}
+    }
+  },
+
+  upsertStageLinkSlot: async (input) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const slot: StageLinkSlot = await invoke('upsert_stagelink_slot', { input });
+        if (slot) {
+          const cur = get().stageLinkSlots;
+          const next = cur.some((s) => s.id === slot.id) ? cur.map((s) => (s.id === slot.id ? slot : s)) : [...cur, slot];
+          set({ stageLinkSlots: next });
+        }
+        await get().refreshStageLinkSlots(true);
+        get().addEventLog({
+          category: 'DISPLAY',
+          level: 'INFO',
+          severity: 'INFO',
+          message: `${input.id ? 'Updated' : 'Created'} Wireless StageLink slot "${slot.name}" (${slot.source_mode} @ ${slot.target_fps} FPS)`,
+        });
+        return slot;
+      } catch (err) {
+        console.warn('upsert_stagelink_slot error:', err);
+      }
+    }
+    return null;
+  },
+
+  deleteStageLinkSlot: async (slotId) => {
+    const existing = get().stageLinkSlots.find((s) => s.id === slotId);
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('delete_stagelink_slot', { slotId });
+        set({ stageLinkSlots: get().stageLinkSlots.filter((s) => s.id !== slotId) });
+        if (existing) {
+          get().addEventLog({
+            category: 'DISPLAY',
+            level: 'INFO',
+            severity: 'INFO',
+            message: `Removed Wireless StageLink slot "${existing.name}"`,
+          });
+        }
+      } catch (_) {}
+    }
+  },
+
+  setStageLinkSlotFreeze: async (slotId, frozen) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const updated: StageLinkSlot | null = await invoke('set_stagelink_slot_freeze', { slotId, frozen });
+        if (updated) {
+          set({ stageLinkSlots: get().stageLinkSlots.map((s) => (s.id === slotId ? updated : s)) });
+        }
+        await get().refreshStageLinkSlots(true);
+      } catch (_) {}
+    }
+  },
+
+  setStageLinkSlotBlackout: async (slotId, blackout) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const updated: StageLinkSlot | null = await invoke('set_stagelink_slot_blackout', { slotId, blackout });
+        if (updated) {
+          set({ stageLinkSlots: get().stageLinkSlots.map((s) => (s.id === slotId ? updated : s)) });
+        }
+        await get().refreshStageLinkSlots(true);
+      } catch (_) {}
+    }
+  },
+
+  flashStageLinkSlot: async (slotId) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const updated: StageLinkSlot | null = await invoke('flash_stagelink_slot', { slotId });
+        if (updated) {
+          set({ stageLinkSlots: get().stageLinkSlots.map((s) => (s.id === slotId ? updated : s)) });
+        }
+      } catch (_) {}
+    }
+  },
+
+  sendStageLinkWhisper: async (slotId, text, tone, durationSecs = 20) => {
+    if (!text.trim()) return;
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const updated: StageLinkSlot | null = await invoke('send_stagelink_whisper', {
+          slotId,
+          message: text.trim(),
+          tone,
+          durationSeconds: durationSecs,
+        });
+        if (updated) {
+          set({ stageLinkSlots: get().stageLinkSlots.map((s) => (s.id === slotId ? updated : s)) });
+        }
+        await get().refreshStageLinkSlots(false);
+        const slot = get().stageLinkSlots.find((s) => s.id === slotId);
+        get().addEventLog({
+          category: 'DISPLAY',
+          level: tone === 'CRITICAL' ? 'CRITICAL' : tone === 'WARN' ? 'WARN' : 'INFO',
+          severity: tone === 'CRITICAL' ? 'CRITICAL' : tone === 'WARN' ? 'WARN' : 'INFO',
+          message: `Stage Whisper [${tone}] → "${slot?.name || slotId}": ${text.trim()}`,
+        });
+      } catch (_) {}
+    }
+  },
+
+  clearStageLinkWhisper: async (slotId) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const updated: StageLinkSlot | null = await invoke('clear_stagelink_whisper', { slotId });
+        if (updated) {
+          set({ stageLinkSlots: get().stageLinkSlots.map((s) => (s.id === slotId ? updated : s)) });
+        }
+        await get().refreshStageLinkSlots(false);
+      } catch (_) {}
+    }
+  },
+
   importProject: (proj) => {
     if (proj && proj.nodes && proj.edges) {
       const converged = computeConvergence(proj.nodes as any, get().liveDisplays);
@@ -2503,7 +2942,21 @@ if (typeof window !== 'undefined') {
       useRigStore.getState().pollLiveThumbnails();
     });
     useRigStore.getState().refreshLiveCameras();
+    useRigStore.getState().refreshCompanionStatus();
+    useRigStore.getState().refreshOsWindows();
+    useRigStore.getState().refreshStageLinkSlots(false);
   }, 100);
+
+  // Demand-driven StageLink & OS Window Director polling (0% CPU in Planner Studio)
+  setInterval(() => {
+    const st = useRigStore.getState();
+    const isLiveView = st.appMode === 'LIVE' || st.appMode === 'LIVE_MAP';
+    if (isLiveView || st.stageLinkModalOpen || st.mobileModalOpen) {
+      st.refreshOsWindows();
+      st.refreshStageLinkSlots(isLiveView);
+      st.refreshCompanionStatus();
+    }
+  }, 1200);
 
   // Listen for hardware camera hotplug events (plugging in USB webcam or connecting Iriun phone)
   if (typeof navigator !== 'undefined' && navigator.mediaDevices?.addEventListener) {
