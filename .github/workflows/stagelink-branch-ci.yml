@@ -71,7 +71,7 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          cargo test --manifest-path src-tauri/Cargo.toml -- --nocapture 2>&1 | tee cargo_test.log
+          cargo test --manifest-path src-tauri/Cargo.toml --lib -- --nocapture 2>&1 | tee cargo_test.log
 
       - name: Print Failure to Step Summary
         if: steps.cargo_tests.outcome == 'failure'
@@ -81,11 +81,13 @@ jobs:
           import re
           with open('cargo_test.log', 'r', encoding='utf-8', errors='ignore') as f:
               text = f.read()
-          errs = re.findall(r'(?:error|failed to|caused by|panicked)[^\n]{0,200}', text, re.IGNORECASE)
+          errs = re.findall(r'(?:\b(?:error\[E\d+\]|error:|panicked at|FAILED|failures:)[^\n]{0,200})', text)
+          if not errs:
+              errs = [l.strip() for l in text.splitlines() if not any(l.strip().startswith(p) for p in ['Compiling', 'Downloaded', 'Checking', 'Finished']) and l.strip()][-25:]
           for e in errs[:25]:
               clean = e.strip().replace('::', '__')
               if clean:
-                  print(f'::error title=FoundErr::{clean}')
+                  print(f'::error title=TrueErr::{clean}')
           "
           exit 1
 
