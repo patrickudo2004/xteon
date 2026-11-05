@@ -330,6 +330,38 @@ async fn api_auth_verify(Json(body): Json<VerifyPinBody>) -> impl IntoResponse {
         )
     }
 }
+
+async fn api_displays(
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<Vec<crate::display::types::NativeDisplayInfo>>, (StatusCode, Json<serde_json::Value>)> {
+    check_query_auth(&params)?;
+    let displays = crate::display::windows_capture::enumerate_real_windows_displays();
+    Ok(Json(displays))
+}
+
+async fn api_flash(
+    Path(id): Path<String>,
+    Query(params): Query<HashMap<String, String>>,
+    State(state): State<AppState>,
+) -> Result<(StatusCode, String), (StatusCode, Json<serde_json::Value>)> {
+    check_query_auth(&params)?;
+    println!("Mobile companion triggered flash on display: {}", id);
+    if let Some(ref app_handle) = state.app_handle {
+        let displays = crate::display::windows_capture::enumerate_real_windows_displays();
+        if let Some(target) = displays.iter().find(|d| d.id == id || d.os_index.to_string() == id) {
+            if let Some(ref bounds) = target.bounds {
+                let display_title = format!("{} ({}x{})", target.custom_alias, target.width, target.height);
+                let _ = crate::trigger_flash_native(
+                    app_handle.clone(),
+                    display_title,
+                    bounds.x,
+                    bounds.y,
+                    bounds.width,
+                    bounds.height,
+                );
+            }
+        }
+    }
     Ok((StatusCode::OK, format!("Flashed {id}")))
 }
 
