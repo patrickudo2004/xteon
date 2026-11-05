@@ -67,7 +67,17 @@ jobs:
         run: npm run build
 
       - name: Run Cargo Unit Tests
-        run: cargo test --manifest-path src-tauri/Cargo.toml
+        shell: bash
+        run: |
+          cargo test --manifest-path src-tauri/Cargo.toml --verbose 2>&1 | tee cargo_test.log
+
+      - name: Upload Test Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-test-log-${{ matrix.platform }}
+          path: cargo_test.log
+          if-no-files-found: ignore
 
       - name: Build Windows Preview Installer
         if: matrix.build-artifact == true
