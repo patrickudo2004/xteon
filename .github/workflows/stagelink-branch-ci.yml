@@ -80,11 +80,9 @@ jobs:
           python3 -c "
           with open('cargo_test.log', 'r', encoding='utf-8', errors='ignore') as f:
               lines = f.readlines()
-          matched = [l.strip() for l in lines if any(k in l for k in ['FAILED', 'panicked at', 'failures:', 'assertion', 'error:'])]
-          if not matched:
-              matched = [l.strip() for l in lines[-30:]]
-          for line in matched[-25:]:
-              print(f'::error title=FailureDetail::{line}')
+          filtered = [l.strip() for l in lines if not any(l.strip().startswith(p) for p in ['Compiling ', 'Downloaded ', 'Checking ', 'Finished ']) and l.strip()]
+          for line in filtered[-30:]:
+              print(f'::error title=CargoDiag::{line}')
           "
           exit 1
 
