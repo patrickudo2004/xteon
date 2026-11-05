@@ -11,7 +11,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::{LazyLock, Mutex};
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::display::window_manager::{
@@ -230,15 +230,24 @@ async fn handle_stage_ws(mut socket: WebSocket, slot_id: String, cid: String) {
     ensure_slot_worker_running(rt.clone());
     let mut rx = rt.tx.subscribe();
 
-    // Send initial slot state immediately
-    if let Ok(slot) = rt.slot.lock() {
-        let mut public_slot = slot.clone();
-        public_slot.preview_data_url = None;
-        let payload = serde_json::json!({
-            "type": "slot_state",
-            "slot": public_slot,
-        });
-        let _ = socket.send(Message::Text(payload.to_string())).await;
+    // Send initial slot state immediately, dropping MutexGuard before .await
+    let initial_payload = {
+        if let Ok(slot) = rt.slot.lock() {
+            let mut public_slot = slot.clone();
+            public_slot.preview_data_url = None;
+            Some(
+                serde_json::json!({
+                    "type": "slot_state",
+                    "slot": public_slot,
+                })
+                .to_string(),
+            )
+        } else {
+            None
+        }
+    };
+    if let Some(txt) = initial_payload {
+        let _ = socket.send(Message::Text(txt)).await;
     }
 
     loop {
