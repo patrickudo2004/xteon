@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -19,27 +19,29 @@ import { getPortIcon } from '../common/SvgIcons';
 import { LiveMapInspector } from './LiveMapInspector';
 import { FloatingPanelWrapper } from '../common/FloatingPanelWrapper';
 import {
-  Cpu,
   Monitor,
   Zap,
   Radio,
   Wifi,
   Sparkles,
   RefreshCw,
-  Sliders,
   CheckCircle2,
-  Activity,
   Laptop,
   RotateCcw,
   Camera,
-  PanelRightOpen,
   Split,
   Tv,
+  Plus,
+  QrCode,
+  Snowflake,
+  CornerUpLeft,
+  Users,
+  PanelRightOpen,
 } from 'lucide-react';
 
 // Custom Live Camera Source Node Component
 const LiveCameraNode: React.FC<{ data: any }> = ({ data }) => {
-  const { selectLiveElement, toggleCameraFreeze } = useRigStore();
+  const { selectLiveElement } = useRigStore();
   const camera = data.camera;
   if (!camera) return null;
 
@@ -48,51 +50,45 @@ const LiveCameraNode: React.FC<{ data: any }> = ({ data }) => {
   return (
     <div
       onClick={() => selectLiveElement('node', `cam-node-${camera.id}`)}
-      className="w-80 rounded-2xl bg-[var(--bg-card)] border-2 border-amber-500/70 shadow-2xl overflow-hidden font-sans text-[var(--text-primary)] select-none relative cursor-pointer hover:border-amber-400 transition"
+      className="w-80 rounded-2xl bg-[var(--bg-card)] border-2 border-[var(--badge-amber-border)] shadow-2xl overflow-hidden font-sans text-[var(--text-primary)] select-none relative cursor-pointer hover:border-[var(--accent-amber)] transition"
     >
-      {/* Node Header */}
       <div className="p-3.5 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           {isWireless ? (
-            <Wifi className="w-4 h-4 text-amber-400 animate-pulse" />
+            <Wifi className="w-4 h-4 text-[var(--accent-amber)] animate-pulse shrink-0" />
           ) : (
-            <Camera className="w-4 h-4 text-amber-400" />
+            <Camera className="w-4 h-4 text-[var(--accent-amber)] shrink-0" />
           )}
-          <span className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
+          <span className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-primary)] truncate">
             {camera.customAlias || camera.name}
           </span>
         </div>
-        <span className="text-[9px] px-2 py-0.5 rounded font-mono font-bold uppercase border bg-amber-500/20 text-amber-400 border-amber-500/40">
+        <span className="text-[9px] px-2 py-0.5 rounded font-mono font-bold uppercase border bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border-[var(--badge-amber-border)] shrink-0">
           {camera.portType.replace('_', ' ')}
         </span>
       </div>
 
-      {/* Node Body */}
       <div className="p-4 space-y-3 font-mono">
-        <div className="flex items-center justify-between text-xs">
-          <div className="text-[var(--text-muted)] truncate max-w-[170px]">{camera.vendor}</div>
-          <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)]">
+        <div className="flex items-center justify-between text-xs gap-2">
+          <div className="text-[var(--text-muted)] truncate">{camera.vendor}</div>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)] shrink-0">
             📍 {camera.stageZone}
           </span>
         </div>
 
-        {/* Live Signal Telemetry */}
-        <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2 text-amber-400 font-bold">
-            <CheckCircle2 className="w-4 h-4 text-amber-400" />
+        <div className="p-2.5 rounded-xl bg-[var(--badge-amber-bg)] border border-[var(--badge-amber-border)] flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 text-[var(--badge-amber-text)] font-bold">
+            <CheckCircle2 className="w-4 h-4" />
             <span>SIGNAL LOCKED</span>
           </div>
-          <span className="text-[10px] text-amber-300 font-bold">
+          <span className="text-[10px] text-[var(--badge-amber-text)] font-bold">
             {camera.resolution.width}x{camera.resolution.height}
           </span>
         </div>
 
-        <div className="text-[10px] text-[var(--text-muted)] truncate">
-          {camera.name}
-        </div>
+        <div className="text-[10px] text-[var(--text-muted)] truncate">{camera.name}</div>
       </div>
 
-      {/* Source Output Handle on the right */}
       <Handle
         type="source"
         position={Position.Right}
@@ -104,19 +100,19 @@ const LiveCameraNode: React.FC<{ data: any }> = ({ data }) => {
   );
 };
 
-// Custom Unified Host Workstation Node Component (PC + Primary Screen Built-In)
+// Custom Unified Host Workstation Node Component (PC + Primary Screen + StageLink Hub)
 const LiveHostNode: React.FC<{ data: any }> = ({ data }) => {
   const { flashDisplay, setTestPattern, selectLiveElement } = useRigStore();
   const primaryDisplay = data.primaryDisplay;
   const externalDisplays = data.externalDisplays || [];
+  const stageSlots = data.stageSlots || [];
   const cameras = data.cameras || [];
 
   return (
     <div
       onClick={() => primaryDisplay && selectLiveElement('node', primaryDisplay.id)}
-      className="w-96 rounded-2xl bg-[var(--bg-card)] border-2 border-cyan-500/70 shadow-2xl overflow-hidden font-sans text-[var(--text-primary)] select-none cursor-pointer hover:border-cyan-400 transition relative"
+      className="w-96 rounded-2xl bg-[var(--bg-card)] border-2 border-[var(--badge-cyan-border)] shadow-2xl overflow-hidden font-sans text-[var(--text-primary)] select-none cursor-pointer hover:border-[var(--accent-cyan)] transition relative"
     >
-      {/* Target Input Handles from Cameras on the left */}
       {cameras.map((cam: any) => (
         <Handle
           key={cam.id}
@@ -128,37 +124,35 @@ const LiveHostNode: React.FC<{ data: any }> = ({ data }) => {
         />
       ))}
 
-      {/* Node Header */}
       <div className="p-3.5 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-400">
+          <div className="w-8 h-8 rounded-xl bg-[var(--badge-cyan-bg)] border border-[var(--badge-cyan-border)] flex items-center justify-center text-[var(--accent-cyan)]">
             <Laptop className="w-4 h-4" />
           </div>
           <div>
-            <div className="font-bold text-xs tracking-wide text-cyan-300 uppercase font-mono">
+            <div className="font-bold text-xs tracking-wide text-[var(--badge-cyan-text)] uppercase font-mono">
               HOST WORKSTATION & PRIMARY SCREEN
             </div>
             <div className="text-[10px] text-[var(--text-muted)] font-mono">
-              Local Operating System & GPU Hub
+              Local OS, GPU & StageLink Wireless Hub
             </div>
           </div>
         </div>
-        <div className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="px-2 py-0.5 rounded-full bg-[var(--badge-emerald-bg)] border border-[var(--badge-emerald-border)] text-[var(--badge-emerald-text)] text-[10px] font-mono font-bold flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-emerald)] animate-pulse" />
           <span>ACTIVE</span>
         </div>
       </div>
 
-      {/* Built-in Primary Screen Details */}
       <div className="p-4 space-y-3 font-mono">
         {primaryDisplay ? (
           <div className="p-3 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)]">
-                <Monitor className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Screen 1: {primaryDisplay.customAlias || primaryDisplay.name}</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)] truncate">
+                <Monitor className="w-3.5 h-3.5 text-[var(--accent-cyan)] shrink-0" />
+                <span className="truncate">Screen 1: {primaryDisplay.customAlias || primaryDisplay.name}</span>
               </div>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-bold">
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold shrink-0">
                 PRIMARY
               </span>
             </div>
@@ -178,9 +172,9 @@ const LiveHostNode: React.FC<{ data: any }> = ({ data }) => {
                   e.stopPropagation();
                   flashDisplay(primaryDisplay.id);
                 }}
-                className="flex-1 py-1.5 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold transition flex items-center justify-center gap-1"
+                className="flex-1 py-1.5 px-2 rounded-lg bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border border-[var(--badge-amber-border)] text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
               >
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <Zap className="w-3.5 h-3.5" />
                 <span>Flash Screen</span>
               </button>
 
@@ -189,9 +183,9 @@ const LiveHostNode: React.FC<{ data: any }> = ({ data }) => {
                   e.stopPropagation();
                   setTestPattern(primaryDisplay.id, 'smpte');
                 }}
-                className="flex-1 py-1.5 px-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold transition flex items-center justify-center gap-1"
+                className="flex-1 py-1.5 px-2 rounded-lg bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
               >
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <Sparkles className="w-3.5 h-3.5" />
                 <span>Test Pattern</span>
               </button>
             </div>
@@ -200,12 +194,11 @@ const LiveHostNode: React.FC<{ data: any }> = ({ data }) => {
           <div className="text-xs text-[var(--text-muted)] italic">Primary screen detecting...</div>
         )}
 
-        {/* Camera Ingest Ports */}
         {cameras.length > 0 && (
           <div className="pt-2 border-t border-[var(--border-color)] space-y-1.5">
             <div className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-bold flex items-center justify-between">
               <span>Camera Video Ingests ({cameras.length})</span>
-              <span className="text-amber-400">Capture Input</span>
+              <span className="text-[var(--accent-amber)]">Capture Input</span>
             </div>
 
             {cameras.map((cam: any) => (
@@ -213,24 +206,23 @@ const LiveHostNode: React.FC<{ data: any }> = ({ data }) => {
                 key={cam.id}
                 className="relative flex items-center justify-between bg-[var(--bg-subcard)] px-3 py-1.5 rounded-lg border border-[var(--border-color)] text-xs"
               >
-                <div className="flex items-center gap-2 text-[var(--text-primary)]">
-                  <Camera className="w-3.5 h-3.5 text-amber-400" />
+                <div className="flex items-center gap-2 text-[var(--text-primary)] truncate">
+                  <Camera className="w-3.5 h-3.5 text-[var(--accent-amber)] shrink-0" />
                   <span className="font-medium text-[11px] truncate max-w-[190px]">
                     From {cam.customAlias || cam.name}
                   </span>
                 </div>
-                <span className="text-[10px] text-amber-400 font-bold">{cam.portType}</span>
+                <span className="text-[10px] text-[var(--accent-amber)] font-bold">{cam.portType}</span>
               </div>
             ))}
           </div>
         )}
 
-        {/* Output Ports Connecting to External Displays */}
         {externalDisplays.length > 0 && (
           <div className="pt-2 border-t border-[var(--border-color)] space-y-1.5">
             <div className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-bold flex items-center justify-between">
               <span>Connected Video Ports ({externalDisplays.length})</span>
-              <span className="text-cyan-400">GPU Output</span>
+              <span className="text-[var(--accent-cyan)]">GPU Output</span>
             </div>
 
             {externalDisplays.map((disp: any) => (
@@ -245,11 +237,10 @@ const LiveHostNode: React.FC<{ data: any }> = ({ data }) => {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1 text-[10px] text-cyan-400 font-bold">
+                <div className="flex items-center gap-1 text-[10px] text-[var(--accent-cyan)] font-bold">
                   <span>{disp.portType}</span>
                 </div>
 
-                {/* ReactFlow Source Handle on the right */}
                 <Handle
                   type="source"
                   position={Position.Right}
@@ -261,6 +252,132 @@ const LiveHostNode: React.FC<{ data: any }> = ({ data }) => {
             ))}
           </div>
         )}
+
+        {stageSlots.length > 0 && (
+          <div className="pt-2 border-t border-[var(--border-color)] space-y-1.5">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-bold flex items-center justify-between">
+              <span>Wireless StageLink Feeds ({stageSlots.length})</span>
+              <span className="text-[var(--accent-emerald)]">LAN :8765</span>
+            </div>
+
+            {stageSlots.map((slot: any) => (
+              <div
+                key={slot.id}
+                className="relative flex items-center justify-between bg-[var(--bg-subcard)] px-3 py-2 rounded-lg border border-[var(--border-color)] text-xs"
+              >
+                <div className="flex items-center gap-2 text-[var(--text-primary)] min-w-0">
+                  <Radio className="w-3.5 h-3.5 text-[var(--accent-cyan)] shrink-0" />
+                  <span className="font-medium text-[11px] truncate max-w-[190px]">
+                    To {slot.name}
+                  </span>
+                </div>
+                <span className="text-[10px] text-[var(--accent-emerald)] font-bold shrink-0">
+                  {slot.source_mode}
+                </span>
+
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={`out-stage-${slot.id}`}
+                  className="!bg-emerald-400 !border-2 !border-[var(--bg-card)] !w-3.5 !h-3.5"
+                  style={{ right: -7 }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Custom Wireless StageLink Sink Node Component
+const LiveStageLinkNode: React.FC<{ data: any }> = ({ data }) => {
+  const { selectLiveElement, flashStageLinkSlot, openQrForStageSlot, setStageLinkSlotFreeze } = useRigStore();
+  const slot = data.slot;
+  if (!slot) return null;
+
+  return (
+    <div
+      onClick={() => selectLiveElement('node', `stage-node-${slot.id}`)}
+      className="w-80 rounded-2xl bg-[var(--bg-card)] border-2 border-[var(--badge-emerald-border)] shadow-2xl overflow-hidden font-sans text-[var(--text-primary)] select-none relative cursor-pointer hover:border-[var(--accent-cyan)] transition"
+    >
+      <Handle
+        type="target"
+        position={Position.Left}
+        id={`in-stage-${slot.id}`}
+        className="!bg-emerald-400 !border-2 !border-[var(--bg-card)] !w-3.5 !h-3.5"
+        style={{ left: -7 }}
+      />
+
+      <div className="p-3.5 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <Radio className="w-4 h-4 text-[var(--accent-emerald)] animate-pulse shrink-0" />
+          <span className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-primary)] truncate">
+            {slot.name}
+          </span>
+        </div>
+        <span className="text-[9px] px-2 py-0.5 rounded font-mono font-bold uppercase border bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border-[var(--badge-cyan-border)] shrink-0">
+          {slot.source_mode}
+        </span>
+      </div>
+
+      <div className="p-4 space-y-3 font-mono">
+        <div className="flex items-center justify-between text-xs gap-2">
+          <div className="text-[var(--text-muted)] truncate">{slot.primary_source_label}</div>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)] shrink-0">
+            📍 {slot.stage_zone}
+          </span>
+        </div>
+
+        <div className="p-2.5 rounded-xl bg-[var(--badge-emerald-bg)] border border-[var(--badge-emerald-border)] flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1.5 text-[var(--badge-emerald-text)] font-bold">
+            <Users className="w-3.5 h-3.5" />
+            <span>
+              {slot.connected_clients > 0
+                ? `${slot.connected_clients} TABLET${slot.connected_clients > 1 ? 'S' : ''} LIVE`
+                : 'READY FOR QR SCAN'}
+            </span>
+          </div>
+          <span className="text-[10px] text-[var(--badge-emerald-text)] font-bold">
+            {slot.target_fps} FPS
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-1.5 pt-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              openQrForStageSlot(slot.id);
+            }}
+            className="py-1.5 px-2 rounded-lg bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <QrCode className="w-3 h-3" />
+            <span>QR</span>
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              flashStageLinkSlot(slot.id);
+            }}
+            className="py-1.5 px-2 rounded-lg bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border border-[var(--badge-amber-border)] text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Zap className="w-3 h-3" />
+            <span>Flash</span>
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setStageLinkSlotFreeze(slot.id, !slot.is_frozen);
+            }}
+            className="py-1.5 px-2 rounded-lg bg-[var(--bg-subcard)] text-[var(--text-primary)] border border-[var(--border-color)] text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Snowflake className="w-3 h-3" />
+            <span>{slot.is_frozen ? 'Unfrz' : 'Freeze'}</span>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -277,9 +394,8 @@ const LiveDisplayNode: React.FC<{ data: any }> = ({ data }) => {
   return (
     <div
       onClick={() => selectLiveElement('node', `disp-node-${display.id}`)}
-      className="w-80 rounded-2xl bg-[var(--bg-card)] border-2 border-blue-500/60 shadow-2xl overflow-hidden font-sans text-[var(--text-primary)] select-none relative cursor-pointer hover:border-cyan-400 transition"
+      className="w-80 rounded-2xl bg-[var(--bg-card)] border-2 border-[var(--badge-cyan-border)] shadow-2xl overflow-hidden font-sans text-[var(--text-primary)] select-none relative cursor-pointer hover:border-[var(--accent-cyan)] transition"
     >
-      {/* Target Input Handle from Host PC on the left */}
       <Handle
         type="target"
         position={Position.Left}
@@ -288,7 +404,6 @@ const LiveDisplayNode: React.FC<{ data: any }> = ({ data }) => {
         style={{ left: -7 }}
       />
 
-      {/* Outgoing Handle to Splitter if branched */}
       {data.hasBranch && (
         <Handle
           type="source"
@@ -299,13 +414,12 @@ const LiveDisplayNode: React.FC<{ data: any }> = ({ data }) => {
         />
       )}
 
-      {/* Card Header */}
       <div className="p-3.5 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between">
         <div className="flex items-center gap-2">
           {isWireless ? (
-            <Wifi className="w-4 h-4 text-amber-400 animate-pulse" />
+            <Wifi className="w-4 h-4 text-[var(--accent-amber)] animate-pulse" />
           ) : (
-            <Monitor className="w-4 h-4 text-blue-400" />
+            <Monitor className="w-4 h-4 text-[var(--accent-cyan)]" />
           )}
           <span className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
             Screen {display.osIndex}: {isWireless ? 'Wireless Screen' : 'External Display'}
@@ -314,21 +428,20 @@ const LiveDisplayNode: React.FC<{ data: any }> = ({ data }) => {
         <span
           className={`text-[9px] px-2 py-0.5 rounded font-mono font-bold uppercase border ${
             isWireless
-              ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-              : 'bg-blue-500/20 text-blue-400 border-blue-500/40'
+              ? 'bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border-[var(--badge-amber-border)]'
+              : 'bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border-[var(--badge-cyan-border)]'
           }`}
         >
           {display.portType}
         </span>
       </div>
 
-      {/* Card Body */}
       <div className="p-4 space-y-3 font-mono">
-        <div className="flex items-center justify-between text-xs">
-          <div className="text-[var(--text-primary)] font-bold truncate max-w-[170px]">
+        <div className="flex items-center justify-between text-xs gap-2">
+          <div className="text-[var(--text-primary)] font-bold truncate">
             {display.customAlias || display.name}
           </div>
-          <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)]">
+          <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)] shrink-0">
             📍 {display.stageZone}
           </span>
         </div>
@@ -337,40 +450,37 @@ const LiveDisplayNode: React.FC<{ data: any }> = ({ data }) => {
           {display.vendor} {display.model}
         </div>
 
-        {/* Live Signal Telemetry */}
-        <div className="p-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/40 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2 text-emerald-400 font-bold">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+        <div className="p-2.5 rounded-xl bg-[var(--badge-emerald-bg)] border border-[var(--badge-emerald-border)] flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 text-[var(--badge-emerald-text)] font-bold">
+            <CheckCircle2 className="w-4 h-4" />
             <span>SIGNAL LOCKED</span>
           </div>
-          <span className="text-[10px] text-emerald-300 font-bold">
+          <span className="text-[10px] text-[var(--badge-emerald-text)] font-bold">
             {display.refreshRateHz ? `${display.refreshRateHz} Hz` : '60 Hz'}
           </span>
         </div>
 
-        {/* Virtual Splitter Badge */}
         {data.hasBranch && data.branch && (
-          <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5 text-amber-400 font-bold truncate max-w-[190px]">
+          <div className="p-2.5 rounded-xl bg-[var(--badge-amber-bg)] border border-[var(--badge-amber-border)] flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1.5 text-[var(--badge-amber-text)] font-bold truncate max-w-[190px]">
               <Split className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">{data.branch.splitterModel}</span>
             </div>
-            <span className="text-[10px] text-amber-300 font-bold shrink-0">
+            <span className="text-[10px] text-[var(--badge-amber-text)] font-bold shrink-0">
               {data.branch.downstreamDisplays.length} TVs
             </span>
           </div>
         )}
 
-        {/* Action Controls */}
         <div className="grid grid-cols-2 gap-2 pt-1">
           <button
             onClick={(e) => {
               e.stopPropagation();
               flashDisplay(display.id);
             }}
-            className="py-1.5 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold transition flex items-center justify-center gap-1"
+            className="py-1.5 px-2 rounded-lg bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border border-[var(--badge-amber-border)] text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
           >
-            <Zap className="w-3 h-3 text-amber-400" />
+            <Zap className="w-3 h-3" />
             <span>Flash Screen</span>
           </button>
 
@@ -379,9 +489,9 @@ const LiveDisplayNode: React.FC<{ data: any }> = ({ data }) => {
               e.stopPropagation();
               setTestPattern(display.id, 'smpte');
             }}
-            className="py-1.5 px-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold transition flex items-center justify-center gap-1"
+            className="py-1.5 px-2 rounded-lg bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
           >
-            <Sparkles className="w-3 h-3 text-cyan-400" />
+            <Sparkles className="w-3 h-3" />
             <span>Test Pattern</span>
           </button>
         </div>
@@ -399,7 +509,7 @@ const LiveSplitterNode: React.FC<{ data: any }> = ({ data }) => {
   return (
     <div
       onClick={() => openBranchModal(branch.parentDisplayId)}
-      className="w-72 rounded-2xl bg-[var(--bg-card)] border-2 border-amber-500/80 shadow-2xl overflow-hidden font-sans text-[var(--text-primary)] select-none relative cursor-pointer hover:border-amber-400 transition"
+      className="w-72 rounded-2xl bg-[var(--bg-card)] border-2 border-[var(--badge-amber-border)] shadow-2xl overflow-hidden font-sans text-[var(--text-primary)] select-none relative cursor-pointer hover:border-[var(--accent-amber)] transition"
     >
       <Handle
         type="target"
@@ -411,12 +521,12 @@ const LiveSplitterNode: React.FC<{ data: any }> = ({ data }) => {
 
       <div className="p-3 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Split className="w-4 h-4 text-amber-400" />
+          <Split className="w-4 h-4 text-[var(--accent-amber)]" />
           <span className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
             {branch.splitterType.replace('_', ' ')}
           </span>
         </div>
-        <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold uppercase border bg-amber-500/20 text-amber-400 border-amber-500/40">
+        <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold uppercase border bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border-[var(--badge-amber-border)]">
           SPLITTER / DA
         </span>
       </div>
@@ -427,9 +537,9 @@ const LiveSplitterNode: React.FC<{ data: any }> = ({ data }) => {
         </div>
         <div className="text-[10px] text-[var(--text-muted)] flex items-center justify-between">
           <span>Medium: {branch.cableMedium.replace('_', ' ')}</span>
-          <span className="text-amber-400 font-bold">{branch.downstreamDisplays.length} Outputs</span>
+          <span className="text-[var(--accent-amber)] font-bold">{branch.downstreamDisplays.length} Outputs</span>
         </div>
-        <div className="p-2 rounded-lg bg-amber-950/30 border border-amber-500/30 flex items-center justify-between text-[10px] text-amber-300">
+        <div className="p-2 rounded-lg bg-[var(--badge-amber-bg)] border border-[var(--badge-amber-border)] flex items-center justify-between text-[10px] text-[var(--badge-amber-text)] font-bold">
           <span>1 IN ➔ {branch.downstreamDisplays.length} OUT ACTIVE</span>
         </div>
       </div>
@@ -456,7 +566,7 @@ const LiveDownstreamDisplayNode: React.FC<{ data: any }> = ({ data }) => {
   if (!tv) return null;
 
   return (
-    <div className="w-72 rounded-2xl bg-[var(--bg-card)] border-2 border-cyan-500/70 shadow-2xl overflow-hidden font-sans text-[var(--text-primary)] select-none relative">
+    <div className="w-72 rounded-2xl bg-[var(--bg-card)] border-2 border-[var(--badge-cyan-border)] shadow-2xl overflow-hidden font-sans text-[var(--text-primary)] select-none relative">
       <Handle
         type="target"
         position={Position.Left}
@@ -467,12 +577,12 @@ const LiveDownstreamDisplayNode: React.FC<{ data: any }> = ({ data }) => {
 
       <div className="p-3 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Tv className="w-4 h-4 text-cyan-400" />
+          <Tv className="w-4 h-4 text-[var(--accent-cyan)]" />
           <span className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-primary)] truncate max-w-[150px]">
             {tv.customAlias || tv.name}
           </span>
         </div>
-        <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold uppercase border bg-cyan-500/20 text-cyan-400 border-cyan-500/40">
+        <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold uppercase border bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border-[var(--badge-cyan-border)]">
           BRANCH TV
         </span>
       </div>
@@ -485,12 +595,12 @@ const LiveDownstreamDisplayNode: React.FC<{ data: any }> = ({ data }) => {
 
         <div className="flex items-center justify-between text-[11px]">
           <span className="text-[var(--text-muted)]">Cable Run:</span>
-          <span className="font-bold text-amber-300">📏 {tv.cableLengthMeters}m ({tv.portType.replace('_', ' ')})</span>
+          <span className="font-bold text-[var(--accent-amber)]">📏 {tv.cableLengthMeters}m ({tv.portType.replace('_', ' ')})</span>
         </div>
 
-        <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between text-[10px] text-emerald-300">
+        <div className="p-2 rounded-lg bg-[var(--badge-emerald-bg)] border border-[var(--badge-emerald-border)] flex items-center justify-between text-[10px] text-[var(--badge-emerald-text)]">
           <div className="flex items-center gap-1.5 font-bold">
-            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+            <CheckCircle2 className="w-3 h-3" />
             <span>MIRRORED SIGNAL</span>
           </div>
           <span className="text-[9px] text-[var(--text-muted)] font-mono">
@@ -498,20 +608,19 @@ const LiveDownstreamDisplayNode: React.FC<{ data: any }> = ({ data }) => {
           </span>
         </div>
 
-        {/* Action triggers */}
         <div className="grid grid-cols-2 gap-1.5 pt-1">
           <button
             onClick={() => parentDisplay && flashDisplay(parentDisplay.id)}
-            className="py-1 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+            className="py-1 px-2 rounded-lg bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border border-[var(--badge-amber-border)] text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
           >
-            <Zap className="w-3 h-3 text-amber-400" />
+            <Zap className="w-3 h-3" />
             <span>Flash</span>
           </button>
           <button
             onClick={() => parentDisplay && openTestPatternModal(parentDisplay.id)}
-            className="py-1 px-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+            className="py-1 px-2 rounded-lg bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
           >
-            <Sparkles className="w-3 h-3 text-cyan-400" />
+            <Sparkles className="w-3 h-3" />
             <span>Pattern</span>
           </button>
         </div>
@@ -524,6 +633,7 @@ const nodeTypes = {
   liveCameraNode: LiveCameraNode,
   liveHostNode: LiveHostNode,
   liveDisplayNode: LiveDisplayNode,
+  liveStageLinkNode: LiveStageLinkNode,
   liveSplitterNode: LiveSplitterNode,
   liveDownstreamNode: LiveDownstreamDisplayNode,
 };
@@ -532,8 +642,13 @@ export const LiveMapCanvas: React.FC = () => {
   const {
     liveDisplays,
     liveCameras,
+    stageLinkSlots,
     refreshLiveDisplays,
     refreshLiveCameras,
+    refreshStageLinkSlots,
+    refreshOsWindows,
+    openStageLinkModal,
+    recallStrayOsWindows,
     resetAllDisplaysToDefault,
     forkLiveRigToPlanner,
     selectLiveElement,
@@ -544,11 +659,11 @@ export const LiveMapCanvas: React.FC = () => {
     openBranchModal,
   } = useRigStore();
 
-  const [liveMapRightWidth, setLiveMapRightWidth] = React.useState(340);
-  const [isDraggingRight, setIsDraggingRight] = React.useState(false);
+  const [liveMapRightWidth, setLiveMapRightWidth] = useState(340);
+  const [isDraggingRight, setIsDraggingRight] = useState(false);
+  const [recallMsg, setRecallMsg] = useState<string | null>(null);
 
-  // Resizable Right Sidebar Mouse Drag Engine
-  React.useEffect(() => {
+  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDraggingRight) {
         setLiveMapRightWidth(Math.max(260, Math.min(600, window.innerWidth - e.clientX)));
@@ -565,7 +680,7 @@ export const LiveMapCanvas: React.FC = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDraggingRight, setLiveMapRightWidth]);
+  }, [isDraggingRight]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -596,7 +711,6 @@ export const LiveMapCanvas: React.FC = () => {
         data: { camera: cam },
       });
 
-      // Edge from Camera to Host PC
       newEdges.push({
         id: `edge-cam-${cam.id}`,
         source: camNodeId,
@@ -622,7 +736,10 @@ export const LiveMapCanvas: React.FC = () => {
 
     // 2. Host PC (in the middle)
     const hostX = visibleCameras.length > 0 ? 460 : 100;
-    const hostY = Math.max(120, Math.max(externalDisplays.length, visibleCameras.length) * 80);
+    const hostY = Math.max(
+      120,
+      Math.max(externalDisplays.length + stageLinkSlots.length, visibleCameras.length) * 80
+    );
     const hostPosition = positionMap['host-pc'] || { x: hostX, y: hostY };
 
     newNodes.push({
@@ -632,15 +749,17 @@ export const LiveMapCanvas: React.FC = () => {
       data: {
         primaryDisplay,
         externalDisplays,
+        stageSlots: stageLinkSlots,
         cameras: visibleCameras,
       },
     });
+
+    const sinkX = visibleCameras.length > 0 ? 940 : 580;
 
     // 3. External Displays (on the right)
     externalDisplays.forEach((disp, idx) => {
       const nodeId = `disp-node-${disp.id}`;
       const defaultY = 80 + idx * 260;
-      const sinkX = visibleCameras.length > 0 ? 940 : 580;
       const pos = positionMap[nodeId] || { x: sinkX, y: defaultY };
 
       const branch = distributionBranches[disp.id];
@@ -657,7 +776,6 @@ export const LiveMapCanvas: React.FC = () => {
         },
       });
 
-      // Edge from Host PC to Display
       newEdges.push({
         id: `edge-host-${disp.id}`,
         source: 'host-pc',
@@ -680,7 +798,6 @@ export const LiveMapCanvas: React.FC = () => {
         labelBgBorderRadius: 4,
       });
 
-      // 4. If this display feed is branched (e.g. 1x4 Splitter over CAT6)
       if (hasBranch && branch) {
         const splitterNodeId = `splitter-node-${disp.id}`;
         const splitterPos = positionMap[splitterNodeId] || { x: pos.x + 360, y: pos.y };
@@ -695,7 +812,6 @@ export const LiveMapCanvas: React.FC = () => {
           },
         });
 
-        // Edge from Display to Splitter
         newEdges.push({
           id: `edge-branch-${disp.id}`,
           source: nodeId,
@@ -703,22 +819,15 @@ export const LiveMapCanvas: React.FC = () => {
           target: splitterNodeId,
           targetHandle: `in-splitter-${disp.id}`,
           animated: true,
-          style: {
-            stroke: '#F59E0B',
-            strokeWidth: 2.5,
-          },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#F59E0B',
-          },
-          label: `Splitter Input (HDMI)`,
+          style: { stroke: '#F59E0B', strokeWidth: 2.5 },
+          markerEnd: { type: MarkerType.ArrowClosed, color: '#F59E0B' },
+          label: 'Splitter Input (HDMI)',
           labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'monospace', fontWeight: 600 },
           labelBgStyle: { fill: 'var(--bg-subcard)', fillOpacity: 0.95 },
           labelBgPadding: [6, 3] as [number, number],
           labelBgBorderRadius: 4,
         });
 
-        // Downstream TVs connected to splitter outputs
         const tvCount = branch.downstreamDisplays.length;
         branch.downstreamDisplays.forEach((tv, tvIdx) => {
           const tvNodeId = `downstream-node-${tv.id}`;
@@ -729,14 +838,9 @@ export const LiveMapCanvas: React.FC = () => {
             id: tvNodeId,
             type: 'liveDownstreamNode',
             position: tvPos,
-            data: {
-              tv,
-              parentDisplay: disp,
-              branch,
-            },
+            data: { tv, parentDisplay: disp, branch },
           });
 
-          // Edge from Splitter to Downstream TV
           newEdges.push({
             id: `edge-splitter-to-${tv.id}`,
             source: splitterNodeId,
@@ -744,14 +848,8 @@ export const LiveMapCanvas: React.FC = () => {
             target: tvNodeId,
             targetHandle: `in-downstream-${tv.id}`,
             animated: true,
-            style: {
-              stroke: '#10B981',
-              strokeWidth: 2,
-            },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: '#10B981',
-            },
+            style: { stroke: '#10B981', strokeWidth: 2 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#10B981' },
             label: `${tv.cableLengthMeters}m ${branch.cableMedium.replace('_', ' ')}`,
             labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'monospace', fontWeight: 600 },
             labelBgStyle: { fill: 'var(--bg-subcard)', fillOpacity: 0.95 },
@@ -762,9 +860,46 @@ export const LiveMapCanvas: React.FC = () => {
       }
     });
 
+    // 4. Wireless StageLink Sink Nodes (below External Displays)
+    stageLinkSlots.forEach((slot, sIdx) => {
+      const stageNodeId = `stage-node-${slot.id}`;
+      const defaultY = 80 + (externalDisplays.length + sIdx) * 260;
+      const pos = positionMap[stageNodeId] || { x: sinkX, y: defaultY };
+
+      newNodes.push({
+        id: stageNodeId,
+        type: 'liveStageLinkNode',
+        position: pos,
+        data: { slot },
+      });
+
+      newEdges.push({
+        id: `edge-stage-${slot.id}`,
+        source: 'host-pc',
+        sourceHandle: `out-stage-${slot.id}`,
+        target: stageNodeId,
+        targetHandle: `in-stage-${slot.id}`,
+        animated: true,
+        style: {
+          stroke: '#10B981',
+          strokeWidth: 2.5,
+          strokeDasharray: '6 4',
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#10B981',
+        },
+        label: `StageLink Wi-Fi • ${slot.source_mode} @ ${slot.target_fps}FPS`,
+        labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'monospace', fontWeight: 600 },
+        labelBgStyle: { fill: 'var(--bg-subcard)', fillOpacity: 0.95 },
+        labelBgPadding: [6, 3] as [number, number],
+        labelBgBorderRadius: 4,
+      });
+    });
+
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [liveDisplays, liveCameras, distributionBranches]);
+  }, [liveDisplays, liveCameras, stageLinkSlots, distributionBranches]);
 
   return (
     <div className="w-full h-full flex overflow-hidden relative bg-[var(--bg-primary)]">
@@ -778,7 +913,9 @@ export const LiveMapCanvas: React.FC = () => {
           onNodeClick={(e, node) => {
             e.stopPropagation();
             if (node.id === 'host-pc') {
-              const primary = liveDisplays.find((d) => d.customAlias.includes('Primary') || d.osIndex === 1) || liveDisplays[0];
+              const primary =
+                liveDisplays.find((d) => d.customAlias.includes('Primary') || d.osIndex === 1) ||
+                liveDisplays[0];
               if (primary) selectLiveElement('node', primary.id);
             } else if (node.id.startsWith('splitter-node-')) {
               const dispId = node.id.replace('splitter-node-', '');
@@ -809,34 +946,63 @@ export const LiveMapCanvas: React.FC = () => {
           <Background color="var(--border-color)" gap={20} size={1} />
           <Controls className="react-flow__controls" />
           <MiniMap
-            nodeColor={(n) => (n.id.startsWith('cam-') ? '#F59E0B' : n.id === 'host-pc' ? '#06B6D4' : '#3B82F6')}
+            nodeColor={(n) =>
+              n.id.startsWith('cam-')
+                ? '#F59E0B'
+                : n.id.startsWith('stage-')
+                ? '#10B981'
+                : n.id === 'host-pc'
+                ? '#06B6D4'
+                : '#3B82F6'
+            }
             className="react-flow__minimap"
             maskColor="rgba(0,0,0,0.6)"
           />
 
-          {/* Top Control Bar Panel */}
-          <Panel position="top-left" className="m-4">
-            <div className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] backdrop-blur-md shadow-2xl flex items-center gap-3 text-xs font-mono text-[var(--text-primary)]">
+          {/* Top Responsive Control Bar Panel */}
+          <Panel position="top-left" className="m-3 max-w-[calc(100vw-2rem)]">
+            <div className="p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] backdrop-blur-md shadow-2xl flex flex-wrap items-center gap-2 text-xs font-mono text-[var(--text-primary)]">
               <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="font-bold text-[var(--text-primary)]">LIVE TOPOLOGY MAP</span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold">
-                  {liveCameras.length} CAMS • {liveDisplays.length} SCREENS
+                <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent-emerald)] animate-pulse" />
+                <span className="font-bold text-[var(--text-primary)]">LIVE TOPOLOGY</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold">
+                  {liveCameras.length} CAMS • {liveDisplays.length} SCREENS • {stageLinkSlots.length} STAGELINK
                 </span>
               </div>
 
-              <div className="h-4 w-[1px] bg-[var(--border-color)]" />
+              <button
+                onClick={() => openStageLinkModal(null)}
+                className="min-h-[34px] px-2.5 py-1.5 rounded-lg bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold transition flex items-center gap-1.5 cursor-pointer"
+                title="Add Wireless StageLink Confidence Monitor"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Wireless Stage</span>
+              </button>
+
+              <button
+                onClick={async () => {
+                  const n = await recallStrayOsWindows();
+                  setRecallMsg(n > 0 ? `Recalled ${n}` : 'Stage Clean');
+                  setTimeout(() => setRecallMsg(null), 2200);
+                }}
+                className="min-h-[34px] px-2.5 py-1.5 rounded-lg bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border border-[var(--badge-amber-border)] font-bold transition flex items-center gap-1.5 cursor-pointer"
+                title="Pull unpinned windows back to FOH primary screen"
+              >
+                <CornerUpLeft className="w-3.5 h-3.5" />
+                <span>{recallMsg || 'Recall Windows'}</span>
+              </button>
 
               <button
                 onClick={() => {
                   refreshLiveDisplays();
                   refreshLiveCameras();
+                  refreshOsWindows();
+                  refreshStageLinkSlots(true);
                 }}
-                className="px-3 py-1.5 rounded-md bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] text-cyan-400 font-bold transition flex items-center gap-1.5 shadow-sm border border-[var(--border-color)] cursor-pointer"
-                title="Rescan connected monitors, cameras & wireless adapters"
+                className="min-h-[34px] px-2.5 py-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] text-[var(--accent-cyan)] font-bold transition flex items-center gap-1.5 border border-[var(--border-color)] cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>Rescan Hardware</span>
+                <span>Rescan</span>
               </button>
 
               <button
@@ -845,30 +1011,44 @@ export const LiveMapCanvas: React.FC = () => {
                     resetAllDisplaysToDefault();
                   }
                 }}
-                className="px-3 py-1.5 rounded-md bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] font-bold transition flex items-center gap-1.5 shadow-sm border border-[var(--border-color)] cursor-pointer"
-                title="Clear all custom names and reset to original hardware names"
+                className="min-h-[34px] px-2.5 py-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] font-bold transition flex items-center gap-1.5 border border-[var(--border-color)] cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Reset Aliases</span>
               </button>
 
-              {/* Fork Live Rig to Planner Studio */}
               <button
                 onClick={() => {
-                  if (window.confirm('Copy this live hardware setup (cameras & displays) into Planner Studio as an editable project?')) {
+                  if (
+                    window.confirm(
+                      'Copy this live hardware setup (cameras, displays & StageLink monitors) into Planner Studio as an editable project?'
+                    )
+                  ) {
                     forkLiveRigToPlanner();
                   }
                 }}
-                className="px-3.5 py-1.5 rounded-md bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold transition flex items-center gap-1.5 shadow-md cursor-pointer"
-                title="Create an editable planning diagram from your current live hardware"
+                className="min-h-[34px] px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold transition flex items-center gap-1.5 shadow-md cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Fork Rig to Planner</span>
+                <span>Fork to Planner</span>
               </button>
             </div>
           </Panel>
         </ReactFlow>
       </div>
+
+      {/* Collapsed Rail so user can re-expand LiveMapInspector */}
+      {selectedLiveElement && liveMapInspectorDockState === 'COLLAPSED' && (
+        <div className="h-full w-12 bg-[var(--bg-header)] border-l border-[var(--border-color)] flex flex-col items-center py-4 gap-3 shrink-0 z-20">
+          <button
+            onClick={() => setLiveMapInspectorDockState('DOCKED')}
+            className="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] text-[var(--accent-cyan)] border border-[var(--border-color)] transition cursor-pointer shadow-sm"
+            title="Expand Live Inspector"
+          >
+            <PanelRightOpen className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* DOCKED Mode Right Inspector */}
       {selectedLiveElement && liveMapInspectorDockState === 'DOCKED' && (
@@ -876,7 +1056,6 @@ export const LiveMapCanvas: React.FC = () => {
           style={{ width: `${liveMapRightWidth}px` }}
           className="relative h-full border-l border-[var(--border-color)] bg-[var(--bg-header)] shrink-0 z-20 flex"
         >
-          {/* Draggable Resize Handle */}
           <div
             onMouseDown={() => setIsDraggingRight(true)}
             className={`absolute -left-1.5 top-0 bottom-0 w-3 cursor-col-resize z-30 transition-colors ${

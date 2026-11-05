@@ -65,12 +65,13 @@ pub fn enumerate_real_windows_displays() -> Vec<NativeDisplayInfo> {
                 let is_primary = (display_device.StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE) != 0;
 
                 // Check for ASUS GlideX, Spacedesk, Miracast, Duet, Splashtop, Virtual IDD
-                let is_wireless = all_info.contains("glidex") 
-                    || all_info.contains("asus") 
-                    || all_info.contains("spacedesk") 
+                let is_wireless = all_info.contains("glidex")
+                    || all_info.contains("spacedesk")
                     || all_info.contains("miracast")
-                    || all_info.contains("virtual")
-                    || all_info.contains("idd");
+                    || all_info.contains("duet")
+                    || all_info.contains("splashtop")
+                    || all_info.contains("iddcx")
+                    || all_info.contains("virtual display");
 
                 let is_explicit_hdmi = all_info.contains("hdmi");
                 let is_explicit_dp = all_info.contains("displayport") || all_info.contains("dp_");
@@ -107,13 +108,15 @@ pub fn enumerate_real_windows_displays() -> Vec<NativeDisplayInfo> {
                 };
 
                 let vendor = if is_wireless {
-                    "ASUS / Wireless".to_string()
+                    "Wireless / Virtual Display".to_string()
                 } else if monitor_string.contains("Dell") {
                     "Dell".to_string()
                 } else if monitor_string.contains("Samsung") {
                     "Samsung".to_string()
                 } else if monitor_string.contains("LG") {
                     "LG".to_string()
+                } else if monitor_string.to_lowercase().contains("asus") {
+                    "ASUS".to_string()
                 } else {
                     "Standard PnP".to_string()
                 };
@@ -405,6 +408,195 @@ pub fn capture_screen_thumbnail(_x: i32, _y: i32, _width: u32, _height: u32, _sh
 #[cfg(not(windows))]
 pub fn capture_all_displays_batch(_targets: Vec<CaptureDisplayTarget>, _show_cursor: bool) -> Vec<CapturedFrameResult> {
     Vec::new()
+}
+
+#[cfg(windows)]
+pub fn capture_screen_jpeg_raw(
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    max_target_width: u32,
+    jpeg_quality: u8,
+    show_cursor: bool,
+    prev_checksum: Option<u64>,
+) -> super::window_manager::WindowCaptureOutcome {
+    use std::io::Cursor;
+    use super::window_manager::{fnv1a_hash_64, WindowCaptureOutcome};
+    use windows_sys::Win32::Graphics::Gdi::{
+        GetDC, ReleaseDC, CreateCompatibleDC, CreateCompatibleBitmap, SelectObject,
+        DeleteDC, DeleteObject, BitBlt, GetDIBits,
+        BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS, SRCCOPY,
+    };
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        GetCursorInfo, DrawIconEx, CURSORINFO, CURSOR_SHOWING, DI_NORMAL, DI_DEFAULTSIZE,
+    };
+
+    if width == 0 || height == 0 || width > 16384 || height > 16384 {
+        return WindowCaptureOutcome::NotFound;
+    }
+
+    unsafe {
+        let hdc_screen = GetDC(std::ptr::null_mut());
+        if hdc_screen.is_null() {
+            return WindowCaptureOutcome::NotFound;
+        }
+
+        let hdc_mem = CreateCompatibleDC(hdc_screen);
+        if hdc_mem.is_null() {
+            ReleaseDC(std::ptr::null_mut(), hdc_screen);
+            return WindowCaptureOutcome::NotFound;
+        }
+
+        let h_bitmap = CreateCompatibleBitmap(hdc_screen, width as i32, height as i32);
+        if h_bitmap.is_null() {
+            DeleteDC(hdc_mem);
+            ReleaseDC(std::ptr::null_mut(), hdc_screen);
+            return WindowCaptureOutcome::NotFound;
+        }
+
+        let old_bitmap = SelectObject(hdc_mem, h_bitmap as _);
+
+        BitBlt(
+            hdc_mem,
+            0,
+            0,
+            width as i32,
+            height as i32,
+            hdc_screen,
+            x,
+            y,
+            SRCCOPY,
+        );
+
+        if show_cursor {
+            let mut ci: CURSORINFO = std::mem::zeroed();
+            ci.cbSize = std::mem::size_of::<CURSORINFO>() as u32;
+            if GetCursorInfo(&mut ci) != 0 && (ci.flags & CURSOR_SHOWING) != 0 && !ci.hCursor.is_null() {
+                let cur_x = ci.ptScreenPos.x;
+                let cur_y = ci.ptScreenPos.y;
+                if cur_x >= x && cur_x < (x + width as i32) && cur_y >= y && cur_y < (y + height as i32) {
+                    DrawIconEx(
+                        hdc_mem,
+                        cur_x - x,
+                        cur_y - y,
+                        ci.hCursor,
+                        0,
+                        0,
+                        0,
+                        std::ptr::null_mut(),
+                        DI_NORMAL | DI_DEFAULTSIZE,
+                    );
+                }
+            }
+        }
+
+        SelectObject(hdc_mem, old_bitmap);
+
+        let mut bmi: BITMAPINFO = std::mem::zeroed();
+        bmi.bmiHeader.biSize = std::mem::size_of::<BITMAPINFOHEADER>() as u32;
+        bmi.bmiHeader.biWidth = width as i32;
+        bmi.bmiHeader.biHeight = height as i32;
+        bmi.bmiHeader.biPlanes = 1;
+        bmi.bmiHeader.biBitCount = 32;
+        bmi.bmiHeader.biCompression = BI_RGB as u32;
+
+        let mut raw_bgra: Vec<u8> = vec![0; (width * height * 4) as usize];
+        let lines = GetDIBits(
+            hdc_screen,
+            h_bitmap,
+            0,
+            height,
+            raw_bgra.as_mut_ptr() as *mut _,
+            &mut bmi,
+            DIB_RGB_COLORS,
+        );
+
+        DeleteObject(h_bitmap as _);
+        DeleteDC(hdc_mem);
+        ReleaseDC(std::ptr::null_mut(), hdc_screen);
+
+        if lines == 0 {
+            return WindowCaptureOutcome::NotFound;
+        }
+
+        let clamp_max = max_target_width.clamp(320, 1920);
+        let (target_w, target_h, rgb_buffer) = if width > clamp_max {
+            let scale = clamp_max as f32 / width as f32;
+            let tw = clamp_max;
+            let th = ((height as f32 * scale).round() as u32).max(1);
+            let mut out = vec![0u8; (tw * th * 3) as usize];
+
+            let x_ratio = (width as u64 * 65536) / tw as u64;
+            let y_ratio = (height as u64 * 65536) / th as u64;
+
+            for ty in 0..th {
+                let sample_y = ((ty as u64 * y_ratio) >> 16) as u32;
+                let sy = height.saturating_sub(1).saturating_sub(sample_y) as usize;
+                let src_row_offset = sy * width as usize * 4;
+                let dst_row_offset = ty as usize * tw as usize * 3;
+
+                for tx in 0..tw {
+                    let sx = ((tx as u64 * x_ratio) >> 16) as usize;
+                    let src_idx = src_row_offset + (sx * 4);
+                    let dst_idx = dst_row_offset + (tx as usize * 3);
+
+                    out[dst_idx] = raw_bgra[src_idx + 2];
+                    out[dst_idx + 1] = raw_bgra[src_idx + 1];
+                    out[dst_idx + 2] = raw_bgra[src_idx];
+                }
+            }
+            (tw, th, out)
+        } else {
+            let mut out = vec![0u8; (width * height * 3) as usize];
+            for ty in 0..height {
+                let sy = (height - 1 - ty) as usize;
+                let src_row = sy * width as usize * 4;
+                let dst_row = ty as usize * width as usize * 3;
+                for tx in 0..width as usize {
+                    let src_idx = src_row + (tx * 4);
+                    let dst_idx = dst_row + (tx * 3);
+                    out[dst_idx] = raw_bgra[src_idx + 2];
+                    out[dst_idx + 1] = raw_bgra[src_idx + 1];
+                    out[dst_idx + 2] = raw_bgra[src_idx];
+                }
+            }
+            (width, height, out)
+        };
+
+        let checksum = fnv1a_hash_64(&rgb_buffer);
+        if prev_checksum == Some(checksum) {
+            return WindowCaptureOutcome::Unchanged { checksum };
+        }
+
+        let mut jpeg_bytes: Vec<u8> = Vec::with_capacity((target_w * target_h / 4) as usize);
+        let mut cursor_writer = Cursor::new(&mut jpeg_bytes);
+        let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut cursor_writer, jpeg_quality.clamp(40, 95));
+        if encoder.encode(&rgb_buffer, target_w, target_h, image::ExtendedColorType::Rgb8).is_err() {
+            return WindowCaptureOutcome::NotFound;
+        }
+
+        WindowCaptureOutcome::Frame {
+            jpeg_bytes,
+            width: target_w,
+            height: target_h,
+            checksum,
+        }
+    }
+}
+
+#[cfg(not(windows))]
+pub fn capture_screen_jpeg_raw(
+    _x: i32,
+    _y: i32,
+    _width: u32,
+    _height: u32,
+    _max_target_width: u32,
+    _jpeg_quality: u8,
+    _show_cursor: bool,
+    _prev_checksum: Option<u64>,
+) -> super::window_manager::WindowCaptureOutcome {
+    super::window_manager::WindowCaptureOutcome::NotFound
 }
 
 #[cfg(test)]

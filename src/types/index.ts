@@ -221,6 +221,7 @@ export interface AppSettings {
   presentationKeepAwake: boolean;
   companionPort: number;
   companionPin: string;
+  companionPinLockEnabled?: boolean;
   oscEnabled?: boolean;
   oscPort?: number;
   propresenterSyncEnabled?: boolean;
@@ -250,3 +251,88 @@ export interface EventLogInput {
   details?: string;
 }
 
+
+export interface NetworkAdapterInfo {
+  name: string;
+  ip: string;
+  kind: 'WIFI' | 'HOTSPOT' | 'USB_TETHER' | 'ETHERNET' | 'VIRTUAL' | string;
+  is_preferred: boolean;
+}
+
+export interface CompanionServerStatus {
+  is_running: boolean;
+  port: number;
+  host: string;
+  interfaces: NetworkAdapterInfo[];
+  active_pin: string;
+  session_token: string;
+  pin_lock_enabled: boolean;
+  client_count: number;
+}
+
+export interface CapturableWindow {
+  hwnd_id: string;
+  title: string;
+  process_name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  is_minimized: boolean;
+  is_maximized: boolean;
+  is_borderless_snapped: boolean;
+  is_pinned_stage: boolean;
+  is_xteon_self: boolean;
+  display_id?: string | null;
+  display_os_index?: number | null;
+}
+
+export interface StageWhisperPayload {
+  id: string;
+  message: string;
+  tone: 'INFO' | 'WARN' | 'CRITICAL';
+  created_at_ms: number;
+  expires_at_ms?: number | null;
+}
+
+export type StageLinkSourceMode = 'WINDOW' | 'DISPLAY' | 'SPLIT';
+export type StageSplitLayout = 'SIDE_70_30' | 'SIDE_50_50' | 'TOP_BOTTOM' | 'PIP_CORNER';
+
+export interface StageLinkSlot {
+  id: string;
+  name: string;
+  stage_zone: string;
+  source_mode: StageLinkSourceMode;
+  primary_source_id: string;
+  primary_source_label: string;
+  secondary_source_id?: string | null;
+  secondary_source_label?: string | null;
+  split_layout: StageSplitLayout;
+  target_fps: number;
+  max_width: number;
+  jpeg_quality: number;
+  is_frozen: boolean;
+  is_blackout: boolean;
+  is_flashing: boolean;
+  active_whisper?: StageWhisperPayload | null;
+  connected_clients: number;
+  source_minimized: boolean;
+  source_missing: boolean;
+  live_fps: number;
+  last_frame_kb: number;
+  preview_data_url?: string | null;
+}
+
+export interface UpsertStageSlotInput {
+  id?: string;
+  name: string;
+  stage_zone: string;
+  source_mode: StageLinkSourceMode;
+  primary_source_id: string;
+  primary_source_label: string;
+  secondary_source_id?: string | null;
+  secondary_source_label?: string | null;
+  split_layout?: StageSplitLayout;
+  target_fps?: number;
+  max_width?: number;
+}

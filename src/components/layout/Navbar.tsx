@@ -39,6 +39,7 @@ import {
   AlertTriangle,
   Tag,
   Printer,
+  Radio,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -72,6 +73,8 @@ export const Navbar: React.FC = () => {
     setAudioDelayModalOpen,
     printableBlueprintModalOpen,
     setPrintableBlueprintModalOpen,
+    stageLinkSlots,
+    openStageLinkModal,
   } = useRigStore();
 
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
@@ -121,15 +124,15 @@ export const Navbar: React.FC = () => {
       <div className="flex items-center gap-3">
         {/* Logo Monogram */}
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center font-mono font-black text-slate-950 text-sm shadow-[0_0_15px_rgba(6,182,212,0.4)] border border-cyan-400/40">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center font-mono font-black text-white text-sm shadow-[0_0_15px_rgba(6,182,212,0.4)] border border-cyan-400/40">
             XT
           </div>
           <div className="font-mono text-sm font-black tracking-wider text-[var(--text-primary)] flex items-center gap-1.5">
             <span>XTEON</span>
-            <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-normal">PRO</span>
+            <span className="text-[9px] px-1.5 py-0.2 rounded bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-normal">PRO</span>
             <button
               onClick={() => setUpdateModalOpen(true)}
-              className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono font-bold hover:bg-emerald-500/30 transition cursor-pointer"
+              className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--badge-emerald-bg)] text-[var(--badge-emerald-text)] border border-[var(--badge-emerald-border)] font-mono font-bold hover:opacity-90 transition cursor-pointer"
               title="Installed Version: v1.3.2 (Click to check updates)"
             >
               v1.3.2
@@ -402,7 +405,7 @@ export const Navbar: React.FC = () => {
               title="Click to rename project"
             >
               <span className="text-[var(--text-muted)] text-[10px]">Project:</span>
-              <span className="font-bold max-w-44 truncate">{projectName}</span>
+              <span className="font-bold max-w-32 xl:max-w-44 truncate">{projectName}</span>
               {isDirty && <span className="text-amber-400 font-black animate-pulse" title="Unsaved changes">*</span>}
               <Edit2 className="w-2.5 h-2.5 text-[var(--text-muted)] ml-0.5 opacity-60" />
             </div>
@@ -454,7 +457,7 @@ export const Navbar: React.FC = () => {
         {/* Mirroring Warning Indicator */}
         {isMirroringDetected && (
           <div
-            className="hidden lg:flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-mono font-bold animate-pulse"
+            className="hidden lg:flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border border-[var(--badge-amber-border)] text-[11px] font-mono font-bold animate-pulse"
             title="Display Mirroring Active: Both laptop and external display show identical desktop (Presenter notes and private windows may be visible)"
           >
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
@@ -467,7 +470,7 @@ export const Navbar: React.FC = () => {
           onClick={toggleKeepAwake}
           className={`px-2.5 py-1.5 rounded-md border text-xs font-mono transition flex items-center gap-1.5 shadow-sm cursor-pointer ${
             presentationKeepAwake
-              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 font-bold shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+              ? 'bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border-[var(--badge-amber-border)] font-bold shadow-[0_0_12px_rgba(245,158,11,0.25)]'
               : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)] hover:bg-[var(--bg-subcard)] hover:text-[var(--text-primary)]'
           }`}
           title={
@@ -526,6 +529,21 @@ export const Navbar: React.FC = () => {
           <Settings className="w-4 h-4" />
         </button>
 
+        {/* Wireless StageLink Quick Trigger */}
+        <button
+          onClick={() => openStageLinkModal(null)}
+          className="px-2.5 py-1.5 rounded-md bg-[var(--badge-cyan-bg)] hover:opacity-90 border border-[var(--badge-cyan-border)] text-xs font-mono font-bold text-[var(--badge-cyan-text)] flex items-center gap-1.5 transition shadow-sm cursor-pointer"
+          title="Create Wireless StageLink Confidence Monitor (Stream App Window / Split View to Tablet)"
+        >
+          <Radio className="w-3.5 h-3.5" />
+          <span className="hidden md:inline">StageLink</span>
+          {stageLinkSlots.length > 0 && (
+            <span className="px-1.5 py-0.2 rounded-full bg-[var(--bg-card)] text-[10px]">
+              {stageLinkSlots.length}
+            </span>
+          )}
+        </button>
+
         {/* Mobile Companion Trigger */}
         <button
           onClick={() => setMobileModalOpen(true)}
@@ -562,7 +580,7 @@ export const Navbar: React.FC = () => {
                   setThemeMenuOpen(false);
                 }}
                 className={`w-full px-2.5 py-1.5 rounded text-left flex items-center gap-2 transition cursor-pointer ${
-                  themeMode === 'DARK_FOH' ? 'bg-cyan-500/20 text-cyan-400 font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-subcard)]'
+                  themeMode === 'DARK_FOH' ? 'bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-subcard)]'
                 }`}
               >
                 <Moon className="w-3.5 h-3.5 text-purple-400" />
@@ -575,7 +593,7 @@ export const Navbar: React.FC = () => {
                   setThemeMenuOpen(false);
                 }}
                 className={`w-full px-2.5 py-1.5 rounded text-left flex items-center gap-2 transition cursor-pointer ${
-                  themeMode === 'DAYLIGHT' ? 'bg-cyan-500/20 text-cyan-400 font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-subcard)]'
+                  themeMode === 'DAYLIGHT' ? 'bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-subcard)]'
                 }`}
               >
                 <Sun className="w-3.5 h-3.5 text-amber-500" />
@@ -588,7 +606,7 @@ export const Navbar: React.FC = () => {
                   setThemeMenuOpen(false);
                 }}
                 className={`w-full px-2.5 py-1.5 rounded text-left flex items-center gap-2 transition cursor-pointer ${
-                  themeMode === 'BROADCAST' ? 'bg-cyan-500/20 text-cyan-400 font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-subcard)]'
+                  themeMode === 'BROADCAST' ? 'bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-subcard)]'
                 }`}
               >
                 <Tv className="w-3.5 h-3.5 text-cyan-400" />

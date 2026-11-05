@@ -10,6 +10,7 @@ import { FullscreenOverlayView } from './components/overlays/FullscreenOverlayVi
 import { TestPatternModal } from './components/modals/TestPatternModal';
 import { ReconciliationModal } from './components/modals/ReconciliationModal';
 import { MobileCompanionModal } from './components/modals/MobileCompanionModal';
+import { StageLinkModal } from './components/modals/StageLinkModal';
 import { AudioConsentModal } from './components/modals/AudioConsentModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { VirtualBranchModal } from './components/modals/VirtualBranchModal';
@@ -147,15 +148,15 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className={`w-screen h-screen flex flex-col overflow-hidden select-none font-sans bg-[var(--bg-primary)] text-[var(--text-primary)] ${getThemeClass()}`}>
+    <div className={`w-screen h-screen h-dvh flex flex-col overflow-hidden select-none font-sans bg-[var(--bg-primary)] text-[var(--text-primary)] ${getThemeClass()}`}>
       {/* Top Navbar */}
       <Navbar />
 
       {/* Presentation Privacy Mirroring Alert Banner */}
       {isMirroringDetected && (appSettings.alertOnDisplayMirroring ?? true) && (
-        <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between text-xs font-mono text-amber-300 z-20 shrink-0 animate-fadeIn">
+        <div className="bg-[var(--badge-amber-bg)] border-b border-[var(--badge-amber-border)] px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-[var(--badge-amber-text)] z-20 shrink-0 animate-fadeIn">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+            <AlertTriangle className="w-4 h-4 text-[var(--badge-amber-text)] shrink-0 animate-pulse" />
             <span>
               <strong>PRIVACY WARNING: Display Mirroring (Clone) Active.</strong> Your internal screen is cloned to the external display. Audience can see desktop & private windows.
             </span>
@@ -169,7 +170,7 @@ export const App: React.FC = () => {
             </button>
             <button
               onClick={dismissMirroringAlert}
-              className="p-1 rounded hover:bg-amber-500/20 text-amber-400 cursor-pointer transition"
+              className="p-1 rounded hover:bg-[var(--bg-subcard)] text-[var(--badge-amber-text)] cursor-pointer transition"
               title="Dismiss alert"
             >
               <X className="w-3.5 h-3.5" />
@@ -180,9 +181,9 @@ export const App: React.FC = () => {
 
       {/* Audio Hijack Route Alert Banner */}
       {audioNotification?.show && (
-        <div className="bg-indigo-500/15 border-b border-indigo-500/30 px-4 py-2 flex items-center justify-between text-xs font-mono text-indigo-300 z-20 shrink-0 animate-fadeIn">
+        <div className="bg-[var(--badge-cyan-bg)] border-b border-[var(--badge-cyan-border)] px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-[var(--badge-cyan-text)] z-20 shrink-0 animate-fadeIn">
           <div className="flex items-center gap-2">
-            <Volume2 className="w-4 h-4 text-indigo-400 shrink-0" />
+            <Volume2 className="w-4 h-4 text-[var(--badge-cyan-text)] shrink-0" />
             <span>
               <strong>AUDIO ROUTING NOTICE: Audio redirected to "{audioNotification.deviceName}"</strong> via HDMI handshake.
             </span>
@@ -190,13 +191,13 @@ export const App: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSettingsModalOpen(true)}
-              className="px-2.5 py-1 rounded bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-[11px] font-bold cursor-pointer transition"
+              className="px-2.5 py-1 rounded bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] border border-[var(--badge-cyan-border)] text-[11px] font-bold cursor-pointer transition text-[var(--badge-cyan-text)]"
             >
               Audio Settings
             </button>
             <button
               onClick={dismissAudioNotification}
-              className="p-1 rounded hover:bg-indigo-500/20 text-indigo-400 cursor-pointer transition"
+              className="p-1 rounded hover:bg-[var(--bg-subcard)] text-[var(--badge-cyan-text)] cursor-pointer transition"
               title="Dismiss alert"
             >
               <X className="w-3.5 h-3.5" />
@@ -317,6 +318,7 @@ export const App: React.FC = () => {
       <TestPatternModal />
       <ReconciliationModal />
       <MobileCompanionModal />
+      <StageLinkModal />
       <AudioConsentModal />
       <SettingsModal />
       <VirtualBranchModal />
