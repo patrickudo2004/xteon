@@ -67,12 +67,24 @@ jobs:
         run: npm run build
 
       - name: Run Cargo Unit Tests
+        id: cargo_tests
+        continue-on-error: true
         shell: bash
         run: |
-          cargo test --manifest-path src-tauri/Cargo.toml --verbose 2>&1 | tee cargo_test.log
+          cargo test --manifest-path src-tauri/Cargo.toml -- --nocapture 2>&1 | tee cargo_test.log
+
+      - name: Print Failure to Step Summary
+        if: steps.cargo_tests.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "## Cargo Test Error Log (${{ matrix.platform }})" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat cargo_test.log >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit 1
 
       - name: Upload Test Logs on Failure
-        if: failure()
+        if: steps.cargo_tests.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: cargo-test-log-${{ matrix.platform }}
