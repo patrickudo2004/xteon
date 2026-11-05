@@ -78,12 +78,14 @@ jobs:
         shell: bash
         run: |
           python3 -c "
+          import re
           with open('cargo_test.log', 'r', encoding='utf-8', errors='ignore') as f:
-              lines = f.readlines()
-          for l in lines[-25:]:
-              l_clean = l.strip().replace('::', '__')
-              if l_clean:
-                  print(f'::error title=RawEnd::{l_clean}')
+              text = f.read()
+          errs = re.findall(r'(?:error|failed to|caused by|panicked)[^\n]{0,200}', text, re.IGNORECASE)
+          for e in errs[:25]:
+              clean = e.strip().replace('::', '__')
+              if clean:
+                  print(f'::error title=FoundErr::{clean}')
           "
           exit 1
 
