@@ -35,75 +35,115 @@ fn sanitize_label(id: &str) -> String {
 #[tauri::command]
 fn get_connected_displays(app: tauri::AppHandle) -> Vec<NativeDisplayInfo> {
     #[cfg(windows)]
-    {
-        let displays = enumerate_real_windows_displays();
-        if !displays.is_empty() {
-            return displays;
+    let mut displays = enumerate_real_windows_displays();
+    #[cfg(not(windows))]
+    let mut displays: Vec<NativeDisplayInfo> = Vec::new();
+
+    // Native macOS (Cocoa NSScreen) and Linux (XRandR / Wayland) detection via Tauri
+    if displays.is_empty() {
+        if let Ok(monitors) = app.available_monitors() {
+            let primary = app.primary_monitor().ok().flatten();
+            let primary_name = primary.as_ref().and_then(|p| p.name().cloned());
+
+            displays = monitors
+                .into_iter()
+                .enumerate()
+                .map(|(idx, m)| {
+                    let name = m.name().cloned().unwrap_or_else(|| format!("Display {}", idx + 1));
+                    let is_primary = primary_name.as_deref() == Some(&name) || idx == 0;
+                    let size = m.size();
+                    let pos = m.position();
+
+                    let port_type = if is_primary {
+                        "INTERNAL_DISPLAY".to_string()
+                    } else if name.to_lowercase().contains("wireless")
+                        || name.to_lowercase().contains("airplay")
+                        || name.to_lowercase().contains("sidecar")
+                    {
+                        "WIRELESS".to_string()
+                    } else {
+                        "HDMI_2_0".to_string()
+                    };
+
+                    let custom_alias = if is_primary || port_type == "INTERNAL_DISPLAY" {
+                        "Host Laptop / Workstation (Built-in Screen)".to_string()
+                    } else if port_type == "WIRELESS" {
+                        "Wireless / Sidecar Display".to_string()
+                    } else {
+                        format!("External Stage Display {}", idx + 1)
+                    };
+
+                    let stage_zone = if is_primary {
+                        "FOH Control Booth".to_string()
+                    } else if port_type == "WIRELESS" {
+                        "Mobile Director / Stage".to_string()
+                    } else {
+                        "Stage Area".to_string()
+                    };
+
+                    NativeDisplayInfo {
+                        id: format!("live-disp-{}", idx + 1),
+                        os_index: (idx + 1) as u32,
+                        name: name.clone(),
+                        custom_alias,
+                        stage_zone,
+                        port_type,
+                        vendor: if cfg!(target_os = "macos") {
+                            "Apple / macOS".to_string()
+                        } else {
+                            "Linux / Wayland / X11".to_string()
+                        },
+                        model: name,
+                        serial: format!("MON-{}", idx + 1),
+                        width: size.width,
+                        height: size.height,
+                        refresh_rate_hz: 60,
+                        is_hdr: false,
+                        color_space: "sRGB / Rec.709".to_string(),
+                        status: "ONLINE".to_string(),
+                        bounds: Some(display::types::NativeDisplayBounds {
+                            x: pos.x,
+                            y: pos.y,
+                            width: size.width,
+                            height: size.height,
+                        }),
+                    }
+                })
+                .collect();
         }
     }
 
-    // Native macOS (Cocoa NSScreen) and Linux (XRandR / Wayland) detection via Tauri
-    if let Ok(monitors) = app.available_monitors() {
-        let primary = app.primary_monitor().ok().flatten();
-        let primary_name = primary.as_ref().and_then(|p| p.name().cloned());
-
-        return monitors.into_iter().enumerate().map(|(idx, m)| {
-            let name = m.name().cloned().unwrap_or_else(|| format!("Display {}", idx + 1));
-            let is_primary = primary_name.as_deref() == Some(&name) || idx == 0;
-            let size = m.size();
-            let pos = m.position();
-
-            let port_type = if is_primary {
-                "INTERNAL_DISPLAY".to_string()
-            } else if name.to_lowercase().contains("wireless") || name.to_lowercase().contains("airplay") || name.to_lowercase().contains("sidecar") {
-                "WIRELESS".to_string()
-            } else {
-                "HDMI_2_0".to_string()
-            };
-
-            let custom_alias = if is_primary || port_type == "INTERNAL_DISPLAY" {
-                "Host Laptop / Workstation (Built-in Screen)".to_string()
-            } else if port_type == "WIRELESS" {
-                "Wireless / Sidecar Display".to_string()
-            } else {
-                format!("External Stage Display {}", idx + 1)
-            };
-
-            let stage_zone = if is_primary {
-                "FOH Control Booth".to_string()
-            } else if port_type == "WIRELESS" {
-                "Mobile Director / Stage".to_string()
-            } else {
-                "Stage Area".to_string()
-            };
-
-            NativeDisplayInfo {
-                id: format!("live-disp-{}", idx + 1),
-                os_index: (idx + 1) as u32,
-                name: name.clone(),
-                custom_alias,
-                stage_zone,
-                port_type,
-                vendor: if cfg!(target_os = "macos") { "Apple / macOS".to_string() } else { "Linux / Wayland / X11".to_string() },
-                model: name,
-                serial: format!("MON-{}", idx + 1),
-                width: size.width,
-                height: size.height,
-                refresh_rate_hz: 60,
-                is_hdr: false,
-                color_space: "sRGB / Rec.709".to_string(),
-                status: "ONLINE".to_string(),
-                bounds: Some(display::types::NativeDisplayBounds {
-                    x: pos.x,
-                    y: pos.y,
-                    width: size.width,
-                    height: size.height,
-                }),
-            }
-        }).collect();
+    // Dynamically append Xteon Virtual Extended Stage Display if active
+    if let Some(win) = app.get_webview_window("xteon_virtual_display") {
+        let (pos_x, pos_y) = win.outer_position().map(|p| (p.x, p.y)).unwrap_or((1940, 0));
+        let (size_w, size_h) = win.inner_size().map(|s| (s.width, s.height)).unwrap_or((1920, 1080));
+        let next_idx = (displays.len() + 1) as u32;
+        displays.push(NativeDisplayInfo {
+            id: "display-virtual-stage".to_string(),
+            os_index: next_idx,
+            name: "Xteon Virtual Extended Display".to_string(),
+            custom_alias: "Wireless Stage Extended Monitor (Display 2)".to_string(),
+            stage_zone: "Wireless Stage / Pulpit".to_string(),
+            port_type: "VIRTUAL_STAGE_LINK".to_string(),
+            vendor: "Xteon Software".to_string(),
+            model: "Virtual Extended Display".to_string(),
+            serial: "XTEON-VIRTUAL-01".to_string(),
+            width: size_w,
+            height: size_h,
+            refresh_rate_hz: 60,
+            is_hdr: false,
+            color_space: "sRGB / Rec.709".to_string(),
+            status: "ONLINE".to_string(),
+            bounds: Some(display::types::NativeDisplayBounds {
+                x: pos_x,
+                y: pos_y,
+                width: size_w,
+                height: size_h,
+            }),
+        });
     }
 
-    Vec::new()
+    displays
 }
 
 #[tauri::command]
@@ -519,6 +559,93 @@ fn set_host_sleep_inhibit(inhibit: bool) -> bool {
     true
 }
 
+#[tauri::command]
+fn spawn_virtual_extended_display(
+    app: tauri::AppHandle,
+    width: Option<u32>,
+    height: Option<u32>,
+) -> Result<String, String> {
+    let w = width.unwrap_or(1920);
+    let h = height.unwrap_or(1080);
+    let label = "xteon_virtual_display";
+
+    if let Some(existing) = app.get_webview_window(label) {
+        let _ = existing.unminimize();
+        let _ = existing.show();
+        let _ = existing.set_focus();
+        return Ok("Virtual Extended Stage Display is active".to_string());
+    }
+
+    // Determine target location: place just to the right of primary monitor
+    let (px, pw) = if let Ok(Some(primary)) = app.primary_monitor() {
+        let pos = primary.position();
+        let size = primary.size();
+        (pos.x, size.width)
+    } else {
+        (0, 1920)
+    };
+
+    let target_x = px + pw as i32 + 20;
+    let target_y = 0;
+
+    let win = tauri::WebviewWindowBuilder::new(
+        &app,
+        label,
+        tauri::WebviewUrl::App("index.html?overlay=virtual_display".into()),
+    )
+    .title("Xteon Virtual Extended Stage Display (Display 2)")
+    .inner_size(w as f64, h as f64)
+    .position(target_x as f64, target_y as f64)
+    .resizable(true)
+    .decorations(true)
+    .background_color(tauri::window::Color(10, 11, 14, 255))
+    .build()
+    .map_err(|e| format!("Failed to create virtual display window: {e}"))?;
+
+    let _ = win.show();
+    let _ = win.set_focus();
+
+    Ok("Created Xteon Virtual Extended Stage Display".to_string())
+}
+
+#[tauri::command]
+fn close_virtual_extended_display(app: tauri::AppHandle) -> bool {
+    if let Some(win) = app.get_webview_window("xteon_virtual_display") {
+        let _ = win.close();
+        return true;
+    }
+    false
+}
+
+#[tauri::command]
+async fn install_os_virtual_display_driver() -> Result<String, String> {
+    #[cfg(windows)]
+    {
+        tokio::task::spawn_blocking(|| {
+            let output = std::process::Command::new("powershell")
+                .args([
+                    "-NoProfile",
+                    "-Command",
+                    "Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -Command winget install --id=VirtualDrivers.Virtual-Display-Driver -e --accept-package-agreements --accept-source-agreements; Start-Sleep -Seconds 3' -Wait"
+                ])
+                .output()
+                .map_err(|e| format!("Failed to launch installer: {e}"))?;
+
+            if output.status.success() {
+                Ok("Launched Windows Virtual Display Driver installer with Administrator prompt. Please approve the UAC dialog.".to_string())
+            } else {
+                Err("Administrator elevation was declined or cancelled.".to_string())
+            }
+        })
+        .await
+        .map_err(|e| e.to_string())?
+    }
+    #[cfg(not(windows))]
+    {
+        Err("Virtual Display Driver installer is designed for Windows 10/11. On macOS and Linux, the built-in Xteon Virtual Extended Stage Display runs driver-free.".to_string())
+    }
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -534,7 +661,7 @@ pub fn run() {
 
             // Forcefully close any stray overlay windows on startup
             for (label, window) in app.webview_windows() {
-                if label != "main" {
+                if label != "main" && label != "xteon_virtual_display" {
                     let _ = window.close();
                 }
             }
@@ -579,7 +706,10 @@ pub fn run() {
             trigger_os_display_extend,
             open_os_display_settings,
             get_window_thumbnails,
-            set_host_sleep_inhibit
+            set_host_sleep_inhibit,
+            spawn_virtual_extended_display,
+            close_virtual_extended_display,
+            install_os_virtual_display_driver
         ])
         .run(tauri::generate_context!())
         .expect("error while running xteon application");

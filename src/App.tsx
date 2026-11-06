@@ -17,6 +17,7 @@ import { SettingsModal } from './components/modals/SettingsModal';
 import { VirtualBranchModal } from './components/modals/VirtualBranchModal';
 import { SmartTvGuideModal } from './components/modals/SmartTvGuideModal';
 import { EventLogDrawer } from './components/modals/EventLogDrawer';
+import { VirtualStageDisplayView } from './components/stage/VirtualStageDisplayView';
 import { FloatingPanelWrapper } from './components/common/FloatingPanelWrapper';
 import { PanelLeftOpen, PanelRightOpen, AlertTriangle, Volume2, X } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
@@ -43,7 +44,7 @@ export const App: React.FC = () => {
   const [isDraggingRight, setIsDraggingRight] = useState(false);
 
   const [overlayRoute, setOverlayRoute] = useState<{
-    type: 'flash' | 'pattern';
+    type: 'flash' | 'pattern' | 'virtual_display';
     patternType?: string;
     displayId?: string;
   } | null>(null);
@@ -56,7 +57,9 @@ export const App: React.FC = () => {
         .then(({ getCurrentWebviewWindow }) => {
           try {
             const label = getCurrentWebviewWindow().label;
-            if (label.startsWith('xteon_pattern_')) {
+            if (label === 'xteon_virtual_display' || label.startsWith('xteon_virtual_')) {
+              setOverlayRoute({ type: 'virtual_display' });
+            } else if (label.startsWith('xteon_pattern_')) {
               const parts = label.replace('xteon_pattern_', '').split('_');
               const pattern = parts[0] || 'smpte';
               const disp = parts.slice(1).join('_');
@@ -78,7 +81,9 @@ export const App: React.FC = () => {
     }
     const params = new URLSearchParams(rawQuery);
     const overlay = params.get('overlay');
-    if (overlay === 'flash' || overlay === 'pattern') {
+    if (overlay === 'virtual_display') {
+      setOverlayRoute({ type: 'virtual_display' });
+    } else if (overlay === 'flash' || overlay === 'pattern') {
       setOverlayRoute({
         type: overlay,
         patternType: params.get('type') || 'smpte',
@@ -127,6 +132,9 @@ export const App: React.FC = () => {
   }, [paletteDockState, setPaletteDockState]);
 
   if (overlayRoute) {
+    if (overlayRoute.type === 'virtual_display') {
+      return <VirtualStageDisplayView />;
+    }
     return (
       <FullscreenOverlayView
         type={overlayRoute.type}

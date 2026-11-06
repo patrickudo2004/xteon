@@ -8,7 +8,8 @@ use tokio::sync::broadcast;
 
 use crate::display::types::NativeDisplayInfo;
 use crate::display::window_manager::{
-    capture_window_frame_jpeg, enumerate_real_displays_fallback, WindowCaptureOutcome,
+    capture_window_frame_jpeg, enumerate_real_displays_fallback, list_capturable_windows,
+    WindowCaptureOutcome,
 };
 use crate::display::windows_capture::capture_screen_jpeg_raw;
 
@@ -571,6 +572,19 @@ fn capture_any_source_raw(
     };
 
     if kind == "DISPLAY" {
+        // Special-case Xteon Virtual Extended Stage Display: if virtual window is running, prefer capturing its window DWM buffer directly
+        if raw_id == "display-virtual-stage" || raw_id == "virtual-stage" {
+            let all_windows = list_capturable_windows(Some(displays_cache.to_vec()));
+            if let Some(target_win) = all_windows.iter().find(|w| {
+                w.title.contains("Xteon Virtual Extended") || w.title.contains("Virtual Stage")
+            }) {
+                let outcome = capture_window_frame_jpeg(&target_win.hwnd_id, max_width, jpeg_quality, prev_checksum);
+                if matches!(outcome, WindowCaptureOutcome::Frame { .. } | WindowCaptureOutcome::Unchanged { .. }) {
+                    return outcome;
+                }
+            }
+        }
+
         let disp = displays_cache
             .iter()
             .find(|d| d.id == raw_id || d.os_index.to_string() == raw_id);
