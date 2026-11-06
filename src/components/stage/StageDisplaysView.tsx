@@ -65,6 +65,10 @@ export const StageDisplaysView: React.FC = () => {
     upsertStageLinkSlot,
     spawnVirtualExtendedDisplay,
     closeVirtualExtendedDisplay,
+    virtualDriverStatus,
+    refreshVirtualDriverStatus,
+    installVirtualDisplayDriver,
+    toggleVirtualDisplayActive,
   } = useRigStore();
 
   const [pickerModalOpen, setPickerModalOpen] = useState(false);
@@ -73,6 +77,7 @@ export const StageDisplaysView: React.FC = () => {
   const [whisperTone, setWhisperTone] = useState<'INFO' | 'WARN' | 'CRITICAL'>('WARN');
   const [whisperDuration, setWhisperDuration] = useState<number>(15);
   const [isExtending, setIsExtending] = useState(false);
+  const [isInstallingDriver, setIsInstallingDriver] = useState(false);
   const [recallSuccessMsg, setRecallSuccessMsg] = useState('');
   const [copiedLinkSlotId, setCopiedLinkSlotId] = useState<string | null>(null);
 
@@ -101,9 +106,11 @@ export const StageDisplaysView: React.FC = () => {
     refreshStageLinkSlots(true);
     refreshOsWindows();
     refreshCompanionStatus();
+    refreshVirtualDriverStatus();
     const interval = setInterval(() => {
       refreshStageLinkSlots(false);
       refreshCompanionStatus();
+      refreshVirtualDriverStatus();
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -180,6 +187,66 @@ export const StageDisplaysView: React.FC = () => {
     } finally {
       setIsExtending(false);
       await useRigStore.getState().refreshLiveDisplays();
+    }
+  };
+
+  // Install Windows Virtual Display Driver (Elevated Setup)
+  const handleInstallVirtualDriver = async () => {
+    setIsInstallingDriver(true);
+    setRecallSuccessMsg('Launching Virtual Display Driver installer with Administrator prompt. Please approve the UAC dialog on your screen.');
+    try {
+      const res = await installVirtualDisplayDriver();
+      setRecallSuccessMsg(res || 'Virtual Display Driver installer initiated! Check UAC prompt on your screen.');
+      await new Promise((r) => setTimeout(r, 2000));
+      await refreshVirtualDriverStatus();
+      await useRigStore.getState().refreshLiveDisplays();
+    } catch (e: any) {
+      setRecallSuccessMsg(`Installer note: ${e?.message || e}`);
+    } finally {
+      setIsInstallingDriver(false);
+      setTimeout(() => setRecallSuccessMsg(''), 6000);
+    }
+  };
+
+  // Toggle Virtual Display 2 (Enable/Disable via devcon & DisplaySwitch)
+  const handleToggleVirtualDisplay = async (enable: boolean) => {
+    setIsExtending(true);
+    try {
+      const res = await toggleVirtualDisplayActive(enable);
+      await useRigStore.getState().refreshLiveDisplays();
+      await refreshVirtualDriverStatus();
+
+      if (enable) {
+        // Allow Windows brief moment to attach virtual monitor to DWM
+        await new Promise((r) => setTimeout(r, 800));
+        await useRigStore.getState().refreshLiveDisplays();
+        const updated = useRigStore.getState().liveDisplays;
+        const secDisp = updated.find((d) => d.osIndex > 1);
+
+        if (secDisp && primarySlot) {
+          await upsertStageLinkSlot({
+            id: primarySlot.id,
+            name: primarySlot.name,
+            stage_zone: primarySlot.stage_zone,
+            source_mode: 'DISPLAY',
+            primary_source_id: `D:${secDisp.id}`,
+            primary_source_label: `Display ${secDisp.osIndex}: ${secDisp.customAlias || secDisp.name} (Virtual Extended)`,
+            target_fps: 60,
+            max_width: 1920,
+          });
+          await refreshStageLinkSlots(true);
+          setRecallSuccessMsg(`Display 2 is ACTIVE! Streaming 60 FPS presentation output to ${primarySlot.name || 'connected receiver'}.`);
+        } else {
+          setRecallSuccessMsg(res || 'Virtual Extended Display activated.');
+        }
+      } else {
+        setRecallSuccessMsg('Deactivated Virtual Extended Display.');
+      }
+    } catch (e: any) {
+      setRecallSuccessMsg(`Virtual display error: ${e?.message || e}`);
+    } finally {
+      setIsExtending(false);
+      setTimeout(() => setRecallSuccessMsg(''), 5000);
     }
   };
 
@@ -424,34 +491,41 @@ export const StageDisplaysView: React.FC = () => {
         {/* MODE 1: ZERO-INSTALL EXTERNAL MONITOR & PROJECTOR (GLIDEX STYLE) */}
         <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col justify-between gap-5 relative overflow-hidden">
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400">
                   <Laptop className="w-4 h-4" />
                 </div>
                 <div>
                   <h2 className="font-bold font-mono text-sm sm:text-base text-[var(--text-primary)]">
-                    External Monitor & Projector Screen
+                    External Monitor & Virtual Stage Screen
                   </h2>
                   <div className="text-[11px] text-[var(--text-muted)]">
-                    Zero-install extended desktop for projectors, tablets, and phones
+                    GlideX-style extended desktop for PowerPoint Presenter View & wireless receivers
                   </div>
                 </div>
               </div>
 
-              {secondaryDisplay ? (
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
-                  ● Projector / Display 2 Active
-                </span>
-              ) : (
-                <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-[10px] font-mono font-bold">
-                  Single Screen
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {secondaryDisplay ? (
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
+                    ● Display 2 (Extended Monitor) Active
+                  </span>
+                ) : virtualDriverStatus?.installed ? (
+                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-[10px] font-mono font-bold flex items-center gap-1">
+                    ● Virtual Display Engine Ready
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold flex items-center gap-1">
+                    Single Screen (Driver Setup Available)
+                  </span>
+                )}
+              </div>
             </div>
 
             <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              Activate Windows <strong>"Extend"</strong> mode to use a projector or secondary display, and stream your screen directly to any phone or tablet with 60 FPS zero-install.
+              Use your phone, tablet, or receiver as a genuine <strong>Display 2</strong> in Windows without physical HDMI cables. 
+              PowerPoint will show <strong>Presenter View</strong> on your laptop and stream <strong>presentation slides</strong> at 60 FPS to your connected device.
             </p>
 
             {secondaryDisplay && (
@@ -459,7 +533,7 @@ export const StageDisplaysView: React.FC = () => {
                 <div className="text-[var(--text-primary)] font-bold flex items-center justify-between">
                   <span>Screen {secondaryDisplay.osIndex}: {secondaryDisplay.customAlias || secondaryDisplay.name}</span>
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">
-                    PROJECTOR / EXTENDED
+                    EXTENDED MONITOR (60 FPS)
                   </span>
                 </div>
                 <div className="text-[10px] text-[var(--text-muted)]">
@@ -472,6 +546,43 @@ export const StageDisplaysView: React.FC = () => {
           {/* Action Buttons - Grouped & Compacted */}
           <div className="space-y-2 pt-3 border-t border-[var(--border-color)]">
             <div className="flex flex-wrap items-center gap-2">
+              {/* 1-Click Virtual Display Driver Toggle (If installed) */}
+              {virtualDriverStatus?.installed ? (
+                <button
+                  onClick={() => handleToggleVirtualDisplay(!secondaryDisplay)}
+                  disabled={isExtending}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[36px] ${
+                    secondaryDisplay
+                      ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                      : 'bg-indigo-500 hover:bg-indigo-400 text-white'
+                  }`}
+                  title="Toggle Virtual Display 2 in Windows"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>
+                    {isExtending
+                      ? 'Toggling Display 2...'
+                      : secondaryDisplay
+                      ? 'Deactivate Virtual Display 2'
+                      : 'Activate Virtual Extended Display (Display 2)'}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleInstallVirtualDriver}
+                  disabled={isInstallingDriver}
+                  className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[36px]"
+                  title="Install the Windows Virtual Display Driver to enable secondary monitor without HDMI cable"
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>
+                    {isInstallingDriver
+                      ? 'Launching Installer (Check UAC Prompt)...'
+                      : 'Setup Virtual Display Engine (One-Time Setup)'}
+                  </span>
+                </button>
+              )}
+
               <button
                 onClick={() => handleStreamDesktop()}
                 className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[36px]"
@@ -498,13 +609,11 @@ export const StageDisplaysView: React.FC = () => {
                 className="px-3 py-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-cyan-500/40 text-cyan-300 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[36px]"
                 title="Activate Windows Extended Desktop mode (DisplaySwitch /extend)"
               >
-                <Zap className="w-3.5 h-3.5" />
+                <Monitor className="w-3.5 h-3.5" />
                 <span>
                   {isExtending
-                    ? 'Activating Extend Mode...'
-                    : secondaryDisplay
-                    ? 'Re-Trigger Windows Extend'
-                    : 'Activate Windows Extend (Projector)'}
+                    ? 'Activating...'
+                    : 'DisplaySwitch /extend'}
                 </span>
               </button>
             </div>
@@ -528,7 +637,7 @@ export const StageDisplaysView: React.FC = () => {
                   title="Send active window borderless fullscreen to Projector"
                 >
                   <Maximize2 className="w-3 h-3" />
-                  <span>Snap Window to Projector</span>
+                  <span>Snap Window to Display 2</span>
                 </button>
               )}
 
@@ -538,7 +647,7 @@ export const StageDisplaysView: React.FC = () => {
                 title="Open OS Display Settings panel"
               >
                 <ExternalLink className="w-3 h-3" />
-                <span>OS Settings</span>
+                <span>Windows Display Settings</span>
               </button>
 
               <button
@@ -549,6 +658,12 @@ export const StageDisplaysView: React.FC = () => {
                 <RotateCcw className="w-3 h-3" />
                 <span>Emergency Recall</span>
               </button>
+
+              {!virtualDriverStatus?.installed && (
+                <div className="w-full text-[11px] text-[var(--text-muted)] font-mono flex items-center gap-1 pt-1">
+                  Manual script: <code className="px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)] text-[10px] text-cyan-300">C:\VirtualDisplayDriver\install_driver.bat</code>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1171,8 +1286,12 @@ export const StageDisplaysView: React.FC = () => {
                       setDrawerMode('DISPLAY');
                       let targetDisp = secondaryDisplay || liveDisplays.find((d) => d.osIndex > 1 && d.id !== 'display-virtual-stage');
                       if (!targetDisp) {
-                        await triggerOsDisplayExtend();
-                        await new Promise((r) => setTimeout(r, 600));
+                        if (virtualDriverStatus?.installed) {
+                          await handleToggleVirtualDisplay(true);
+                        } else {
+                          await triggerOsDisplayExtend();
+                        }
+                        await new Promise((r) => setTimeout(r, 800));
                         await useRigStore.getState().refreshLiveDisplays();
                         targetDisp = useRigStore.getState().liveDisplays.find((d) => d.osIndex > 1 && d.id !== 'display-virtual-stage');
                       }

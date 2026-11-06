@@ -878,6 +878,19 @@ interface RigState {
   stopStageLinkStream: (slotId?: string) => Promise<void>;
   spawnVirtualExtendedDisplay: (width?: number, height?: number) => Promise<boolean>;
   closeVirtualExtendedDisplay: () => Promise<boolean>;
+  virtualDriverStatus: VirtualDriverStatusInfo | null;
+  refreshVirtualDriverStatus: () => Promise<VirtualDriverStatusInfo | null>;
+  installVirtualDisplayDriver: () => Promise<string>;
+  uninstallVirtualDisplayDriver: () => Promise<string>;
+  toggleVirtualDisplayActive: (enable: boolean) => Promise<string>;
+}
+
+export interface VirtualDriverStatusInfo {
+  installed: boolean;
+  is_glidex_present: boolean;
+  display_active: boolean;
+  driver_path: string;
+  message: string;
 }
 
 let isCapturingInProgress = false;
@@ -3027,6 +3040,67 @@ export const useRigStore = create<RigState>((set, get) => ({
     await get().refreshStageLinkSlots(true);
   },
 
+  virtualDriverStatus: null,
+  refreshVirtualDriverStatus: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const status = await invoke<VirtualDriverStatusInfo>('get_virtual_driver_status');
+        set({ virtualDriverStatus: status });
+        return status;
+      } catch (err: any) {
+        console.warn('get_virtual_driver_status error:', err);
+      }
+    }
+    return null;
+  },
+
+  installVirtualDisplayDriver: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const res = await invoke<string>('install_os_virtual_display_driver');
+        await get().refreshVirtualDriverStatus();
+        await get().refreshLiveDisplays();
+        return res;
+      } catch (err: any) {
+        throw new Error(err?.message || String(err));
+      }
+    }
+    return 'Driver installation not supported in web preview mode';
+  },
+
+  uninstallVirtualDisplayDriver: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const res = await invoke<string>('uninstall_os_virtual_display_driver');
+        await get().refreshVirtualDriverStatus();
+        await get().refreshLiveDisplays();
+        return res;
+      } catch (err: any) {
+        throw new Error(err?.message || String(err));
+      }
+    }
+    return 'Driver uninstallation not supported in web preview mode';
+  },
+
+  toggleVirtualDisplayActive: async (enable: boolean) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const res = await invoke<string>('toggle_virtual_display_active', { enable });
+        await new Promise((r) => setTimeout(r, 600));
+        await get().refreshVirtualDriverStatus();
+        await get().refreshLiveDisplays();
+        return res;
+      } catch (err: any) {
+        throw new Error(err?.message || String(err));
+      }
+    }
+    return 'Virtual display not supported in web preview mode';
+  },
+
   importProject: (proj) => {
     if (proj && proj.nodes && proj.edges) {
       const converged = computeConvergence(proj.nodes as any, get().liveDisplays);
@@ -3049,6 +3123,7 @@ if (typeof window !== 'undefined') {
     useRigStore.getState().refreshCompanionStatus();
     useRigStore.getState().refreshOsWindows();
     useRigStore.getState().refreshStageLinkSlots(false);
+    useRigStore.getState().refreshVirtualDriverStatus();
   }, 100);
 
   // Demand-driven StageLink & OS Window Director polling (0% CPU in Planner Studio)
