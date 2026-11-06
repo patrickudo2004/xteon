@@ -130,6 +130,9 @@ static COMPANION_HTTP_SESSIONS: LazyLock<Mutex<HashMap<String, u64>>> =
 static STAGE_SLOTS: LazyLock<Mutex<HashMap<String, Arc<SlotRuntime>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
+static LAST_ALLOCATED_SLOT_TIME: LazyLock<Mutex<HashMap<String, u64>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
 pub fn now_epoch_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -250,16 +253,29 @@ pub fn allocate_slot_for_new_client() -> String {
         .map(|m| m.values().cloned().collect())
         .unwrap_or_default();
 
-    // 1. Look for an existing slot that has 0 subscribers (waiting for a device)
+    let now = now_epoch_ms();
+    let recent_allocations = LAST_ALLOCATED_SLOT_TIME.lock().ok();
+
+    // 1. Look for an existing slot that has 0 subscribers AND has not been allocated in the last 10 seconds
     for rt in &runtimes {
         if rt.subscriber_count.load(Ordering::Relaxed) == 0 {
             if let Ok(slot) = rt.slot.lock() {
-                return slot.id.clone();
+                let is_recent = recent_allocations
+                    .as_ref()
+                    .and_then(|m| m.get(&slot.id))
+                    .map(|&ts| now.saturating_sub(ts) < 10_000)
+                    .unwrap_or(false);
+                if !is_recent {
+                    if let Ok(mut m) = LAST_ALLOCATED_SLOT_TIME.lock() {
+                        m.insert(slot.id.clone(), now);
+                    }
+                    return slot.id.clone();
+                }
             }
         }
     }
 
-    // 2. If all existing slots have active subscribers, allocate the next slot (stage-1, stage-2, stage-3...)
+    // 2. If all existing slots have active subscribers or are recently reserved, allocate the next slot (stage-1, stage-2, stage-3...)
     let existing_ids: std::collections::HashSet<String> = runtimes
         .iter()
         .filter_map(|rt| rt.slot.lock().ok().map(|s| s.id.clone()))
@@ -295,6 +311,9 @@ pub fn allocate_slot_for_new_client() -> String {
                 target_fps: Some(30),
                 max_width: Some(1920),
             });
+            if let Ok(mut m) = LAST_ALLOCATED_SLOT_TIME.lock() {
+                m.insert(candidate.clone(), now);
+            }
             return candidate;
         }
     }
@@ -599,6 +618,40 @@ pub fn clear_stage_whisper(slot_id: &str) -> Option<StageLinkSlot> {
     };
     broadcast_slot_state(&rt, &snap);
     Some(snap)
+}
+
+pub fn broadcast_stage_whisper(
+    message: String,
+    tone: String,
+    duration_seconds: Option<u32>,
+) -> Vec<StageLinkSlot> {
+    let ids: Vec<String> = STAGE_SLOTS
+        .lock()
+        .map(|m| m.keys().cloned().collect())
+        .unwrap_or_default();
+
+    let mut updated = Vec::with_capacity(ids.len());
+    for id in ids {
+        if let Some(slot) = send_stage_whisper(&id, message.clone(), tone.clone(), duration_seconds) {
+            updated.push(slot);
+        }
+    }
+    updated
+}
+
+pub fn clear_all_stage_whispers() -> Vec<StageLinkSlot> {
+    let ids: Vec<String> = STAGE_SLOTS
+        .lock()
+        .map(|m| m.keys().cloned().collect())
+        .unwrap_or_default();
+
+    let mut updated = Vec::with_capacity(ids.len());
+    for id in ids {
+        if let Some(slot) = clear_stage_whisper(&id) {
+            updated.push(slot);
+        }
+    }
+    updated
 }
 
 pub fn broadcast_slot_state(rt: &Arc<SlotRuntime>, slot: &StageLinkSlot) {

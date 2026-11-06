@@ -13,9 +13,10 @@ use display::windows_capture::{
 use server::companion::{get_companion_status, start_companion_server_with_handle, CompanionServerStatus};
 use server::network::{list_network_interfaces, NetworkAdapterInfo};
 use server::stagelink::{
-    clear_stage_whisper, list_stage_slots, refresh_all_slot_previews, remove_stage_slot,
-    send_stage_whisper, set_security_pin, set_slot_blackout, set_slot_freeze, trigger_slot_flash,
-    upsert_stage_slot, CreateOrUpdateSlotInput, StageLinkSlot,
+    broadcast_stage_whisper, clear_all_stage_whispers, clear_stage_whisper, list_stage_slots,
+    refresh_all_slot_previews, remove_stage_slot, send_stage_whisper, set_security_pin,
+    set_slot_blackout, set_slot_freeze, trigger_slot_flash, upsert_stage_slot,
+    CreateOrUpdateSlotInput, StageLinkSlot,
 };
 use display::window_manager::{
     list_capturable_windows, recall_stray_windows_to_primary, restore_window_behind,
@@ -465,6 +466,20 @@ async fn clear_stagelink_whisper(slot_id: String) -> Option<StageLinkSlot> {
 }
 
 #[tauri::command]
+async fn broadcast_stagelink_whisper(
+    message: String,
+    tone: String,
+    duration_seconds: Option<u32>,
+) -> Vec<StageLinkSlot> {
+    broadcast_stage_whisper(message, tone, duration_seconds)
+}
+
+#[tauri::command]
+async fn clear_all_stagelink_whispers() -> Vec<StageLinkSlot> {
+    clear_all_stage_whispers()
+}
+
+#[tauri::command]
 fn trigger_os_display_extend() -> Result<String, String> {
     #[cfg(windows)]
     {
@@ -676,6 +691,8 @@ pub fn run() {
             flash_stagelink_slot,
             send_stagelink_whisper,
             clear_stagelink_whisper,
+            broadcast_stagelink_whisper,
+            clear_all_stagelink_whispers,
             trigger_os_display_extend,
             open_os_display_settings,
             get_window_thumbnails,

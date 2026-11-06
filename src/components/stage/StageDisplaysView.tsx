@@ -39,6 +39,7 @@ import {
   Square,
   ChevronRight,
   Layers,
+  MessageSquare,
 } from 'lucide-react';
 
 export const StageDisplaysView: React.FC = () => {
@@ -55,6 +56,8 @@ export const StageDisplaysView: React.FC = () => {
     flashStageLinkSlot,
     sendStageLinkWhisper,
     clearStageLinkWhisper,
+    broadcastStageLinkWhisper,
+    clearAllStageLinkWhispers,
     companionStatus,
     routeOsWindow,
     recallStrayOsWindows,
@@ -72,6 +75,10 @@ export const StageDisplaysView: React.FC = () => {
   const [whisperInput, setWhisperInput] = useState('');
   const [whisperTone, setWhisperTone] = useState<'INFO' | 'WARN' | 'CRITICAL'>('WARN');
   const [whisperDuration, setWhisperDuration] = useState<number>(15);
+  const [whisperRecipientId, setWhisperRecipientId] = useState<string>('ALL');
+  const [broadcastWhisperInput, setBroadcastWhisperInput] = useState('');
+  const [broadcastTone, setBroadcastTone] = useState<'INFO' | 'WARN' | 'CRITICAL'>('WARN');
+  const [slotWhisperDrafts, setSlotWhisperDrafts] = useState<Record<string, string>>({});
   const [isExtending, setIsExtending] = useState(false);
   const [recallSuccessMsg, setRecallSuccessMsg] = useState('');
   const [copiedLinkSlotId, setCopiedLinkSlotId] = useState<string | null>(null);
@@ -263,16 +270,53 @@ export const StageDisplaysView: React.FC = () => {
     setTimeout(() => setRecallSuccessMsg(''), 3000);
   };
 
-  // Send Stage Whisper message to active slot
+  // Send Stage Whisper message
   const handleSendWhisper = async () => {
-    if (!whisperInput.trim() || !primarySlot) return;
-    await sendStageLinkWhisper(primarySlot.id, whisperInput, whisperTone, whisperDuration);
+    if (!whisperInput.trim()) return;
+    if (whisperRecipientId === 'ALL') {
+      await broadcastStageLinkWhisper(whisperInput, whisperTone, whisperDuration);
+      setRecallSuccessMsg(`Broadcasted to all screens: "${whisperInput}"`);
+    } else {
+      await sendStageLinkWhisper(whisperRecipientId, whisperInput, whisperTone, whisperDuration);
+      const targetSlot = stageLinkSlots.find((s) => s.id === whisperRecipientId);
+      setRecallSuccessMsg(`Sent whisper to ${targetSlot?.name || whisperRecipientId}: "${whisperInput}"`);
+    }
     setWhisperInput('');
+    setTimeout(() => setRecallSuccessMsg(''), 4000);
   };
 
   const handleClearWhisper = async () => {
-    if (!primarySlot) return;
-    await clearStageLinkWhisper(primarySlot.id);
+    if (whisperRecipientId === 'ALL') {
+      await clearAllStageLinkWhispers();
+      setRecallSuccessMsg('Cleared whispers from all stage screens');
+    } else {
+      await clearStageLinkWhisper(whisperRecipientId);
+      setRecallSuccessMsg(`Cleared whisper on ${whisperRecipientId}`);
+    }
+    setTimeout(() => setRecallSuccessMsg(''), 3000);
+  };
+
+  const handleBroadcastWhisper = async () => {
+    if (!broadcastWhisperInput.trim()) return;
+    await broadcastStageLinkWhisper(broadcastWhisperInput, broadcastTone, 15);
+    setRecallSuccessMsg(`Broadcasted alert to all stage screens: "${broadcastWhisperInput.trim()}"`);
+    setBroadcastWhisperInput('');
+    setTimeout(() => setRecallSuccessMsg(''), 4000);
+  };
+
+  const handleClearAllWhispers = async () => {
+    await clearAllStageLinkWhispers();
+    setRecallSuccessMsg('Cleared whispers from all stage screens');
+    setTimeout(() => setRecallSuccessMsg(''), 3000);
+  };
+
+  const handleSendTargetedWhisper = async (slotId: string, customText?: string) => {
+    const text = customText || slotWhisperDrafts[slotId];
+    if (!text || !text.trim()) return;
+    await sendStageLinkWhisper(slotId, text.trim(), 'WARN', 15);
+    setSlotWhisperDrafts((prev) => ({ ...prev, [slotId]: '' }));
+    setRecallSuccessMsg(`Sent cue to screen: "${text.trim()}"`);
+    setTimeout(() => setRecallSuccessMsg(''), 3000);
   };
 
   // Open Drawer for a specific slot
@@ -402,12 +446,12 @@ export const StageDisplaysView: React.FC = () => {
           )}
 
           <button
-            onClick={() => openQrForStageSlot(primarySlot?.id || 'stage-1')}
-            className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold font-mono text-xs transition flex items-center gap-2 shadow-md cursor-pointer ml-auto md:ml-0"
-            title="Scan QR code with tablet or phone to connect"
+            onClick={() => openQrForStageSlot(null)}
+            className="px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold font-mono text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer ml-auto md:ml-0 min-h-[34px]"
+            title="Scan Universal QR code with any tablet or phone to connect"
           >
-            <QrCode className="w-4 h-4" />
-            <span>Pair Device (QR Code)</span>
+            <QrCode className="w-3.5 h-3.5" />
+            <span>Pair Stage Device (QR)</span>
           </button>
         </div>
       </div>
@@ -471,69 +515,62 @@ export const StageDisplaysView: React.FC = () => {
             )}
           </div>
 
-          {/* Action Buttons - Grouped & Compacted */}
-          <div className="space-y-2 pt-3 border-t border-[var(--border-color)]">
+          {/* Action Buttons - Cleanly Grouped & Sized */}
+          <div className="space-y-2.5 pt-3 border-t border-[var(--border-color)]">
             <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-muted)] mr-1">
+                Display Feed:
+              </span>
               <button
                 onClick={() => handleStreamDesktop()}
-                className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[36px]"
+                className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
                 title="Immediately stream host laptop desktop screen to connected receivers"
               >
-                <Laptop className="w-3.5 h-3.5" />
-                <span>Stream Laptop Screen (Display 1)</span>
+                <Laptop className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Laptop Mirror (Display 1)</span>
               </button>
 
               {secondaryDisplay && (
                 <button
                   onClick={() => handleStreamProjectorScreen(primarySlot?.id)}
-                  className="px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-400 text-slate-950 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[36px]"
+                  className="px-2.5 py-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
                   title="Stream projector / second screen directly to connected devices"
                 >
-                  <Monitor className="w-3.5 h-3.5" />
+                  <Monitor className="w-3.5 h-3.5 text-blue-400" />
                   <span>Stream Projector (Display {secondaryDisplay.osIndex})</span>
                 </button>
               )}
 
               <button
                 onClick={() => setPickerModalOpen(true)}
-                className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[36px]"
+                className="px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
                 title="Cast specific presentation or timer application window"
               >
-                <AppWindow className="w-3.5 h-3.5" />
+                <AppWindow className="w-3.5 h-3.5 text-purple-400" />
                 <span>Cast App Window (PowerPoint / Timer)</span>
               </button>
+            </div>
 
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[var(--border-color)]/60">
+              <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-muted)] mr-1">
+                Windows OS:
+              </span>
               <button
                 onClick={handleTriggerWindowsExtend}
                 disabled={isExtending}
-                className="px-3 py-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-cyan-500/40 text-cyan-300 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[36px]"
+                className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-cyan-500/40 text-cyan-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
                 title="Activate Windows Extended Desktop mode (DisplaySwitch /extend)"
               >
                 <Monitor className="w-3.5 h-3.5" />
                 <span>
-                  {isExtending
-                    ? 'Activating...'
-                    : 'DisplaySwitch /extend'}
+                  {isExtending ? 'Activating...' : 'Windows Extend (Win+P)'}
                 </span>
               </button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              {virtualDisplay && (
-                <button
-                  onClick={handleCloseVirtualDisplay}
-                  className="px-2.5 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-mono font-semibold transition flex items-center gap-1 cursor-pointer min-h-[34px]"
-                  title="Close Virtual Window"
-                >
-                  <X className="w-3 h-3" />
-                  <span>Close Virtual Window</span>
-                </button>
-              )}
 
               {secondaryDisplay && (
                 <button
                   onClick={handleTeleportToDisplay2}
-                  className="px-2.5 py-1.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 text-xs font-mono font-semibold transition flex items-center gap-1 cursor-pointer min-h-[34px]"
+                  className="px-2.5 py-1.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 text-xs font-mono font-semibold transition flex items-center gap-1 cursor-pointer min-h-[32px]"
                   title="Send active window borderless fullscreen to Projector"
                 >
                   <Maximize2 className="w-3 h-3" />
@@ -543,16 +580,16 @@ export const StageDisplaysView: React.FC = () => {
 
               <button
                 onClick={handleOpenDisplaySettings}
-                className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-mono font-semibold transition flex items-center gap-1 cursor-pointer min-h-[34px]"
+                className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-mono text-[var(--text-muted)] hover:text-[var(--text-primary)] transition flex items-center gap-1 cursor-pointer min-h-[32px]"
                 title="Open OS Display Settings panel"
               >
                 <ExternalLink className="w-3 h-3" />
-                <span>Windows Display Settings</span>
+                <span>Display Settings</span>
               </button>
 
               <button
                 onClick={handleRecallWindows}
-                className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-mono font-semibold transition flex items-center gap-1 cursor-pointer ml-auto min-h-[34px]"
+                className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-mono font-semibold transition flex items-center gap-1 cursor-pointer ml-auto min-h-[32px]"
                 title="Recall any off-screen or lost windows back onto laptop screen"
               >
                 <RotateCcw className="w-3 h-3" />
@@ -716,6 +753,84 @@ export const StageDisplaysView: React.FC = () => {
           </div>
         </div>
 
+        {/* MASTER BROADCAST WHISPER BAR */}
+        <div className="p-3.5 rounded-xl bg-[var(--bg-subcard)] border border-amber-500/30 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-inner">
+          <div className="flex items-center gap-2 text-amber-400 shrink-0">
+            <MessageSquare className="w-4 h-4" />
+            <span className="font-bold text-xs uppercase tracking-wider">Broadcast Whisper:</span>
+          </div>
+
+          <div className="flex-1 flex flex-wrap md:flex-nowrap items-center gap-2">
+            <input
+              type="text"
+              value={broadcastWhisperInput}
+              onChange={(e) => setBroadcastWhisperInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && broadcastWhisperInput.trim()) {
+                  handleBroadcastWhisper();
+                }
+              }}
+              placeholder="Send alert banner to ALL connected screens (e.g. '5 Mins Left', 'Wrap Up', 'Nursery 104')..."
+              className="flex-1 min-w-[220px] h-8 px-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-amber-400"
+            />
+
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setBroadcastTone('INFO')}
+                className={`px-2 py-1 rounded text-[10px] font-bold font-mono transition ${
+                  broadcastTone === 'INFO'
+                    ? 'bg-cyan-500/30 border border-cyan-400 text-cyan-300'
+                    : 'bg-[var(--bg-card)] text-[var(--text-muted)] border border-transparent'
+                }`}
+              >
+                INFO
+              </button>
+              <button
+                type="button"
+                onClick={() => setBroadcastTone('WARN')}
+                className={`px-2 py-1 rounded text-[10px] font-bold font-mono transition ${
+                  broadcastTone === 'WARN'
+                    ? 'bg-amber-500/30 border border-amber-400 text-amber-300'
+                    : 'bg-[var(--bg-card)] text-[var(--text-muted)] border border-transparent'
+                }`}
+              >
+                WARN
+              </button>
+              <button
+                type="button"
+                onClick={() => setBroadcastTone('CRITICAL')}
+                className={`px-2 py-1 rounded text-[10px] font-bold font-mono transition ${
+                  broadcastTone === 'CRITICAL'
+                    ? 'bg-red-500/30 border border-red-400 text-red-300'
+                    : 'bg-[var(--bg-card)] text-[var(--text-muted)] border border-transparent'
+                }`}
+              >
+                ALERT
+              </button>
+            </div>
+
+            <button
+              onClick={handleBroadcastWhisper}
+              disabled={!broadcastWhisperInput.trim()}
+              className="h-8 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-bold text-xs flex items-center gap-1.5 transition shadow-sm cursor-pointer shrink-0"
+              title="Broadcast alert to all connected screens"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Broadcast</span>
+            </button>
+
+            <button
+              onClick={handleClearAllWhispers}
+              className="h-8 px-2.5 rounded-lg bg-[var(--bg-card)] hover:bg-red-500/20 text-[var(--text-muted)] hover:text-red-400 border border-[var(--border-color)] text-xs flex items-center gap-1 transition cursor-pointer shrink-0"
+              title="Clear whispers from all screens"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Clear</span>
+            </button>
+          </div>
+        </div>
+
         {/* Devices Cards Grid (Both Wireless and Wired Displays) */}
         {stageLinkSlots.length > 0 || wiredDisplays.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
@@ -726,9 +841,9 @@ export const StageDisplaysView: React.FC = () => {
               return (
                 <div
                   key={slot.id}
-                  className="p-4 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] hover:border-cyan-500/40 transition flex flex-col justify-between gap-3 text-left group"
+                  className="p-3.5 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] hover:border-cyan-500/40 transition flex flex-col justify-between gap-3 text-left group shadow-sm"
                 >
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {/* Header Row: Title + Status Badges */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -753,9 +868,6 @@ export const StageDisplaysView: React.FC = () => {
 
                       {/* Pill Badges */}
                       <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono font-bold">
-                          WIRELESS (Wi-Fi)
-                        </span>
                         {isLive ? (
                           <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[9px] font-mono font-bold flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -763,21 +875,149 @@ export const StageDisplaysView: React.FC = () => {
                           </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/30 text-[9px] font-mono">
-                            READY (0 Connected)
+                            STANDBY (0)
                           </span>
                         )}
+                        <span className="text-[9px] text-[var(--text-muted)] font-mono">
+                          ID: {slot.id}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Feed Info */}
-                    <div className="p-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-xs space-y-1">
-                      <div className="text-[11px] font-medium text-[var(--text-primary)] truncate flex items-center gap-1.5">
-                        <span className="text-[var(--text-muted)] text-[10px]">Source:</span>
-                        <span className="truncate">{slot.primary_source_label || 'Desktop Screen (Host Laptop)'}</span>
+                    {/* 16:9 MINI LIVE PREVIEW THUMBNAIL */}
+                    <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-slate-950/90 border border-[var(--border-color)] flex items-center justify-center shadow-inner group/thumb">
+                      {slot.preview_data_url ? (
+                        <img
+                          src={slot.preview_data_url}
+                          alt={slot.name}
+                          className="w-full h-full object-contain"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-[var(--text-muted)] text-[10px] gap-1 p-2 text-center">
+                          <Monitor className="w-6 h-6 opacity-30 text-cyan-400" />
+                          <span className="font-mono text-[9px]">
+                            {isLive ? 'Active Feed • 30 FPS' : 'Ready (Scan QR to Connect)'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Floating Telemetry Badges */}
+                      <div className="absolute top-1.5 left-1.5 flex items-center gap-1 pointer-events-none">
+                        <span className="px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-sm text-cyan-300 border border-cyan-500/30 text-[9px] font-mono font-bold">
+                          {slot.live_fps || slot.target_fps} FPS
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-sm text-slate-300 border border-slate-600/40 text-[9px] font-mono">
+                          {slot.max_width}p
+                        </span>
                       </div>
+
+                      <div className="absolute bottom-1.5 right-1.5 pointer-events-none">
+                        <span className="px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-sm text-slate-200 text-[9px] font-mono truncate max-w-[140px] inline-block">
+                          {slot.primary_source_label || 'Laptop Desktop'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Inline Feed Source Switcher */}
+                    <div className="space-y-1">
                       <div className="text-[10px] text-[var(--text-muted)] font-mono flex items-center justify-between">
-                        <span>Mode: {slot.source_mode}</span>
-                        <span>{slot.target_fps} FPS • {slot.max_width}p</span>
+                        <span>Source: <strong className="text-[var(--text-primary)]">{slot.primary_source_label || 'Desktop'}</strong></span>
+                        <span className="uppercase text-[9px] text-cyan-400 font-bold">{slot.source_mode}</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1 text-[10px] font-mono">
+                        <button
+                          onClick={() => handleStreamDesktop(slot.id)}
+                          className={`px-2 py-1 rounded-md border flex items-center justify-center gap-1 transition ${
+                            slot.source_mode === 'DISPLAY' && slot.primary_source_id === 'D:display-1'
+                              ? 'bg-emerald-500/20 border-emerald-500/60 text-emerald-300 font-bold'
+                              : 'bg-[var(--bg-card)] hover:bg-[var(--bg-primary)] border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                          }`}
+                          title="Stream laptop screen to this receiver"
+                        >
+                          <Laptop className="w-3 h-3 text-emerald-400" />
+                          <span className="truncate">Laptop Screen</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setPickerTargetSlotId(slot.id);
+                            setPickerModalOpen(true);
+                          }}
+                          className={`px-2 py-1 rounded-md border flex items-center justify-center gap-1 transition ${
+                            slot.source_mode === 'WINDOW'
+                              ? 'bg-purple-500/20 border-purple-500/60 text-purple-300 font-bold'
+                              : 'bg-[var(--bg-card)] hover:bg-[var(--bg-primary)] border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                          }`}
+                          title="Cast PowerPoint or application window to this device"
+                        >
+                          <AppWindow className="w-3 h-3 text-purple-400" />
+                          <span className="truncate">Cast App</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* TARGETED WHISPER FOR THIS SCREEN */}
+                    <div className="p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] space-y-1.5">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="flex items-center gap-1 font-bold text-amber-400">
+                          <MessageSquare className="w-3 h-3" />
+                          <span>Private Cue:</span>
+                        </span>
+                        {slot.active_whisper && (
+                          <button
+                            onClick={() => clearStageLinkWhisper(slot.id)}
+                            className="text-[9px] text-red-400 hover:underline flex items-center gap-0.5"
+                          >
+                            <X className="w-2.5 h-2.5" /> Clear
+                          </button>
+                        )}
+                      </div>
+
+                      {slot.active_whisper ? (
+                        <div className="px-2 py-1 rounded bg-amber-500/15 border border-amber-500/30 text-[10px] text-amber-300 flex items-center justify-between">
+                          <span className="truncate font-sans font-medium">"{slot.active_whisper.message}"</span>
+                          <span className="text-[8px] uppercase tracking-wider text-amber-400 font-bold shrink-0 ml-1">
+                            {slot.active_whisper.tone}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="text"
+                            placeholder={`Whisper to ${slot.name}...`}
+                            value={slotWhisperDrafts[slot.id] || ''}
+                            onChange={(e) =>
+                              setSlotWhisperDrafts((prev) => ({ ...prev, [slot.id]: e.target.value }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSendTargetedWhisper(slot.id);
+                            }}
+                            className="flex-1 h-6 px-2 rounded bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[10px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-amber-400 font-sans"
+                          />
+                          <button
+                            onClick={() => handleSendTargetedWhisper(slot.id)}
+                            disabled={!slotWhisperDrafts[slot.id]?.trim()}
+                            className="h-6 px-2 rounded bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 font-bold text-[10px] flex items-center gap-1 transition cursor-pointer shrink-0"
+                            title="Send targeted whisper to this device"
+                          >
+                            <Send className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Quick preset chips */}
+                      <div className="flex items-center gap-1 pt-0.5">
+                        {['Wrap Up', '1 Min', 'Mic Check'].map((preset) => (
+                          <button
+                            key={preset}
+                            onClick={() => handleSendTargetedWhisper(slot.id, preset)}
+                            className="px-1.5 py-0.5 rounded bg-[var(--bg-subcard)] hover:bg-[var(--bg-primary)] border border-[var(--border-color)] text-[9px] text-[var(--text-muted)] hover:text-amber-300 transition"
+                          >
+                            {preset}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -786,68 +1026,47 @@ export const StageDisplaysView: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[var(--border-color)]">
                     <button
                       onClick={() => handleOpenDrawer(slot)}
-                      className="px-2.5 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-[11px] font-mono font-bold transition flex items-center gap-1 cursor-pointer min-h-[34px]"
-                      title="Edit device name, location, operating mode, and parameters"
+                      className="px-2 py-1 rounded-md bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-[10px] font-mono font-bold transition flex items-center gap-1 cursor-pointer min-h-[28px]"
+                      title="Edit device configuration"
                     >
                       <Sliders className="w-3 h-3" />
                       <span>Edit</span>
                     </button>
 
                     <button
-                      onClick={() => {
-                        setPickerTargetSlotId(slot.id);
-                        setPickerModalOpen(true);
-                      }}
-                      className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] text-[11px] font-mono font-medium transition flex items-center gap-1 cursor-pointer min-h-[34px]"
-                      title="Choose application or window to cast to this device"
-                    >
-                      <AppWindow className="w-3 h-3 text-cyan-400" />
-                      <span>Cast App</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleStreamDesktop(slot.id)}
-                      className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono font-bold transition flex items-center gap-1 cursor-pointer min-h-[34px]"
-                      title="Set this device to display your laptop desktop screen (External Monitor)"
-                    >
-                      <Laptop className="w-3 h-3 text-emerald-400" />
-                      <span>Desktop Screen</span>
-                    </button>
-
-                    <button
                       onClick={() => flashStageLinkSlot(slot.id)}
-                      className="p-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 text-xs transition cursor-pointer min-h-[34px] min-w-[34px] flex items-center justify-center"
+                      className="p-1 rounded-md bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 text-xs transition cursor-pointer min-h-[28px] min-w-[28px] flex items-center justify-center"
                       title="Flash screen attention on this receiver"
                     >
-                      <Zap className="w-3.5 h-3.5" />
+                      <Zap className="w-3 h-3" />
                     </button>
 
                     <button
                       onClick={() => openQrForStageSlot(slot.id)}
-                      className="p-1.5 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs transition cursor-pointer min-h-[34px] min-w-[34px] flex items-center justify-center"
+                      className="p-1 rounded-md bg-[var(--bg-card)] hover:bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs transition cursor-pointer min-h-[28px] min-w-[28px] flex items-center justify-center"
                       title="Show pairing QR code for this specific device"
                     >
-                      <QrCode className="w-3.5 h-3.5" />
+                      <QrCode className="w-3 h-3" />
                     </button>
 
                     <button
                       onClick={() => handleCopySlotLink(slot.id)}
-                      className="p-1.5 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs transition cursor-pointer min-h-[34px] min-w-[34px] flex items-center justify-center"
+                      className="p-1 rounded-md bg-[var(--bg-card)] hover:bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs transition cursor-pointer min-h-[28px] min-w-[28px] flex items-center justify-center"
                       title="Copy browser stage link"
                     >
                       {copiedLinkSlotId === slot.id ? (
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <Check className="w-3 h-3 text-emerald-400" />
                       ) : (
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="w-3 h-3" />
                       )}
                     </button>
 
                     <button
                       onClick={() => deleteStageLinkSlot(slot.id)}
-                      className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs transition cursor-pointer ml-auto min-h-[34px] min-w-[34px] flex items-center justify-center"
+                      className="p-1 rounded-md bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs transition cursor-pointer ml-auto min-h-[28px] min-w-[28px] flex items-center justify-center"
                       title="Remove device"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
@@ -931,11 +1150,11 @@ export const StageDisplaysView: React.FC = () => {
                 <span>Add Primary Receiver</span>
               </button>
               <button
-                onClick={() => openQrForStageSlot('stage-1')}
+                onClick={() => openQrForStageSlot(null)}
                 className="px-3.5 py-1.5 rounded-lg bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)] text-xs font-semibold font-mono transition inline-flex items-center gap-1.5 cursor-pointer min-h-[36px]"
               >
                 <QrCode className="w-3.5 h-3.5" />
-                <span>Show QR Code</span>
+                <span>Show Universal QR Code</span>
               </button>
             </div>
           </div>
@@ -977,45 +1196,66 @@ export const StageDisplaysView: React.FC = () => {
           </div>
         )}
 
-        {/* Input Form */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        {/* Recipient Selector + Input Form */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          {/* Recipient Dropdown */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] font-mono">To:</span>
+            <select
+              value={whisperRecipientId}
+              onChange={(e) => setWhisperRecipientId(e.target.value)}
+              className="p-2 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none min-h-[38px] max-w-[210px]"
+            >
+              <option value="ALL">📢 All Screens (Broadcast)</option>
+              {stageLinkSlots.map((s) => (
+                <option key={s.id} value={s.id}>
+                  📺 {s.name} ({s.id})
+                </option>
+              ))}
+            </select>
+          </div>
+
           <input
             type="text"
-            placeholder="Type discreet message (e.g., 'Pastor: 2 mins left', 'Wrap up for offering')..."
+            placeholder={
+              whisperRecipientId === 'ALL'
+                ? "Type broadcast alert to ALL screens (e.g., 'Service ending in 5 mins')..."
+                : `Type targeted message to this screen...`
+            }
             value={whisperInput}
             onChange={(e) => setWhisperInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendWhisper()}
-            className="flex-1 p-2.5 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-amber-400 placeholder-[var(--text-muted)] min-h-[42px]"
+            className="flex-1 p-2 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-amber-400 placeholder-[var(--text-muted)] min-h-[38px]"
           />
 
           <select
             value={whisperTone}
             onChange={(e) => setWhisperTone(e.target.value as any)}
-            className="p-2.5 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono text-[var(--text-primary)] focus:outline-none min-h-[42px]"
+            className="p-2 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono text-[var(--text-primary)] focus:outline-none min-h-[38px] shrink-0"
           >
             <option value="INFO">Info (Cyan)</option>
             <option value="WARN">Warning (Amber)</option>
-            <option value="CRITICAL">Critical Alert (Red)</option>
+            <option value="CRITICAL">Alert (Red)</option>
           </select>
 
           <select
             value={whisperDuration}
             onChange={(e) => setWhisperDuration(Number(e.target.value))}
-            className="p-2.5 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono text-[var(--text-primary)] focus:outline-none min-h-[42px]"
+            className="p-2 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono text-[var(--text-primary)] focus:outline-none min-h-[38px] shrink-0"
           >
-            <option value={10}>10 Seconds</option>
-            <option value={20}>20 Seconds</option>
-            <option value={30}>30 Seconds</option>
-            <option value={0}>Permanent</option>
+            <option value={10}>10s</option>
+            <option value={20}>20s</option>
+            <option value={30}>30s</option>
+            <option value={0}>Persistent</option>
           </select>
 
           <button
             onClick={handleSendWhisper}
             disabled={!whisperInput.trim()}
-            className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 font-bold font-mono text-xs transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer shrink-0 min-h-[42px]"
+            className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 font-bold font-mono text-xs transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer shrink-0 min-h-[38px]"
           >
             <Send className="w-3.5 h-3.5" />
-            <span>Send Whisper</span>
+            <span>{whisperRecipientId === 'ALL' ? 'Broadcast' : 'Send'}</span>
           </button>
         </div>
 
