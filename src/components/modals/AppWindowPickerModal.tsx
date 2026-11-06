@@ -38,7 +38,7 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
     upsertStageLinkSlot,
     getWindowThumbnails,
     stopStageLinkStream,
-    spawnVirtualExtendedDisplay,
+    triggerOsDisplayExtend,
   } = useRigStore();
 
   const [activeTab, setActiveTab] = useState<'WINDOW' | 'DISPLAY' | 'SPLIT'>('WINDOW');
@@ -381,37 +381,34 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
                 );
               })}
 
-              {!liveDisplays.some((d) => d.id === 'display-virtual-stage') && (
+              {!liveDisplays.some((d) => d.osIndex > 1) && (
                 <div
                   onClick={async () => {
-                    await spawnVirtualExtendedDisplay(1920, 1080);
+                    await triggerOsDisplayExtend();
+                    await new Promise((r) => setTimeout(r, 600));
                     await useRigStore.getState().refreshLiveDisplays();
-                    setSelectedPrimId('D:display-virtual-stage');
-                    setSelectedPrimLabel('Xteon Virtual Extended Display (Display 2)');
+                    const sec = useRigStore.getState().liveDisplays.find((d) => d.osIndex > 1);
+                    if (sec) {
+                      setSelectedPrimId(`D:${sec.id}`);
+                      setSelectedPrimLabel(`Screen ${sec.osIndex}: ${sec.customAlias || sec.name} (Projector)`);
+                    }
                   }}
-                  className={`p-4 rounded-xl border border-dashed transition-all cursor-pointer flex flex-col justify-between gap-3 text-left ${
-                    selectedPrimId === 'D:display-virtual-stage'
-                      ? 'bg-emerald-500/15 border-emerald-400 shadow-md ring-1 ring-emerald-400/50'
-                      : 'border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10'
-                  }`}
+                  className="p-4 rounded-xl border border-dashed border-cyan-500/40 bg-cyan-500/5 hover:bg-cyan-500/10 transition-all cursor-pointer flex flex-col justify-between gap-3 text-left"
                 >
-                  <div className="relative w-full h-32 rounded-lg overflow-hidden bg-slate-950/80 border border-emerald-500/30 flex flex-col items-center justify-center p-3 text-center gap-1.5">
-                    <Laptop className="w-8 h-8 text-emerald-400" />
-                    <span className="text-xs font-bold text-emerald-300">Launch Virtual Extended Display</span>
-                    <span className="text-[10px] text-slate-400">Independent second screen for phone • Zero Driver</span>
+                  <div className="relative w-full h-32 rounded-lg overflow-hidden bg-slate-950/80 border border-cyan-500/30 flex flex-col items-center justify-center p-3 text-center gap-1.5">
+                    <Laptop className="w-8 h-8 text-cyan-400" />
+                    <span className="text-xs font-bold text-cyan-300">Activate Windows Extend (Projector)</span>
+                    <span className="text-[10px] text-slate-400">Switches Windows to Extend mode for connected projector or HDMI display</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-bold text-sm text-emerald-300">
-                        + Virtual Extended Stage Display
+                      <div className="font-bold text-sm text-cyan-300">
+                        + Extend to Projector / Screen 2
                       </div>
                       <div className="text-xs text-[var(--text-muted)] font-mono mt-0.5">
-                        1920×1080 @ 60 FPS • Extended Workspace
+                        Native OS Extend • Win+P
                       </div>
                     </div>
-                    {selectedPrimId === 'D:display-virtual-stage' && (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                    )}
                   </div>
                 </div>
               )}

@@ -46,10 +46,21 @@ export const VirtualStageDisplayView: React.FC = () => {
     }
   };
 
+  // Close instantly on Escape key
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   return (
     <div className="w-screen h-screen bg-slate-950 text-white font-mono flex flex-col justify-between p-6 select-none overflow-hidden border-4 border-emerald-500/30">
       {/* Top Bar: Header & Digital Wall Clock */}
-      <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+      <div className="flex items-center justify-between pb-4 border-b border-slate-800 gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400">
             <Monitor className="w-6 h-6 animate-pulse" />
@@ -74,12 +85,14 @@ export const VirtualStageDisplayView: React.FC = () => {
           </div>
         </div>
 
+        {/* Large Prominent Close Button */}
         <button
           onClick={handleClose}
-          className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500/40 transition cursor-pointer"
-          title="Close Virtual Extended Display"
+          className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold font-mono text-xs flex items-center gap-2 shadow-lg transition cursor-pointer shrink-0"
+          title="Close Virtual Extended Display (Esc)"
         >
           <X className="w-4 h-4" />
+          <span>Close Window (Esc)</span>
         </button>
       </div>
 
