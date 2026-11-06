@@ -136,7 +136,9 @@ pub fn build_companion_router(state: AppState) -> Router {
 
     Router::new()
         .route("/", get(serve_mobile_ui))
+        .route("/stage", get(serve_stage_default_ui))
         .route("/stage/:slot_id", get(serve_stage_ui))
+        .route("/ws/stage", get(ws_stage_default_handler))
         .route("/ws/stage/:slot_id", get(ws_stage_handler))
         .route("/api/status", get(api_status))
         .route("/api/network-interfaces", get(api_network_interfaces))
@@ -201,8 +203,23 @@ async fn serve_mobile_ui() -> Html<&'static str> {
     Html(render_companion_director_html())
 }
 
+async fn serve_stage_default_ui() -> Html<String> {
+    let slots = list_stage_slots(false);
+    let slot_id = slots.first().map(|s| s.id.clone()).unwrap_or_else(|| "stage-1".to_string());
+    Html(render_stage_receiver_html(&slot_id))
+}
+
 async fn serve_stage_ui(Path(slot_id): Path<String>) -> Html<String> {
     Html(render_stage_receiver_html(&slot_id))
+}
+
+async fn ws_stage_default_handler(
+    params: Query<HashMap<String, String>>,
+    ws: WebSocketUpgrade,
+) -> impl IntoResponse {
+    let slots = list_stage_slots(false);
+    let slot_id = slots.first().map(|s| s.id.clone()).unwrap_or_else(|| "stage-1".to_string());
+    ws_stage_handler(Path(slot_id), params, ws).await
 }
 
 async fn ws_stage_handler(

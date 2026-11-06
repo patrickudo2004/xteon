@@ -424,6 +424,88 @@ async fn clear_stagelink_whisper(slot_id: String) -> Option<StageLinkSlot> {
     clear_stage_whisper(&slot_id)
 }
 
+#[tauri::command]
+fn trigger_os_display_extend() -> Result<String, String> {
+    #[cfg(windows)]
+    {
+        std::process::Command::new("DisplaySwitch.exe")
+            .arg("/extend")
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        Ok("Triggered Windows Extend mode".to_string())
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("x-apple.systempreferences:com.apple.preference.displays")
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        Ok("Opened macOS Displays Settings".to_string())
+    }
+    #[cfg(not(any(windows, target_os = "macos")))]
+    {
+        std::process::Command::new("gnome-control-center")
+            .arg("display")
+            .spawn()
+            .or_else(|_| std::process::Command::new("xfce4-display-settings").spawn())
+            .map_err(|e| e.to_string())?;
+        Ok("Opened Linux Display Settings".to_string())
+    }
+}
+
+#[tauri::command]
+fn open_os_display_settings() -> Result<String, String> {
+    #[cfg(windows)]
+    {
+        open::that("ms-settings:display").map_err(|e| e.to_string())?;
+        Ok("Opened Windows Display Settings".to_string())
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("x-apple.systempreferences:com.apple.preference.displays")
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        Ok("Opened macOS Displays Settings".to_string())
+    }
+    #[cfg(not(any(windows, target_os = "macos")))]
+    {
+        std::process::Command::new("gnome-control-center")
+            .arg("display")
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        Ok("Opened Linux Display Settings".to_string())
+    }
+}
+
+#[tauri::command]
+async fn get_window_thumbnails(hwnd_ids: Vec<String>) -> std::collections::HashMap<String, String> {
+    tokio::task::spawn_blocking(move || {
+        display::window_manager::capture_windows_thumbnails(&hwnd_ids)
+    })
+    .await
+    .unwrap_or_default()
+}
+
+#[tauri::command]
+fn set_host_sleep_inhibit(inhibit: bool) -> bool {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::System::Power::{
+            SetThreadExecutionState, ES_CONTINUOUS, ES_DISPLAY_REQUIRED, ES_SYSTEM_REQUIRED,
+        };
+        unsafe {
+            if inhibit {
+                SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED);
+            } else {
+                SetThreadExecutionState(ES_CONTINUOUS);
+            }
+        }
+    }
+    let _ = inhibit;
+    true
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -480,7 +562,11 @@ pub fn run() {
             set_stagelink_slot_blackout,
             flash_stagelink_slot,
             send_stagelink_whisper,
-            clear_stagelink_whisper
+            clear_stagelink_whisper,
+            trigger_os_display_extend,
+            open_os_display_settings,
+            get_window_thumbnails,
+            set_host_sleep_inhibit
         ])
         .run(tauri::generate_context!())
         .expect("error while running xteon application");

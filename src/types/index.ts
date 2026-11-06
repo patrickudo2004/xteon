@@ -285,6 +285,7 @@ export interface CapturableWindow {
   is_xteon_self: boolean;
   display_id?: string | null;
   display_os_index?: number | null;
+  thumbnail_data_url?: string | null;
 }
 
 export interface StageWhisperPayload {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useRigStore } from '../../store/useRigStore';
 import {
   X,
@@ -12,6 +12,7 @@ import {
   RotateCcw,
   Layers,
   ArrowRight,
+  Square,
 } from 'lucide-react';
 import { StageLinkSourceMode, StageSplitLayout } from '../../types';
 
@@ -33,6 +34,8 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
     restoreOsWindowBehind,
     stageLinkSlots,
     upsertStageLinkSlot,
+    getWindowThumbnails,
+    stopStageLinkStream,
   } = useRigStore();
 
   const [activeTab, setActiveTab] = useState<'WINDOW' | 'DISPLAY' | 'SPLIT'>('WINDOW');
@@ -42,6 +45,8 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
   const [selectedSecId, setSelectedSecId] = useState('');
   const [selectedSecLabel, setSelectedSecLabel] = useState('');
   const [splitLayout, setSplitLayout] = useState<StageSplitLayout>('SIDE_70_30');
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+  const hasInitializedRef = useRef(false);
 
   // Filter out Xteon itself so operators don't mirror the controls inside itself
   const selectableWindows = useMemo(
@@ -56,23 +61,38 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      refreshOsWindows();
-      if (activeSlot) {
-        setSelectedPrimId(activeSlot.primary_source_id);
-        setSelectedPrimLabel(activeSlot.primary_source_label);
-        setSelectedSecId(activeSlot.secondary_source_id || '');
-        setSelectedSecLabel(activeSlot.secondary_source_label || '');
-        setSplitLayout(activeSlot.split_layout || 'SIDE_70_30');
-        setActiveTab(activeSlot.source_mode || 'WINDOW');
-      } else if (selectableWindows.length > 0) {
-        setSelectedPrimId(`W:${selectableWindows[0].hwnd_id}`);
-        setSelectedPrimLabel(selectableWindows[0].title);
-      } else if (liveDisplays.length > 0) {
-        setSelectedPrimId(`D:${liveDisplays[0].id}`);
-        setSelectedPrimLabel(`Screen ${liveDisplays[0].osIndex}: ${liveDisplays[0].customAlias || liveDisplays[0].name}`);
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true;
+        refreshOsWindows();
+        if (activeSlot) {
+          setSelectedPrimId(activeSlot.primary_source_id);
+          setSelectedPrimLabel(activeSlot.primary_source_label);
+          setSelectedSecId(activeSlot.secondary_source_id || '');
+          setSelectedSecLabel(activeSlot.secondary_source_label || '');
+          setSplitLayout(activeSlot.split_layout || 'SIDE_70_30');
+          setActiveTab(activeSlot.source_mode || 'WINDOW');
+        } else if (selectableWindows.length > 0) {
+          setSelectedPrimId(`W:${selectableWindows[0].hwnd_id}`);
+          setSelectedPrimLabel(selectableWindows[0].title);
+        } else if (liveDisplays.length > 0) {
+          setSelectedPrimId(`D:${liveDisplays[0].id}`);
+          setSelectedPrimLabel(`Screen ${liveDisplays[0].osIndex}: ${liveDisplays[0].customAlias || liveDisplays[0].name}`);
+        }
       }
+
+      // Grab live window thumbnails for Google Meet / Teams style visual cards
+      const hwndIds = selectableWindows.map((w) => w.hwnd_id);
+      if (hwndIds.length > 0) {
+        getWindowThumbnails(hwndIds).then((res) => {
+          if (res && Object.keys(res).length > 0) {
+            setThumbnails((prev) => ({ ...prev, ...res }));
+          }
+        });
+      }
+    } else {
+      hasInitializedRef.current = false;
     }
-  }, [isOpen, activeSlot]);
+  }, [isOpen]);
 
   const filteredWindows = useMemo(() => {
     if (!searchQuery.trim()) return selectableWindows;
@@ -99,7 +119,7 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
   };
 
   const handleApply = async () => {
-    const slotId = activeSlot?.id || 'stage-primary';
+    const slotId = activeSlot?.id || 'stage-1';
     const slotName = activeSlot?.name || 'Stage Confidence Monitor';
     const stageZone = activeSlot?.stage_zone || 'Pulpit Shelf';
 
@@ -232,14 +252,45 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
                           setSelectedPrimId(`W:${win.hwnd_id}`);
                           setSelectedPrimLabel(win.title);
                         }}
-                        className={`p-3 rounded-xl border transition-all cursor-pointer relative flex flex-col justify-between gap-3 text-left ${
+                        className={`p-3 rounded-xl border transition-all cursor-pointer relative flex flex-col justify-between gap-2.5 text-left ${
                           isSelected
                             ? 'bg-cyan-500/10 border-cyan-400 shadow-md ring-1 ring-cyan-400/50'
                             : 'bg-[var(--bg-subcard)] border-[var(--border-color)] hover:border-cyan-500/40 hover:bg-[var(--bg-card)]'
                         }`}
                       >
-                        <div className="flex items-start gap-2.5">
-                          <span className="text-xl shrink-0 p-1 rounded-md bg-[var(--bg-card)] border border-[var(--border-color)]">
+                        {/* Live Thumbnail Preview (Google Meet / Teams Style) */}
+                        <div className="relative w-full h-28 rounded-lg overflow-hidden bg-slate-950/80 border border-[var(--border-color)] flex items-center justify-center">
+                          {thumbnails[win.hwnd_id] ? (
+                            <img
+                              src={thumbnails[win.hwnd_id]}
+                              alt={win.title}
+                              className="w-full h-full object-contain"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center justify-center gap-1 text-[var(--text-muted)]">
+                              <span className="text-3xl">{getProcessIcon(win.process_name)}</span>
+                              <span className="text-[10px] font-mono">{win.process_name}</span>
+                            </div>
+                          )}
+                          {win.is_minimized && (
+                            <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xs flex flex-col items-center justify-center p-2 text-center">
+                              <span className="text-amber-400 text-xs font-bold font-mono">TASKBAR MINIMIZED</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  restoreOsWindowBehind(win.hwnd_id);
+                                }}
+                                className="mt-1.5 px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30 hover:bg-amber-500/30 cursor-pointer"
+                              >
+                                Restore Window
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-start gap-2 min-w-0">
+                          <span className="text-base shrink-0">
                             {getProcessIcon(win.process_name)}
                           </span>
                           <div className="flex-1 min-w-0">
@@ -253,20 +304,9 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
                         </div>
 
                         {/* Status Badges */}
-                        <div className="flex items-center justify-between pt-2 border-t border-[var(--border-color)]/60 text-[10px]">
+                        <div className="flex items-center justify-between pt-1.5 border-t border-[var(--border-color)]/60 text-[10px]">
                           {win.is_minimized ? (
-                            <span className="text-amber-400 flex items-center gap-1 font-mono">
-                              ⚠️ Minimized
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  restoreOsWindowBehind(win.hwnd_id);
-                                }}
-                                className="underline hover:text-amber-300 ml-1"
-                              >
-                                Restore
-                              </button>
-                            </span>
+                            <span className="text-amber-400 font-mono">⚠️ Minimized</span>
                           ) : (
                             <span className="text-emerald-400 font-mono">● Ready to Stream</span>
                           )}
@@ -303,10 +343,23 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
                         : 'bg-[var(--bg-subcard)] border-[var(--border-color)] hover:border-blue-500/40 hover:bg-[var(--bg-card)]'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400">
-                        <Monitor className="w-6 h-6" />
-                      </div>
+                    {/* Live Screen Preview */}
+                    <div className="relative w-full h-32 rounded-lg overflow-hidden bg-slate-950/80 border border-[var(--border-color)] flex items-center justify-center">
+                      {disp.liveThumbnailUrl ? (
+                        <img
+                          src={disp.liveThumbnailUrl}
+                          alt={disp.name}
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center gap-1 text-[var(--text-muted)]">
+                          <Monitor className="w-8 h-8 text-cyan-400" />
+                          <span className="text-[10px] font-mono">{disp.activeResolution.width}×{disp.activeResolution.height}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
                       <div>
                         <div className="font-bold text-sm">
                           Screen {disp.osIndex}: {disp.customAlias || disp.name}
@@ -318,11 +371,7 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
                           {disp.portType} • {disp.stageZone}
                         </div>
                       </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-3 border-t border-[var(--border-color)]/60 text-xs font-mono">
-                      <span className="text-emerald-400">Hardware Desktop Output</span>
-                      {isSelected && <CheckCircle2 className="w-5 h-5 text-blue-400" />}
+                      {isSelected && <CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0" />}
                     </div>
                   </div>
                 );
@@ -335,6 +384,60 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
             <div className="space-y-4">
               <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs text-purple-300">
                 <strong>Stage Multiview:</strong> Composites two independent applications side-by-side onto the speaker's tablet (e.g. countdown clock on the left, presentation notes on the right).
+              </div>
+
+              {/* Dynamic Live Composite Mockup Preview */}
+              <div className="p-3 rounded-xl bg-slate-950 border border-[var(--border-color)] space-y-1.5">
+                <div className="text-[11px] font-mono text-[var(--text-muted)] font-bold uppercase tracking-wider flex items-center justify-between">
+                  <span>Live Multiview Layout Preview</span>
+                  <span className="text-purple-400">{splitLayout}</span>
+                </div>
+                <div className="w-full h-36 rounded-lg bg-black/60 border border-purple-500/40 flex overflow-hidden p-1 gap-1">
+                  <div
+                    className="h-full rounded bg-slate-900 border border-cyan-500/50 flex flex-col items-center justify-center overflow-hidden transition-all relative"
+                    style={{
+                      width:
+                        splitLayout === 'SIDE_70_30' ? '70%' : splitLayout === 'SIDE_50_50' ? '50%' : '100%',
+                    }}
+                  >
+                    {thumbnails[selectedPrimId.replace('W:', '')] ? (
+                      <img
+                        src={thumbnails[selectedPrimId.replace('W:', '')]}
+                        alt="Primary"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="text-xs font-mono text-cyan-300 p-2 text-center truncate">
+                        Primary: {selectedPrimLabel || 'Select primary app'}
+                      </div>
+                    )}
+                    <span className="absolute bottom-1 left-1 px-1 rounded bg-black/70 text-[9px] font-mono text-cyan-400">
+                      Primary
+                    </span>
+                  </div>
+                  <div
+                    className="h-full rounded bg-slate-900 border border-purple-500/50 flex flex-col items-center justify-center overflow-hidden transition-all relative"
+                    style={{
+                      width:
+                        splitLayout === 'SIDE_70_30' ? '30%' : splitLayout === 'SIDE_50_50' ? '50%' : '100%',
+                    }}
+                  >
+                    {thumbnails[selectedSecId.replace('W:', '')] ? (
+                      <img
+                        src={thumbnails[selectedSecId.replace('W:', '')]}
+                        alt="Secondary"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="text-xs font-mono text-purple-300 p-2 text-center truncate">
+                        {selectedSecLabel || 'Secondary app'}
+                      </div>
+                    )}
+                    <span className="absolute bottom-1 right-1 px-1 rounded bg-black/70 text-[9px] font-mono text-purple-400">
+                      Secondary
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Layout Picker */}
@@ -418,8 +521,24 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
 
         {/* Footer Actions */}
         <div className="px-5 py-3.5 border-t border-[var(--border-color)] bg-[var(--bg-header)] flex items-center justify-between gap-3 shrink-0">
-          <div className="text-xs text-[var(--text-muted)] truncate hidden sm:block">
-            Selected: <span className="font-bold text-[var(--text-primary)]">{selectedPrimLabel || 'None'}</span>
+          <div className="flex items-center gap-3">
+            {activeSlot && (
+              <button
+                type="button"
+                onClick={async () => {
+                  await stopStageLinkStream(activeSlot.id);
+                  onClose();
+                }}
+                className="px-3.5 py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer"
+                title="Stop current broadcast feed"
+              >
+                <Square className="w-3.5 h-3.5 fill-current" />
+                <span>Stop Sharing</span>
+              </button>
+            )}
+            <div className="text-xs text-[var(--text-muted)] truncate hidden sm:block">
+              Selected: <span className="font-bold text-[var(--text-primary)]">{selectedPrimLabel || 'None'}</span>
+            </div>
           </div>
           <div className="flex items-center gap-2 ml-auto">
             <button
