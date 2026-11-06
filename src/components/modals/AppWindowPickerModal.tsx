@@ -33,6 +33,7 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
     refreshOsWindows,
     restoreOsWindowBehind,
     stageLinkSlots,
+    refreshStageLinkSlots,
     upsertStageLinkSlot,
     getWindowThumbnails,
     stopStageLinkStream,
@@ -120,8 +121,8 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
 
   const handleApply = async () => {
     const slotId = activeSlot?.id || 'stage-1';
-    const slotName = activeSlot?.name || 'Stage Confidence Monitor';
-    const stageZone = activeSlot?.stage_zone || 'Pulpit Shelf';
+    const slotName = activeSlot?.name || 'Stage Receiver (Pulpit Tablet)';
+    const stageZone = activeSlot?.stage_zone || 'Pulpit Altar';
 
     await upsertStageLinkSlot({
       id: slotId,
@@ -137,6 +138,7 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
       max_width: 1280,
     });
 
+    await refreshStageLinkSlots(true);
     onClose();
   };
 

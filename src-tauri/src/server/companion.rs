@@ -206,7 +206,12 @@ async fn serve_mobile_ui() -> Html<&'static str> {
 
 async fn serve_stage_default_ui() -> Html<String> {
     let slots = list_stage_slots(false);
-    let slot_id = slots.first().map(|s| s.id.clone()).unwrap_or_else(|| "stage-1".to_string());
+    let slot_id = if let Some(first) = slots.first() {
+        first.id.clone()
+    } else {
+        let rt = ensure_default_slot_exists();
+        rt.slot.lock().map(|s| s.id.clone()).unwrap_or_else(|_| "stage-1".to_string())
+    };
     Html(render_stage_receiver_html(&slot_id))
 }
 
@@ -219,7 +224,12 @@ async fn ws_stage_default_handler(
     ws: WebSocketUpgrade,
 ) -> impl IntoResponse {
     let slots = list_stage_slots(false);
-    let slot_id = slots.first().map(|s| s.id.clone()).unwrap_or_else(|| "stage-1".to_string());
+    let slot_id = if let Some(first) = slots.first() {
+        first.id.clone()
+    } else {
+        let rt = ensure_default_slot_exists();
+        rt.slot.lock().map(|s| s.id.clone()).unwrap_or_else(|_| "stage-1".to_string())
+    };
     ws_stage_handler(Path(slot_id), params, ws).await
 }
 
@@ -254,13 +264,7 @@ impl Drop for SubscriberGuard {
 async fn handle_stage_ws(mut socket: WebSocket, slot_id: String, cid: String) {
     let rt = match get_slot_runtime(&slot_id) {
         Some(rt) => rt,
-        None => {
-            if slot_id == "stage-1" || slot_id == "stage-primary" || slot_id == "stage" {
-                ensure_default_slot_exists()
-            } else {
-                return;
-            }
-        }
+        None => ensure_default_slot_exists(),
     };
     rt.subscriber_count.fetch_add(1, Ordering::SeqCst);
     if let Ok(mut s) = rt.slot.lock() {
