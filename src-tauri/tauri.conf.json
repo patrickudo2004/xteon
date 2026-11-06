@@ -49,6 +49,9 @@
         "role": "Editor"
       }
     ],
+    "resources": [
+      "resources/drivers/vdd/*"
+    ],
     "macOS": {
       "infoPlist": "Info.plist",
       "entitlements": "Entitlements.plist",

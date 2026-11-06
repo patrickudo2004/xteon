@@ -71,6 +71,7 @@ pub fn enumerate_real_windows_displays() -> Vec<NativeDisplayInfo> {
                     || all_info.contains("duet")
                     || all_info.contains("splashtop")
                     || all_info.contains("iddcx")
+                    || all_info.contains("mttvdd")
                     || all_info.contains("virtual display");
 
                 let is_explicit_hdmi = all_info.contains("hdmi");

@@ -179,6 +179,7 @@ pub async fn start_companion_server_with_handle(app_handle: tauri::AppHandle) {
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
     if let Ok(listener) = tokio::net::TcpListener::bind(addr).await {
         SERVER_BOUND_OK.store(true, Ordering::SeqCst);
+        crate::server::stagelink::ensure_default_slot_exists();
         println!(
             "🚀 [Xteon Companion & StageLink] Live Server listening on http://{}:{}",
             get_preferred_lan_ip(),

@@ -30,6 +30,7 @@ import {
   StageSplitLayout,
   StageLinkSlot,
   UpsertStageSlotInput,
+  VirtualDriverStatus,
 } from '../types';
 import { INDUSTRY_TEMPLATES } from '../utils/industryTemplates';
 
@@ -884,6 +885,12 @@ interface RigState {
   stopStageLinkStream: (slotId?: string) => Promise<void>;
   spawnVirtualExtendedDisplay: (width?: number, height?: number) => Promise<boolean>;
   closeVirtualExtendedDisplay: () => Promise<boolean>;
+  virtualDriverStatus: VirtualDriverStatus | null;
+  isVirtualDriverBusy: boolean;
+  refreshVirtualDriverStatus: () => Promise<VirtualDriverStatus | null>;
+  installVirtualDisplayDriver: () => Promise<string>;
+  toggleVirtualDisplay: (enable: boolean) => Promise<string>;
+  uninstallVirtualDisplayDriver: () => Promise<string>;
 }
 
 let isCapturingInProgress = false;
@@ -2627,6 +2634,8 @@ export const useRigStore = create<RigState>((set, get) => ({
   stageLinkModalOpen: false,
   editingStageSlotId: null,
   qrStageSlotId: null,
+  virtualDriverStatus: null,
+  isVirtualDriverBusy: false,
 
   openStageLinkModal: (slotId = null) => {
     set({ stageLinkModalOpen: true, editingStageSlotId: slotId });
@@ -3056,6 +3065,79 @@ export const useRigStore = create<RigState>((set, get) => ({
     return false;
   },
 
+  refreshVirtualDriverStatus: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const status = (await invoke('get_virtual_driver_status')) as VirtualDriverStatus;
+        set({ virtualDriverStatus: status });
+        return status;
+      } catch (err) {
+        console.warn('get_virtual_driver_status error:', err);
+      }
+    }
+    return null;
+  },
+
+  installVirtualDisplayDriver: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        set({ isVirtualDriverBusy: true });
+        const { invoke } = await import('@tauri-apps/api/core');
+        const res = (await invoke('install_os_virtual_display_driver')) as string;
+        await new Promise((r) => setTimeout(r, 1000));
+        await get().refreshVirtualDriverStatus();
+        await get().refreshLiveDisplays();
+        return res;
+      } catch (err: any) {
+        console.warn('install_os_virtual_display_driver error:', err);
+        return String(err?.message || err);
+      } finally {
+        set({ isVirtualDriverBusy: false });
+      }
+    }
+    return 'Driver installation not available in browser mode';
+  },
+
+  toggleVirtualDisplay: async (enable: boolean) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        set({ isVirtualDriverBusy: true });
+        const { invoke } = await import('@tauri-apps/api/core');
+        const res = (await invoke('toggle_virtual_display_active_state', { enable })) as string;
+        await new Promise((r) => setTimeout(r, 1200));
+        await get().refreshVirtualDriverStatus();
+        await get().refreshLiveDisplays();
+        return res;
+      } catch (err: any) {
+        console.warn('toggle_virtual_display error:', err);
+        return String(err?.message || err);
+      } finally {
+        set({ isVirtualDriverBusy: false });
+      }
+    }
+    return 'Driver toggle not available in browser mode';
+  },
+
+  uninstallVirtualDisplayDriver: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        set({ isVirtualDriverBusy: true });
+        const { invoke } = await import('@tauri-apps/api/core');
+        const res = (await invoke('uninstall_os_virtual_display_driver')) as string;
+        await get().refreshVirtualDriverStatus();
+        await get().refreshLiveDisplays();
+        return res;
+      } catch (err: any) {
+        console.warn('uninstall_os_virtual_display_driver error:', err);
+        return String(err?.message || err);
+      } finally {
+        set({ isVirtualDriverBusy: false });
+      }
+    }
+    return 'Driver uninstallation not available in browser mode';
+  },
+
   stopStageLinkStream: async (slotId?: string) => {
     const target = slotId ? get().stageLinkSlots.find((s) => s.id === slotId) : get().stageLinkSlots[0];
     if (!target) return;
@@ -3097,6 +3179,7 @@ if (typeof window !== 'undefined') {
     useRigStore.getState().refreshCompanionStatus();
     useRigStore.getState().refreshOsWindows();
     useRigStore.getState().refreshStageLinkSlots(false);
+    useRigStore.getState().refreshVirtualDriverStatus();
   }, 100);
 
   // Demand-driven StageLink & OS Window Director polling (0% CPU in Planner Studio)
@@ -3107,6 +3190,7 @@ if (typeof window !== 'undefined') {
       st.refreshOsWindows();
       st.refreshStageLinkSlots(isLiveView);
       st.refreshCompanionStatus();
+      st.refreshVirtualDriverStatus();
     }
   }, 1200);
 

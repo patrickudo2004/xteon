@@ -68,6 +68,11 @@ export const StageDisplaysView: React.FC = () => {
     upsertStageLinkSlot,
     spawnVirtualExtendedDisplay,
     closeVirtualExtendedDisplay,
+    virtualDriverStatus,
+    isVirtualDriverBusy,
+    installVirtualDisplayDriver,
+    toggleVirtualDisplay,
+    uninstallVirtualDisplayDriver,
   } = useRigStore();
 
   const [pickerModalOpen, setPickerModalOpen] = useState(false);
@@ -196,6 +201,28 @@ export const StageDisplaysView: React.FC = () => {
     await useRigStore.getState().refreshLiveDisplays();
     setRecallSuccessMsg('Closed Virtual Extended Stage Display');
     setTimeout(() => setRecallSuccessMsg(''), 3000);
+  };
+
+  const handleToggleVirtualDisplay = async (enable: boolean) => {
+    try {
+      const res = await toggleVirtualDisplay(enable);
+      setRecallSuccessMsg(res || (enable ? 'Virtual Extended Display active!' : 'Virtual Display disconnected'));
+      setTimeout(() => setRecallSuccessMsg(''), 4000);
+    } catch (e: any) {
+      setRecallSuccessMsg(`Virtual display error: ${e?.message || e}`);
+      setTimeout(() => setRecallSuccessMsg(''), 4000);
+    }
+  };
+
+  const handleInstallVirtualDriver = async () => {
+    try {
+      const res = await installVirtualDisplayDriver();
+      setRecallSuccessMsg(res || 'Virtual Display Driver installed successfully!');
+      setTimeout(() => setRecallSuccessMsg(''), 4500);
+    } catch (e: any) {
+      setRecallSuccessMsg(`Driver install error: ${e?.message || e}`);
+      setTimeout(() => setRecallSuccessMsg(''), 4500);
+    }
   };
 
   // Instantly stream host desktop screen (Display 1) at 60 FPS zero-install
@@ -484,7 +511,11 @@ export const StageDisplaysView: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                {secondaryDisplay ? (
+                {virtualDriverStatus?.is_active ? (
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
+                    ● Virtual Display 2 Active
+                  </span>
+                ) : secondaryDisplay ? (
                   <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
                     ● Display 2 (Projector / Extended) Active
                   </span>
@@ -566,6 +597,38 @@ export const StageDisplaysView: React.FC = () => {
                   {isExtending ? 'Activating...' : 'Windows Extend (Win+P)'}
                 </span>
               </button>
+
+              {virtualDriverStatus?.is_active ? (
+                <button
+                  onClick={() => handleToggleVirtualDisplay(false)}
+                  disabled={isVirtualDriverBusy}
+                  className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
+                  title="Disconnect virtual extended screen"
+                >
+                  <Monitor className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{isVirtualDriverBusy ? 'Updating...' : 'Unplug Screen 2'}</span>
+                </button>
+              ) : virtualDriverStatus?.is_installed ? (
+                <button
+                  onClick={() => handleToggleVirtualDisplay(true)}
+                  disabled={isVirtualDriverBusy}
+                  className="px-2.5 py-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
+                  title="Plug in virtual extended monitor (Display 2) for PowerPoint Presenter View"
+                >
+                  <Monitor className="w-3.5 h-3.5 text-blue-400" />
+                  <span>{isVirtualDriverBusy ? 'Plugging in...' : 'Plug In Screen 2'}</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleInstallVirtualDriver}
+                  disabled={isVirtualDriverBusy}
+                  className="px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
+                  title="Setup virtual extended display driver for PowerPoint Presenter View without physical monitors"
+                >
+                  <Monitor className="w-3.5 h-3.5 text-purple-400" />
+                  <span>{isVirtualDriverBusy ? 'Installing...' : 'Setup Virtual Extended Display'}</span>
+                </button>
+              )}
 
               {secondaryDisplay && (
                 <button

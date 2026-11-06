@@ -18,6 +18,10 @@ use server::stagelink::{
     set_slot_blackout, set_slot_freeze, trigger_slot_flash, upsert_stage_slot,
     CreateOrUpdateSlotInput, StageLinkSlot,
 };
+use display::virtual_driver::{
+    install_virtual_driver, query_virtual_driver_status, toggle_virtual_display_active,
+    uninstall_virtual_driver, VirtualDriverStatus,
+};
 use display::window_manager::{
     list_capturable_windows, recall_stray_windows_to_primary, restore_window_behind,
     route_window_to_display, set_window_pinned_stage, unroute_window_to_primary, CapturableWindow,
@@ -632,6 +636,26 @@ fn close_virtual_extended_display(app: tauri::AppHandle) -> bool {
     false
 }
 
+#[tauri::command]
+async fn get_virtual_driver_status() -> VirtualDriverStatus {
+    query_virtual_driver_status().await
+}
+
+#[tauri::command]
+async fn install_os_virtual_display_driver() -> Result<String, String> {
+    install_virtual_driver().await
+}
+
+#[tauri::command]
+async fn toggle_virtual_display_active_state(enable: bool) -> Result<String, String> {
+    toggle_virtual_display_active(enable).await
+}
+
+#[tauri::command]
+async fn uninstall_os_virtual_display_driver() -> Result<String, String> {
+    uninstall_virtual_driver().await
+}
+
 
 
 pub fn run() {
@@ -698,7 +722,11 @@ pub fn run() {
             get_window_thumbnails,
             set_host_sleep_inhibit,
             spawn_virtual_extended_display,
-            close_virtual_extended_display
+            close_virtual_extended_display,
+            get_virtual_driver_status,
+            install_os_virtual_display_driver,
+            toggle_virtual_display_active_state,
+            uninstall_os_virtual_display_driver
         ])
         .run(tauri::generate_context!())
         .expect("error while running xteon application");
