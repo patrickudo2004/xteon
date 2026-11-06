@@ -36,11 +36,11 @@ const hardwareCatalog: { category: DeviceCategory; label: string; icon: React.Re
     icon: <Server className="w-4 h-4 text-blue-400" />,
     items: [
       { category: 'SOURCE', deviceType: 'LAPTOP', label: 'Presentation Laptop', desc: 'Host / Guest speaker laptop', defaultPorts: '1x HDMI 2.0, 1x USB-C DP' },
-      { category: 'SOURCE', deviceType: 'MEDIA_SERVER', label: 'FOH Media Server', desc: 'Workstation driving ProPresenter / Resolume / OBS', defaultPorts: '4x DP 1.4 / HDMI 2.0 Outputs' },
+      { category: 'SOURCE', deviceType: 'MEDIA_SERVER', label: 'FOH Media Server', desc: 'Workstation driving live media, presentation & video playout', defaultPorts: '4x DP 1.4 / HDMI 2.0 Outputs' },
       { category: 'SOURCE', deviceType: 'CAMERA_PTZ', label: 'PTZ Robotic Camera', desc: 'NDI / 12G-SDI remote robotic camera', defaultPorts: '1x 12G-SDI, 1x HDMI, 1x NDI' },
       { category: 'SOURCE', deviceType: 'CAMERA_SDI', label: 'Studio Broadcast Camera', desc: 'Broadcast camera feed over BNC', defaultPorts: '1x 12G-SDI Out' },
       { category: 'SOURCE', deviceType: 'PLAYBACK_RECORDER', label: 'HyperDeck Recorder/Player', desc: 'Blackmagic video deck playback', defaultPorts: '12G-SDI & HDMI Playback + Loop' },
-      { category: 'SOURCE', deviceType: 'WIRELESS_GATEWAY', label: 'Wireless Screen Gateway', desc: 'ASUS GlideX / Barco ClickShare / Miracast', defaultPorts: 'Wireless In -> HDMI Out' },
+      { category: 'SOURCE', deviceType: 'WIRELESS_GATEWAY', label: 'Wireless Screen Gateway', desc: 'Hardware Wireless Screen Receiver / Casting Gateway', defaultPorts: 'Wireless In -> HDMI Out' },
     ],
   },
   {

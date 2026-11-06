@@ -66,13 +66,7 @@ export const StageDisplaysView: React.FC = () => {
     stopStageLinkStream,
     deleteStageLinkSlot,
     upsertStageLinkSlot,
-    spawnVirtualExtendedDisplay,
     closeVirtualExtendedDisplay,
-    virtualDriverStatus,
-    isVirtualDriverBusy,
-    installVirtualDisplayDriver,
-    toggleVirtualDisplay,
-    uninstallVirtualDisplayDriver,
   } = useRigStore();
 
   const [pickerModalOpen, setPickerModalOpen] = useState(false);
@@ -84,7 +78,6 @@ export const StageDisplaysView: React.FC = () => {
   const [broadcastWhisperInput, setBroadcastWhisperInput] = useState('');
   const [broadcastTone, setBroadcastTone] = useState<'INFO' | 'WARN' | 'CRITICAL'>('WARN');
   const [slotWhisperDrafts, setSlotWhisperDrafts] = useState<Record<string, string>>({});
-  const [isExtending, setIsExtending] = useState(false);
   const [recallSuccessMsg, setRecallSuccessMsg] = useState('');
   const [copiedLinkSlotId, setCopiedLinkSlotId] = useState<string | null>(null);
 
@@ -150,80 +143,6 @@ export const StageDisplaysView: React.FC = () => {
   const totalConnectedClients = useMemo(() => {
     return stageLinkSlots.reduce((acc, s) => acc + (s.connected_clients || 0), 0);
   }, [stageLinkSlots]);
-
-  // Handle trigger native OS Extend shortcut (Windows DisplaySwitch, macOS, Linux)
-  const handleTriggerWindowsExtend = async () => {
-    setIsExtending(true);
-    try {
-      // 1. Ensure any legacy virtual window is dismissed
-      await closeVirtualExtendedDisplay();
-
-      // 2. Trigger native OS Extend shortcut (Windows: DisplaySwitch.exe /extend)
-      const res = await triggerOsDisplayExtend();
-
-      // 3. Wait briefly for Windows to activate the projector / second screen
-      await new Promise((r) => setTimeout(r, 800));
-      await useRigStore.getState().refreshLiveDisplays();
-
-      const updated = useRigStore.getState().liveDisplays;
-      const secDisp = updated.find((d) => d.osIndex > 1 && d.id !== 'display-virtual-stage');
-
-      if (secDisp && primarySlot) {
-        await upsertStageLinkSlot({
-          id: primarySlot.id,
-          name: primarySlot.name,
-          stage_zone: primarySlot.stage_zone,
-          source_mode: 'DISPLAY',
-          primary_source_id: `D:${secDisp.id}`,
-          primary_source_label: `Display ${secDisp.osIndex}: ${secDisp.customAlias || secDisp.name} (Projector)`,
-          target_fps: 60,
-          max_width: 1920,
-        });
-        await refreshStageLinkSlots(true);
-        setRecallSuccessMsg(res || `Extended Windows desktop! Projector (Display ${secDisp.osIndex}) connected.`);
-      } else {
-        setRecallSuccessMsg('Switched Windows to Extended Desktop mode. Connect projector or HDMI cable to use Screen 2.');
-      }
-      setTimeout(() => setRecallSuccessMsg(''), 4500);
-    } catch (e: any) {
-      console.warn('Display extend trigger:', e);
-      setRecallSuccessMsg(`Display extend: ${e?.message || e}`);
-      setTimeout(() => setRecallSuccessMsg(''), 4500);
-    } finally {
-      setIsExtending(false);
-      await useRigStore.getState().refreshLiveDisplays();
-    }
-  };
-
-  // Close Xteon Virtual Extended Display
-  const handleCloseVirtualDisplay = async () => {
-    await closeVirtualExtendedDisplay();
-    await useRigStore.getState().refreshLiveDisplays();
-    setRecallSuccessMsg('Closed Virtual Extended Stage Display');
-    setTimeout(() => setRecallSuccessMsg(''), 3000);
-  };
-
-  const handleToggleVirtualDisplay = async (enable: boolean) => {
-    try {
-      const res = await toggleVirtualDisplay(enable);
-      setRecallSuccessMsg(res || (enable ? 'Virtual Extended Display active!' : 'Virtual Display disconnected'));
-      setTimeout(() => setRecallSuccessMsg(''), 4000);
-    } catch (e: any) {
-      setRecallSuccessMsg(`Virtual display error: ${e?.message || e}`);
-      setTimeout(() => setRecallSuccessMsg(''), 4000);
-    }
-  };
-
-  const handleInstallVirtualDriver = async () => {
-    try {
-      const res = await installVirtualDisplayDriver();
-      setRecallSuccessMsg(res || 'Virtual Display Driver installed successfully!');
-      setTimeout(() => setRecallSuccessMsg(''), 4500);
-    } catch (e: any) {
-      setRecallSuccessMsg(`Driver install error: ${e?.message || e}`);
-      setTimeout(() => setRecallSuccessMsg(''), 4500);
-    }
-  };
 
   // Instantly stream host desktop screen (Display 1) at 60 FPS zero-install
   const handleStreamDesktop = async (slotId?: string) => {
@@ -492,300 +411,193 @@ export const StageDisplaysView: React.FC = () => {
         </div>
       )}
 
-      {/* Two Core Operation Modes Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* MODE 1: ZERO-INSTALL EXTERNAL MONITOR & STAGE SCREEN */}
-        <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col justify-between gap-5 relative overflow-hidden">
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400">
-                  <Laptop className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="font-bold font-mono text-sm sm:text-base text-[var(--text-primary)]">
-                    External Monitor & Stage Screen
-                  </h2>
-                  <div className="text-[11px] text-[var(--text-muted)]">
-                    Zero-install screen streaming for phones, tablets, projectors & confidence monitors
-                  </div>
-                </div>
+      {/* Primary Active Broadcast Source Caster (Brand-Agnostic, Multi-Source Hub) */}
+      <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col justify-between gap-5 relative overflow-hidden">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300">
+                <AppWindow className="w-5 h-5" />
               </div>
-
-              <div className="flex items-center gap-2">
-                {virtualDriverStatus?.is_active ? (
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
-                    ● Virtual Display 2 Active
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-bold font-mono text-base text-[var(--text-primary)]">
+                    Active Broadcast Source Caster
+                  </h2>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono font-bold">
+                    60 FPS ZERO-LATENCY
                   </span>
-                ) : secondaryDisplay ? (
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
-                    ● Display 2 (Projector / Extended) Active
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-[10px] font-mono font-bold flex items-center gap-1">
-                    ● Primary Screen (Display 1 Ready)
-                  </span>
-                )}
+                </div>
+                <div className="text-xs text-[var(--text-muted)]">
+                  Zero-install real-time streaming of any application window, display surface, or split layout to connected stage devices
+                </div>
               </div>
             </div>
 
-            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              Stream your full desktop screen or any active application window (PowerPoint, Keynote, Timer, ProPresenter) directly to connected phones and tablets at 60 FPS zero-install.
-            </p>
-
-            {secondaryDisplay && (
-              <div className="p-3 rounded-xl bg-[var(--bg-subcard)] border border-blue-500/30 text-xs font-mono space-y-1">
-                <div className="text-[var(--text-primary)] font-bold flex items-center justify-between">
-                  <span>Screen {secondaryDisplay.osIndex}: {secondaryDisplay.customAlias || secondaryDisplay.name}</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">
-                    EXTENDED MONITOR (60 FPS)
-                  </span>
-                </div>
-                <div className="text-[10px] text-[var(--text-muted)]">
-                  {secondaryDisplay.activeResolution.width}×{secondaryDisplay.activeResolution.height} @ {secondaryDisplay.refreshRateHz}Hz • {secondaryDisplay.portType}
-                </div>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {primarySlot?.is_frozen ? (
+                <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[11px] font-mono font-bold flex items-center gap-1.5">
+                  <Snowflake className="w-3 h-3" />
+                  <span>FROZEN FRAME ACTIVE</span>
+                </span>
+              ) : primarySlot?.is_blackout ? (
+                <span className="px-2.5 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/40 text-[11px] font-mono font-bold flex items-center gap-1.5">
+                  <Square className="w-3 h-3 fill-current" />
+                  <span>BLACKOUT ACTIVE</span>
+                </span>
+              ) : primarySlot?.primary_source_label ? (
+                <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-mono font-bold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>LIVE BROADCASTING</span>
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 rounded-full bg-[var(--bg-subcard)] text-[var(--text-muted)] border border-[var(--border-color)] text-[11px] font-mono font-bold">
+                  STANDBY • READY
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Action Buttons - Cleanly Grouped & Sized */}
-          <div className="space-y-2.5 pt-3 border-t border-[var(--border-color)]">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-muted)] mr-1">
-                Display Feed:
-              </span>
+          {/* Currently Streaming Preview Tile */}
+          <div className="p-3.5 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-amber-300 text-xl shrink-0">
+                {primarySlot?.source_mode === 'DISPLAY' ? '🖥️' : primarySlot?.source_mode === 'SPLIT' ? '⚡' : '🪟'}
+              </div>
+              <div className="min-w-0 space-y-0.5">
+                <div className="text-sm font-bold text-[var(--text-primary)] truncate">
+                  {primarySlot?.primary_source_label || 'Standby — Ready for source assignment'}
+                </div>
+                <div className="text-xs text-[var(--text-muted)] font-mono flex items-center gap-2">
+                  <span>Mode: {primarySlot?.source_mode || 'WINDOW'}</span>
+                  <span>•</span>
+                  <span>Target: {primarySlot?.target_fps || 60} FPS</span>
+                  <span>•</span>
+                  <span className="text-emerald-400 font-bold">{primarySlot?.live_fps || 0} FPS Live</span>
+                  {secondaryDisplay && (
+                    <>
+                      <span>•</span>
+                      <span className="text-blue-300">Screen 2 Detected</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  setPickerTargetSlotId(primarySlot?.id);
+                  setPickerModalOpen(true);
+                }}
+                className="px-3.5 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[38px]"
+                title="Select any active application window, presentation display, or split view"
+              >
+                <AppWindow className="w-3.5 h-3.5 text-amber-400" />
+                <span>{primarySlot?.primary_source_label ? 'Change Source...' : 'Select Source Window...'}</span>
+              </button>
+
               <button
                 onClick={() => handleStreamDesktop()}
-                className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
-                title="Immediately stream host laptop desktop screen to connected receivers"
+                className="px-3 py-2 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-primary)] text-xs font-mono font-medium transition flex items-center gap-1.5 cursor-pointer min-h-[38px]"
+                title="Immediately stream primary host desktop screen"
               >
-                <Laptop className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Laptop Mirror (Display 1)</span>
+                <Laptop className="w-3.5 h-3.5" />
+                <span>Stream Desktop</span>
               </button>
 
               {secondaryDisplay && (
                 <button
                   onClick={() => handleStreamProjectorScreen(primarySlot?.id)}
-                  className="px-2.5 py-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
-                  title="Stream projector / second screen directly to connected devices"
+                  className="px-3 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[38px]"
+                  title="Stream physical second screen / projector output directly"
                 >
                   <Monitor className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Stream Projector (Display {secondaryDisplay.osIndex})</span>
+                  <span>Stream Display {secondaryDisplay.osIndex}</span>
                 </button>
               )}
 
-              <button
-                onClick={() => setPickerModalOpen(true)}
-                className="px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
-                title="Cast specific presentation or timer application window"
-              >
-                <AppWindow className="w-3.5 h-3.5 text-purple-400" />
-                <span>Cast App Window (PowerPoint / Timer)</span>
-              </button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[var(--border-color)]/60">
-              <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-muted)] mr-1">
-                Windows OS:
-              </span>
-              <button
-                onClick={handleTriggerWindowsExtend}
-                disabled={isExtending}
-                className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-cyan-500/40 text-cyan-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
-                title="Activate Windows Extended Desktop mode (DisplaySwitch /extend)"
-              >
-                <Monitor className="w-3.5 h-3.5" />
-                <span>
-                  {isExtending ? 'Activating...' : 'Windows Extend (Win+P)'}
-                </span>
-              </button>
-
-              {virtualDriverStatus?.is_active ? (
+              {primarySlot?.primary_source_label && (
                 <button
-                  onClick={() => handleToggleVirtualDisplay(false)}
-                  disabled={isVirtualDriverBusy}
-                  className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
-                  title="Disconnect virtual extended screen"
+                  onClick={() => handleStopSharing(primarySlot.id)}
+                  className="px-3 py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1.5 min-h-[38px]"
+                  title="Stop sharing feed to stage receivers"
                 >
-                  <Monitor className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>{isVirtualDriverBusy ? 'Updating...' : 'Unplug Screen 2'}</span>
-                </button>
-              ) : virtualDriverStatus?.is_installed ? (
-                <button
-                  onClick={() => handleToggleVirtualDisplay(true)}
-                  disabled={isVirtualDriverBusy}
-                  className="px-2.5 py-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
-                  title="Plug in virtual extended monitor (Display 2) for PowerPoint Presenter View"
-                >
-                  <Monitor className="w-3.5 h-3.5 text-blue-400" />
-                  <span>{isVirtualDriverBusy ? 'Plugging in...' : 'Plug In Screen 2'}</span>
-                </button>
-              ) : (
-                <button
-                  onClick={handleInstallVirtualDriver}
-                  disabled={isVirtualDriverBusy}
-                  className="px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[32px]"
-                  title="Setup virtual extended display driver for PowerPoint Presenter View without physical monitors"
-                >
-                  <Monitor className="w-3.5 h-3.5 text-purple-400" />
-                  <span>{isVirtualDriverBusy ? 'Installing...' : 'Setup Virtual Extended Display'}</span>
+                  <Square className="w-3 h-3 fill-current" />
+                  <span>Stop Sharing</span>
                 </button>
               )}
-
-              {secondaryDisplay && (
-                <button
-                  onClick={handleTeleportToDisplay2}
-                  className="px-2.5 py-1.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 text-xs font-mono font-semibold transition flex items-center gap-1 cursor-pointer min-h-[32px]"
-                  title="Send active window borderless fullscreen to Projector"
-                >
-                  <Maximize2 className="w-3 h-3" />
-                  <span>Snap Window to Display 2</span>
-                </button>
-              )}
-
-              <button
-                onClick={handleOpenDisplaySettings}
-                className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-mono text-[var(--text-muted)] hover:text-[var(--text-primary)] transition flex items-center gap-1 cursor-pointer min-h-[32px]"
-                title="Open OS Display Settings panel"
-              >
-                <ExternalLink className="w-3 h-3" />
-                <span>Display Settings</span>
-              </button>
-
-              <button
-                onClick={handleRecallWindows}
-                className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-mono font-semibold transition flex items-center gap-1 cursor-pointer ml-auto min-h-[32px]"
-                title="Recall any off-screen or lost windows back onto laptop screen"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Emergency Recall</span>
-              </button>
             </div>
           </div>
         </div>
 
-        {/* MODE 2: APPLICATION & WINDOW CASTER (GOOGLE MEET STYLE) */}
-        <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col justify-between gap-5 relative overflow-hidden">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
-                  <AppWindow className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="font-bold font-mono text-sm sm:text-base text-[var(--text-primary)]">
-                    Application & Window Caster
-                  </h2>
-                  <div className="text-[11px] text-[var(--text-muted)]">
-                    Google Meet & Teams style zero-move window streaming
-                  </div>
-                </div>
-              </div>
+        {/* Operator Broadcast Control Strip */}
+        {primarySlot && (
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3.5 border-t border-[var(--border-color)]">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-muted)] mr-1">
+                Broadcast Controls:
+              </span>
 
-              {primarySlot?.is_frozen ? (
-                <span className="px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px] font-mono font-bold">
-                  ❄️ FROZEN
-                </span>
-              ) : primarySlot?.is_blackout ? (
-                <span className="px-2 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/40 text-[10px] font-mono font-bold">
-                  ⬛ BLACKOUT
-                </span>
-              ) : primarySlot?.primary_source_label ? (
-                <span className="px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-bold">
-                  ● LIVE BROADCASTING
-                </span>
-              ) : (
-                <span className="px-2 py-1 rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/30 text-[10px] font-mono font-bold">
-                  STANDBY
-                </span>
-              )}
-            </div>
-
-            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              Streams any application window (Chyron, ProPresenter, PowerPoint, countdown timers) directly to the tablet with 60 FPS forced keyframe heartbeat so timers never freeze.
-            </p>
-
-            {/* Currently Streaming Preview Tile */}
-            <div className="p-3 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-cyan-400 text-lg shrink-0">
-                  {primarySlot?.source_mode === 'DISPLAY' ? '🖥️' : primarySlot?.source_mode === 'SPLIT' ? '⚡' : '🪟'}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-[var(--text-primary)] truncate">
-                    {primarySlot?.primary_source_label || 'Standby — Ready for app share'}
-                  </div>
-                  <div className="text-[10px] text-[var(--text-muted)] font-mono">
-                    Mode: {primarySlot?.source_mode || 'WINDOW'} • {primarySlot?.target_fps || 30} FPS • {primarySlot?.live_fps || 0} FPS Live
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => {
-                    setPickerTargetSlotId(primarySlot?.id);
-                    setPickerModalOpen(true);
-                  }}
-                  className="px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold transition cursor-pointer min-h-[36px]"
-                >
-                  {primarySlot?.primary_source_label ? 'Change App...' : 'Select App...'}
-                </button>
-
-                {primarySlot?.primary_source_label && (
-                  <button
-                    onClick={() => handleStopSharing(primarySlot.id)}
-                    className="px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1.5 min-h-[36px]"
-                    title="Stop sharing feed to stage receivers"
-                  >
-                    <Square className="w-3 h-3 fill-current" />
-                    <span>Stop Sharing</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Stage Protection Controls */}
-          {primarySlot && (
-            <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[var(--border-color)]">
               <button
                 onClick={() => flashStageLinkSlot(primarySlot.id)}
-                className="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[36px]"
-                title="Pulse amber/white light border on speaker tablet screen"
+                className="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[34px]"
+                title="Flash visual beacon border on confidence screen"
               >
-                <Zap className="w-3.5 h-3.5" />
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
                 <span>Flash Attention</span>
               </button>
 
               <button
                 onClick={() => setStageLinkSlotFreeze(primarySlot.id, !primarySlot.is_frozen)}
-                className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[36px] ${
+                className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[34px] ${
                   primarySlot.is_frozen
                     ? 'bg-blue-500 text-slate-950 border-blue-400'
-                    : 'bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)]'
+                    : 'bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] text-[var(--text-primary)] border-[var(--border-color)]'
                 }`}
-                title="Freeze tablet frame while switching confidential content"
+                title="Hold current frame on stage devices while switching confidential content"
               >
                 <Snowflake className="w-3.5 h-3.5" />
-                <span>{primarySlot.is_frozen ? 'Unfreeze' : 'Freeze Feed'}</span>
+                <span>{primarySlot.is_frozen ? 'Unfreeze' : 'Freeze Frame'}</span>
               </button>
 
               <button
                 onClick={() => setStageLinkSlotBlackout(primarySlot.id, !primarySlot.is_blackout)}
-                className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[36px] ${
+                className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[34px] ${
                   primarySlot.is_blackout
                     ? 'bg-red-500 text-white border-red-400'
-                    : 'bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)]'
+                    : 'bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] text-[var(--text-primary)] border-[var(--border-color)]'
                 }`}
-                title="Blackout tablet feed immediately"
+                title="Emergency blackout — instant cut to black"
               >
                 <EyeOff className="w-3.5 h-3.5" />
                 <span>{primarySlot.is_blackout ? 'Restore Feed' : 'Blackout'}</span>
               </button>
             </div>
-          )}
-        </div>
+
+            <div className="flex items-center gap-2 ml-auto">
+              {secondaryDisplay && (
+                <button
+                  onClick={handleTeleportToDisplay2}
+                  className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-mono text-[var(--text-primary)] transition flex items-center gap-1 cursor-pointer min-h-[34px]"
+                  title="Snap active window borderless to Display 2"
+                >
+                  <Maximize2 className="w-3 h-3 text-blue-400" />
+                  <span>Snap to Display {secondaryDisplay.osIndex}</span>
+                </button>
+              )}
+
+              <button
+                onClick={handleRecallWindows}
+                className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-mono text-[var(--text-muted)] hover:text-[var(--text-primary)] transition flex items-center gap-1 cursor-pointer min-h-[34px]"
+                title="Recall any off-screen or lost windows back onto primary screen"
+              >
+                <RotateCcw className="w-3 h-3 text-amber-400" />
+                <span>Recall Windows</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* CONNECTED RECEIVERS & MONITORS HUD (ENHANCED MULTI-DEVICE MANAGEMENT) */}
@@ -1015,7 +827,7 @@ export const StageDisplaysView: React.FC = () => {
                               ? 'bg-purple-500/20 border-purple-500/60 text-purple-300 font-bold'
                               : 'bg-[var(--bg-card)] hover:bg-[var(--bg-primary)] border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                           }`}
-                          title="Cast PowerPoint or application window to this device"
+                          title="Cast application or presenter window to this device"
                         >
                           <AppWindow className="w-3 h-3 text-purple-400" />
                           <span className="truncate">Cast App</span>
@@ -1439,7 +1251,7 @@ export const StageDisplaysView: React.FC = () => {
                       <span className="font-bold text-xs text-[var(--text-primary)]">Application Window</span>
                     </div>
                     <p className="text-[11px] leading-relaxed">
-                      Zero-move streaming of a specific app (ProPresenter, Chyron, Timer) directly to the screen.
+                      Zero-move streaming of a specific application window, media feed, or timer directly to the screen.
                     </p>
                   </div>
 

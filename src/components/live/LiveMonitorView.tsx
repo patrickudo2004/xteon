@@ -83,6 +83,7 @@ export const LiveMonitorView: React.FC = () => {
   } = useRigStore();
 
   const [activeTab, setActiveTab] = useState<'ALL' | 'STAGELINK' | 'DISPLAYS' | 'CAMERAS'>('ALL');
+  const [monitorLayout, setMonitorLayout] = useState<'GRID' | 'HERO'>('GRID');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [editingCamId, setEditingCamId] = useState<string | null>(null);
@@ -217,6 +218,20 @@ export const LiveMonitorView: React.FC = () => {
           >
             <Tv className="w-3.5 h-3.5" />
             <span>Stage Displays</span>
+          </button>
+
+          {/* Layout Mode Toggle (Hero vs 2-Column Grid) */}
+          <button
+            onClick={() => setMonitorLayout(monitorLayout === 'HERO' ? 'GRID' : 'HERO')}
+            className={`min-h-[36px] px-3 py-1.5 rounded-lg border text-xs font-mono font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer ${
+              monitorLayout === 'HERO'
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                : 'bg-[var(--bg-card)] text-[var(--text-primary)] border-[var(--border-color)] hover:bg-[var(--bg-subcard)]'
+            }`}
+            title="Toggle between Large Hero Program view and Multi-Column Grid view"
+          >
+            <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
+            <span>{monitorLayout === 'HERO' ? 'Hero View' : 'Multiview'}</span>
           </button>
 
           {/* Emergency Recall Stray Windows to FOH */}
@@ -431,7 +446,7 @@ export const LiveMonitorView: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
+            <div className={monitorLayout === 'HERO' ? 'flex flex-col gap-6' : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6'}>
               {visibleCameras.map((cam, idx) => {
                 const isFeedActive = cam.isLiveFeedEnabled === true;
 
@@ -502,7 +517,7 @@ export const LiveMonitorView: React.FC = () => {
                     </div>
 
                     {/* Camera Video Viewfinder */}
-                    <div className="relative aspect-video max-h-[360px] w-full bg-black flex items-center justify-center overflow-hidden border-b border-[var(--border-color)]">
+                    <div className={monitorLayout === 'HERO' ? 'relative aspect-video max-h-[580px] w-full bg-black flex items-center justify-center overflow-hidden border-b border-[var(--border-color)]' : 'relative aspect-video max-h-[440px] w-full bg-black flex items-center justify-center overflow-hidden border-b border-[var(--border-color)]'}>
                       <CameraStreamPlayer
                         cameraId={cam.id}
                         cameraName={cam.customAlias || cam.name}
@@ -601,7 +616,7 @@ export const LiveMonitorView: React.FC = () => {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
+          <div className={monitorLayout === 'HERO' ? 'flex flex-col gap-6' : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6'}>
             {liveDisplays.map((disp) => {
               const effectiveAudio = audioMonitoringAllowed ? Math.max(-60, Math.min(0, disp.audioLevelDb)) : -60;
               const audioPercent = audioMonitoringAllowed ? Math.round(((effectiveAudio + 60) / 60) * 100) : 0;
@@ -686,7 +701,7 @@ export const LiveMonitorView: React.FC = () => {
                   {/* Video Preview Canvas / Raster OR Standby Overlay */}
                   <div
                     style={{ aspectRatio: displayRatio }}
-                    className="relative max-h-[360px] w-full bg-[#050608] flex items-center justify-center overflow-hidden border-b border-[var(--border-color)]"
+                    className={monitorLayout === 'HERO' ? 'relative max-h-[580px] w-full bg-[#050608] flex items-center justify-center overflow-hidden border-b border-[var(--border-color)]' : 'relative max-h-[440px] w-full bg-[#050608] flex items-center justify-center overflow-hidden border-b border-[var(--border-color)]'}
                   >
                     {!isFeedActive ? (
                       <div className="w-full h-full bg-[var(--bg-subcard)] flex flex-col items-center justify-center p-6 text-center space-y-3">
@@ -836,7 +851,7 @@ export const LiveMonitorView: React.FC = () => {
 
                         {routableWindows.length === 0 ? (
                           <div className="text-[11px] text-[var(--text-muted)]">
-                            No open app windows found. Open Kairon or ProPresenter and click Refresh.
+                            No open app windows found. Open your presentation, graphics, or media app and click Refresh.
                           </div>
                         ) : (
                           <>
@@ -926,7 +941,7 @@ export const LiveMonitorView: React.FC = () => {
                             ? 'bg-[var(--badge-cyan-bg)] border-[var(--badge-cyan-border)] text-[var(--badge-cyan-text)]'
                             : 'bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] border-[var(--border-color)] text-[var(--text-primary)]'
                         }`}
-                        title="Teleport any open app window (Kairon, ProPresenter, Browser) onto this display"
+                        title="Teleport any open application window (Presentation, Media Player, Browser) onto this display"
                       >
                         <AppWindow className="w-3.5 h-3.5 text-[var(--accent-cyan)]" />
                         <span>Route App</span>

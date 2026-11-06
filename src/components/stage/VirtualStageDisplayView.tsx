@@ -145,10 +145,10 @@ export const VirtualStageDisplayView: React.FC = () => {
         {/* Window Staging Hint Box */}
         <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 max-w-xl text-center space-y-1">
           <div className="text-xs font-bold text-slate-300 font-sans">
-            Ready for Presentation & Chiron Window Snapping
+            Ready for Presentation & Media Window Snapping
           </div>
           <div className="text-[11px] text-slate-500 font-sans">
-            Use Xteon FOH to route countdown timers, Chiron titles, or PowerPoint directly into this screen borderless.
+            Use Xteon FOH to route countdown timers, graphics titles, or presentation windows directly into this screen borderless.
           </div>
         </div>
       </div>

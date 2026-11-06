@@ -75,6 +75,7 @@ export const Navbar: React.FC = () => {
     setPrintableBlueprintModalOpen,
     stageLinkSlots,
     openStageLinkModal,
+    companionStatus,
   } = useRigStore();
 
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
@@ -603,6 +604,21 @@ export const Navbar: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Mobile Companion Trigger */}
+          <button
+            onClick={() => setMobileModalOpen(true)}
+            className="px-2 py-1 rounded-md text-[11px] font-mono font-medium text-[var(--text-primary)] hover:bg-[var(--bg-card)] flex items-center gap-1 transition cursor-pointer relative"
+            title="Open Mobile Companion & StageLink QR Pairing"
+          >
+            <Smartphone className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Mobile</span>
+            {companionStatus && (companionStatus.client_count ?? 0) > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-bold">
+                {companionStatus.client_count}
+              </span>
+            )}
+          </button>
 
           {/* Settings Modal Trigger */}
           <button
