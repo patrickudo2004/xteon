@@ -878,7 +878,6 @@ interface RigState {
   stopStageLinkStream: (slotId?: string) => Promise<void>;
   spawnVirtualExtendedDisplay: (width?: number, height?: number) => Promise<boolean>;
   closeVirtualExtendedDisplay: () => Promise<boolean>;
-  installVirtualDisplayDriver: () => Promise<string>;
 }
 
 let isCapturingInProgress = false;
@@ -3007,19 +3006,6 @@ export const useRigStore = create<RigState>((set, get) => ({
       }
     }
     return false;
-  },
-
-  installVirtualDisplayDriver: async () => {
-    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
-      try {
-        const { invoke } = await import('@tauri-apps/api/core');
-        return await invoke<string>('install_os_virtual_display_driver');
-      } catch (err: any) {
-        console.warn('install_os_virtual_display_driver error:', err);
-        return String(err);
-      }
-    }
-    return 'Driver installation only supported in native desktop app';
   },
 
   stopStageLinkStream: async (slotId?: string) => {

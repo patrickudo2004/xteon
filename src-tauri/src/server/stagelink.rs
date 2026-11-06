@@ -226,22 +226,80 @@ pub fn ensure_default_slot_exists() -> Arc<SlotRuntime> {
     }
     upsert_stage_slot(CreateOrUpdateSlotInput {
         id: Some("stage-1".to_string()),
-        name: "Pulpit Confidence Tablet".to_string(),
+        name: "Pulpit Confidence Screen".to_string(),
         stage_zone: "Pulpit Altar".to_string(),
-        source_mode: "WINDOW".to_string(),
-        primary_source_id: "".to_string(),
-        primary_source_label: "".to_string(),
+        source_mode: "DISPLAY".to_string(),
+        primary_source_id: "D:display-1".to_string(),
+        primary_source_label: "Desktop Screen (Host Laptop)".to_string(),
         secondary_source_id: None,
         secondary_source_label: None,
         split_layout: Some("SIDE_70_30".to_string()),
         target_fps: Some(30),
-        max_width: Some(1280),
+        max_width: Some(1920),
     });
     STAGE_SLOTS
         .lock()
         .ok()
         .and_then(|m| m.get("stage-1").cloned())
         .expect("default slot stage-1 must exist after upsert")
+}
+
+pub fn allocate_slot_for_new_client() -> String {
+    let runtimes: Vec<Arc<SlotRuntime>> = STAGE_SLOTS
+        .lock()
+        .map(|m| m.values().cloned().collect())
+        .unwrap_or_default();
+
+    // 1. Look for an existing slot that has 0 subscribers (waiting for a device)
+    for rt in &runtimes {
+        if rt.subscriber_count.load(Ordering::Relaxed) == 0 {
+            if let Ok(slot) = rt.slot.lock() {
+                return slot.id.clone();
+            }
+        }
+    }
+
+    // 2. If all existing slots have active subscribers, allocate the next slot (stage-1, stage-2, stage-3...)
+    let existing_ids: std::collections::HashSet<String> = runtimes
+        .iter()
+        .filter_map(|rt| rt.slot.lock().ok().map(|s| s.id.clone()))
+        .collect();
+
+    for i in 1..=50 {
+        let candidate = format!("stage-{}", i);
+        if !existing_ids.contains(&candidate) {
+            let label = if i == 1 {
+                "Pulpit Confidence Screen".to_string()
+            } else if i == 2 {
+                "Secondary Stage Monitor".to_string()
+            } else {
+                format!("Stage Receiver {}", i)
+            };
+            let zone = match i {
+                1 => "Pulpit Altar",
+                2 => "Downstage Left",
+                3 => "Downstage Right",
+                4 => "Choir Loft",
+                _ => "Stage Zone",
+            };
+            upsert_stage_slot(CreateOrUpdateSlotInput {
+                id: Some(candidate.clone()),
+                name: label,
+                stage_zone: zone.to_string(),
+                source_mode: "DISPLAY".to_string(),
+                primary_source_id: "D:display-1".to_string(),
+                primary_source_label: "Desktop Screen (Host Laptop)".to_string(),
+                secondary_source_id: None,
+                secondary_source_label: None,
+                split_layout: Some("SIDE_70_30".to_string()),
+                target_fps: Some(30),
+                max_width: Some(1920),
+            });
+            return candidate;
+        }
+    }
+
+    "stage-1".to_string()
 }
 
 pub fn list_stage_slots(include_previews: bool) -> Vec<StageLinkSlot> {
@@ -408,7 +466,7 @@ pub fn remove_stage_slot(slot_id: &str) -> bool {
     if let Some(rt) = removed_rt {
         rt.removed.store(true, Ordering::SeqCst);
         let _ = rt.tx.send(StageBroadcastPacket::JsonText(
-            serde_json::json!({ "type": "slot_reset", "slot_id": slot_id }).to_string(),
+            serde_json::json!({ "type": "slot_removed", "slot_id": slot_id }).to_string(),
         ));
         return true;
     }
@@ -598,7 +656,7 @@ fn capture_any_source_raw(
                     b.height,
                     max_width,
                     jpeg_quality,
-                    false,
+                    true,
                     prev_checksum,
                 );
             }
@@ -612,7 +670,7 @@ fn capture_any_source_raw(
                     b.height,
                     max_width,
                     jpeg_quality,
-                    false,
+                    true,
                     prev_checksum,
                 );
             }

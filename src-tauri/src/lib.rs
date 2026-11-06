@@ -617,34 +617,7 @@ fn close_virtual_extended_display(app: tauri::AppHandle) -> bool {
     false
 }
 
-#[tauri::command]
-async fn install_os_virtual_display_driver() -> Result<String, String> {
-    #[cfg(windows)]
-    {
-        tokio::task::spawn_blocking(|| {
-            let output = std::process::Command::new("powershell")
-                .args([
-                    "-NoProfile",
-                    "-Command",
-                    "Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -Command winget install --id=VirtualDrivers.Virtual-Display-Driver -e --accept-package-agreements --accept-source-agreements; Start-Sleep -Seconds 3' -Wait"
-                ])
-                .output()
-                .map_err(|e| format!("Failed to launch installer: {e}"))?;
 
-            if output.status.success() {
-                Ok("Launched Windows Virtual Display Driver installer with Administrator prompt. Please approve the UAC dialog.".to_string())
-            } else {
-                Err("Administrator elevation was declined or cancelled.".to_string())
-            }
-        })
-        .await
-        .map_err(|e| e.to_string())?
-    }
-    #[cfg(not(windows))]
-    {
-        Err("Virtual Display Driver installer is designed for Windows 10/11. On macOS and Linux, the built-in Xteon Virtual Extended Stage Display runs driver-free.".to_string())
-    }
-}
 
 pub fn run() {
     tauri::Builder::default()
@@ -708,8 +681,7 @@ pub fn run() {
             get_window_thumbnails,
             set_host_sleep_inhibit,
             spawn_virtual_extended_display,
-            close_virtual_extended_display,
-            install_os_virtual_display_driver
+            close_virtual_extended_display
         ])
         .run(tauri::generate_context!())
         .expect("error while running xteon application");
