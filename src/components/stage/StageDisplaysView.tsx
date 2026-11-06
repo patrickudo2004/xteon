@@ -116,11 +116,10 @@ export const StageDisplaysView: React.FC = () => {
     return ifaces.find((i: NetworkAdapterInfo) => i.is_preferred) || ifaces[0] || null;
   }, [companionStatus]);
 
-  // Total active connected clients across slots and companion server
+  // Total active connected clients on live stage slots
   const totalConnectedClients = useMemo(() => {
-    const fromSlots = stageLinkSlots.reduce((acc, s) => acc + (s.connected_clients || 0), 0);
-    return Math.max(fromSlots, companionStatus?.client_count || 0);
-  }, [stageLinkSlots, companionStatus]);
+    return stageLinkSlots.reduce((acc, s) => acc + (s.connected_clients || 0), 0);
+  }, [stageLinkSlots]);
 
   // Handle trigger native OS Extend shortcut (Windows DisplaySwitch, macOS, Linux)
   const handleTriggerWindowsExtend = async () => {
@@ -607,13 +606,9 @@ export const StageDisplaysView: React.FC = () => {
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                           LIVE ({slot.connected_clients})
                         </span>
-                      ) : isOnline ? (
-                        <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 text-[9px] font-mono font-bold shrink-0">
-                          ONLINE
-                        </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/30 text-[9px] font-mono shrink-0">
-                          STANDBY
+                          AWAITING RECEIVER
                         </span>
                       )}
                     </div>

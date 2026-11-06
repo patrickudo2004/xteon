@@ -244,11 +244,6 @@ pub fn ensure_default_slot_exists() -> Arc<SlotRuntime> {
 }
 
 pub fn list_stage_slots(include_previews: bool) -> Vec<StageLinkSlot> {
-    let is_empty = STAGE_SLOTS.lock().map(|m| m.is_empty()).unwrap_or(false);
-    if is_empty {
-        ensure_default_slot_exists();
-    }
-
     let runtimes: Vec<Arc<SlotRuntime>> = STAGE_SLOTS
         .lock()
         .map(|m| m.values().cloned().collect())
@@ -340,6 +335,9 @@ pub fn upsert_stage_slot(input: CreateOrUpdateSlotInput) -> StageLinkSlot {
 
         // Refresh initial preview synchronously on blocking pool or next tick
         broadcast_slot_state(&rt, &updated_snapshot);
+        if rt.subscriber_count.load(Ordering::Relaxed) > 0 && !updated_snapshot.primary_source_id.is_empty() {
+            ensure_slot_worker_running(rt.clone());
+        }
         return updated_snapshot;
     }
 
@@ -393,6 +391,9 @@ pub fn upsert_stage_slot(input: CreateOrUpdateSlotInput) -> StageLinkSlot {
 
     // Capture one initial preview frame so FOH sees the live thumbnail immediately
     capture_single_preview_for_runtime(&rt);
+    if rt.subscriber_count.load(Ordering::Relaxed) > 0 && !new_slot.primary_source_id.is_empty() {
+        ensure_slot_worker_running(rt.clone());
+    }
     let final_state = rt.slot.lock().map(|s| s.clone()).unwrap_or(new_slot);
     final_state
 }
@@ -406,7 +407,7 @@ pub fn remove_stage_slot(slot_id: &str) -> bool {
     if let Some(rt) = removed_rt {
         rt.removed.store(true, Ordering::SeqCst);
         let _ = rt.tx.send(StageBroadcastPacket::JsonText(
-            serde_json::json!({ "type": "slot_removed", "slot_id": slot_id }).to_string(),
+            serde_json::json!({ "type": "slot_reset", "slot_id": slot_id }).to_string(),
         ));
         return true;
     }
@@ -575,6 +576,20 @@ fn capture_any_source_raw(
             .find(|d| d.id == raw_id || d.os_index.to_string() == raw_id);
 
         if let Some(d) = disp {
+            if let Some(ref b) = d.bounds {
+                return capture_screen_jpeg_raw(
+                    b.x,
+                    b.y,
+                    b.width,
+                    b.height,
+                    max_width,
+                    jpeg_quality,
+                    false,
+                    prev_checksum,
+                );
+            }
+        }
+        if let Some(d) = displays_cache.first() {
             if let Some(ref b) = d.bounds {
                 return capture_screen_jpeg_raw(
                     b.x,

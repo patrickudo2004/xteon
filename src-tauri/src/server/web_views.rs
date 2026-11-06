@@ -708,10 +708,18 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
         wb.style.display = 'none';
       }
 
-      if (slot.source_missing && !hasFrame) {
+      if (!hasFrame) {
         document.getElementById('standby-card').style.display = 'block';
-        document.getElementById('standby-title').textContent = 'Source Window Closed or Unassigned';
-        document.getElementById('standby-sub').textContent = 'Select an active window or screen for "' + slot.name + '" in Xteon FOH.';
+        if (!slot.primary_source_id) {
+          document.getElementById('standby-title').textContent = 'Live Link Connected';
+          document.getElementById('standby-sub').textContent = 'Preparing stage receiver. Waiting for live video frames from XTEON FOH Workstation.';
+        } else if (slot.source_missing) {
+          document.getElementById('standby-title').textContent = 'Source Window Closed or Unassigned';
+          document.getElementById('standby-sub').textContent = 'Select an active window or screen for "' + slot.name + '" in Xteon FOH.';
+        } else {
+          document.getElementById('standby-title').textContent = 'Connecting Live Stream...';
+          document.getElementById('standby-sub').textContent = 'Receiving stream from "' + (slot.primary_source_label || slot.name) + '"...';
+        }
       }
     }
 
@@ -793,6 +801,10 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
       ws.onopen = () => {
         const lbl = document.getElementById('conn-label');
         if (lbl) lbl.textContent = 'LIVE LINK CONNECTED';
+        if (!hasFrame) {
+          document.getElementById('standby-title').textContent = 'Live Link Connected';
+          document.getElementById('standby-sub').textContent = 'Preparing stage receiver. Waiting for live video frames from XTEON FOH Workstation.';
+        }
       };
 
       ws.onmessage = (ev) => {
@@ -800,11 +812,12 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
           try {
             const msg = JSON.parse(ev.data);
             if (msg.type === 'slot_state') applySlotMetadata(msg.slot);
-            else if (msg.type === 'slot_removed') {
+            else if (msg.type === 'slot_reset' || msg.type === 'slot_removed') {
               hasFrame = false;
               document.getElementById('standby-card').style.display = 'block';
-              document.getElementById('standby-title').textContent = 'Stage Slot Closed';
-              document.getElementById('standby-sub').textContent = 'FOH operator closed this wireless stage slot.';
+              document.getElementById('standby-title').textContent = 'Live Link Connected';
+              document.getElementById('standby-sub').textContent = 'Standby. Waiting for FOH operator to share application or screen.';
+              scheduleReconnect();
             } else if (msg.type === 'unauthorized') {
               if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
               document.getElementById('pin-gate').style.display = 'flex';

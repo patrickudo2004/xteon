@@ -428,11 +428,20 @@ async fn clear_stagelink_whisper(slot_id: String) -> Option<StageLinkSlot> {
 fn trigger_os_display_extend() -> Result<String, String> {
     #[cfg(windows)]
     {
-        std::process::Command::new("DisplaySwitch.exe")
+        let sys_root = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
+        let full_path = format!("{}\\System32\\DisplaySwitch.exe", sys_root);
+        let spawned = std::process::Command::new(&full_path)
             .arg("/extend")
             .spawn()
-            .map_err(|e| e.to_string())?;
-        Ok("Triggered Windows Extend mode".to_string())
+            .or_else(|_| {
+                std::process::Command::new("DisplaySwitch.exe")
+                    .arg("/extend")
+                    .spawn()
+            });
+        match spawned {
+            Ok(_) => Ok("Switched to Windows Extend mode".to_string()),
+            Err(e) => Err(format!("DisplaySwitch failed: {e}")),
+        }
     }
     #[cfg(target_os = "macos")]
     {
@@ -457,7 +466,11 @@ fn trigger_os_display_extend() -> Result<String, String> {
 fn open_os_display_settings() -> Result<String, String> {
     #[cfg(windows)]
     {
-        open::that("ms-settings:display").map_err(|e| e.to_string())?;
+        if open::that("ms-settings:display").is_err() {
+            let _ = std::process::Command::new("cmd")
+                .args(["/c", "start", "ms-settings:display"])
+                .spawn();
+        }
         Ok("Opened Windows Display Settings".to_string())
     }
     #[cfg(target_os = "macos")]
