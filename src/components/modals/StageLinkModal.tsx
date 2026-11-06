@@ -270,7 +270,7 @@ export const StageLinkModal: React.FC = () => {
                   mode: 'WINDOW' as StageLinkSourceMode,
                   icon: AppWindow,
                   title: 'App Window Cast',
-                  desc: 'Stream Kairon Timer or ProPresenter window even behind other apps',
+                  desc: 'Stream any application or presentation window even behind other apps',
                 },
                 {
                   mode: 'SPLIT' as StageLinkSourceMode,
@@ -336,7 +336,7 @@ export const StageLinkModal: React.FC = () => {
             {primaryList.length === 0 ? (
               <div className="p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] text-[11px]">
                 {sourceMode === 'WINDOW'
-                  ? 'No open application windows detected yet. Open Kairon Timer, ProPresenter, or a browser window and click Rescan Open Apps.'
+                  ? 'No open application windows detected yet. Open your presentation, media, or browser window and click Rescan Open Apps.'
                   : 'No active display outputs detected.'}
               </div>
             ) : (

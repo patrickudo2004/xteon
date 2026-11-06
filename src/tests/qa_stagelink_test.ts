@@ -526,10 +526,10 @@ async function runStageLinkTests() {
   assert(vddSource.includes('CREATE_NO_WINDOW'), 'virtual_driver.rs suppresses console windows');
   assert(!fs.existsSync('C:\\VirtualDisplayDriver'), 'C:\\VirtualDisplayDriver directory is purged from system');
 
-  // 17. StageDisplaysView Zero-Driver Polish
+  // 17. StageDisplaysView Brand-Agnostic Source Caster & Zero-Driver Polish
   const stageDisplaysViewSrc = fs.readFileSync('src/components/stage/StageDisplaysView.tsx', 'utf8');
-  assert(stageDisplaysViewSrc.includes('External Monitor & Stage Screen'), 'StageDisplaysView defines clean External Monitor & Stage Screen header');
-  assert(stageDisplaysViewSrc.includes('Cast App Window (PowerPoint / Timer)'), 'StageDisplaysView provides Cast App Window button');
+  assert(stageDisplaysViewSrc.includes('Active Broadcast Source Caster'), 'StageDisplaysView defines clean Active Broadcast Source Caster header');
+  assert(stageDisplaysViewSrc.includes('Select Source Window...'), 'StageDisplaysView provides brand-agnostic Select Source Window button');
   assert(!stageDisplaysViewSrc.includes('refreshVirtualDriverStatus'), 'StageDisplaysView has no driver polling intervals');
   assert(!stageDisplaysViewSrc.includes('Setup Virtual Display Engine'), 'StageDisplaysView has no intrusive driver install buttons');
 

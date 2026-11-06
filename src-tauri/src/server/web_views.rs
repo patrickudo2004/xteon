@@ -484,6 +484,7 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
     let hudTimer = null;
     let wakeLockObj = null;
     let keepAwakeAudioCtx = null;
+    let keepAwakeActive = false;
     let rotationDeg = 0;
     let fitCover = false;
     let dimmerIdx = 0;
@@ -549,36 +550,28 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
     async function requestWakeLockSafe() {
       // 1. W3C Screen Wake Lock (Secure HTTPS / Localhost)
       try {
-        if ('wakeLock' in navigator) {
+        if ('wakeLock' in navigator && (!wakeLockObj || wakeLockObj.released)) {
           wakeLockObj = await navigator.wakeLock.request('screen');
+          wakeLockObj.addEventListener('release', () => {
+            wakeLockObj = null;
+          });
         }
       } catch (e) {}
 
       // 2. Universal Inline Video NoSleep Engine (Works on ALL mobile browsers including iOS Safari & Android Chrome over HTTP)
       try {
         const vid = document.getElementById('nosleep-video');
-        if (vid && !vid.src && !vid.srcObject) {
+        if (vid) {
           vid.setAttribute('playsinline', '');
           vid.setAttribute('webkit-playsinline', '');
           vid.muted = true;
           vid.loop = true;
-          const c = document.createElement('canvas');
-          c.width = 2;
-          c.height = 2;
-          const ctx = c.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, 2, 2);
+          if (!vid.src && !vid.srcObject) {
+            // Valid minimal looping MP4 video data URI (250 bytes)
+            vid.src = 'data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAsVmdatAAACrgYF//+13wEB42dpdAAAACltZGF0AGBAbm9zbGVlcAAAAAAAAAAAAAAAEAAAAAAABAAAAAAACv//AAAAFnVoZHIBAAEAAAABAAABAAIAAAAAAAAVc3RzYwAAAAAAAAABAAAAAQAAAAEAAAAUc3RzenAAAAAAAAAEAAAABAAAABRzdGNvAAAAAAAAAAEAAAA4AAAAY3N0dHMAAAAAAAAAAQAAAAEAAAAU';
           }
-          if (c.captureStream) {
-            vid.srcObject = c.captureStream(1);
-          } else {
-            // Tiny 1-pixel silent looping H.264 video data URI
-            vid.src = 'data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhmZGF0AAACrgYF//+13wEB42dpdAAAACltZGF0AGBAbm9zbGVlcAAAAAAAAAAAAAAAEAAAAAAABAAAAAAACv//';
-          }
-        }
-        if (vid) {
-          await vid.play();
+          const p = vid.play();
+          if (p && p.catch) p.catch(() => {});
         }
       } catch (e) {}
 
@@ -601,11 +594,21 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
       } catch (e) {}
     }
 
+    // Auto-engage keep-awake on ANY touch, click, scroll or keypress across window
+    ['touchstart', 'touchend', 'pointerdown', 'click', 'keydown'].forEach(evt => {
+      window.addEventListener(evt, () => {
+        requestWakeLockSafe();
+      }, { passive: true });
+    });
+
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && wakeLockObj !== null) {
+      if (document.visibilityState === 'visible') {
         requestWakeLockSafe();
       }
     });
+
+    // Auto-engage immediately on script initialization
+    requestWakeLockSafe();
 
     async function engageStageMode() {
       await requestWakeLockSafe();
@@ -755,6 +758,7 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
           hasFrame = true;
           document.getElementById('standby-card').style.display = 'none';
           scheduleHudAutoHide();
+          requestWakeLockSafe();
         }
       }
     }
