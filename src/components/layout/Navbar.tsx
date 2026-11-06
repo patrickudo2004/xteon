@@ -412,208 +412,217 @@ export const Navbar: React.FC = () => {
           )}
         </div>
 
-        {/* Tri-Mode Switcher */}
-        <div className="p-1 rounded-lg bg-[var(--bg-subcard)] border border-[var(--border-color)] flex items-center gap-1">
+        {/* Mode Switcher */}
+        <div className="p-0.5 rounded-lg bg-[var(--bg-subcard)] border border-[var(--border-color)] flex items-center gap-0.5">
           <button
             onClick={() => setAppMode('PLANNER')}
-            className={`px-3 py-1 rounded-md text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer ${
               appMode === 'PLANNER'
-                ? 'bg-cyan-500 text-slate-950 shadow-md font-bold'
+                ? 'bg-cyan-500 text-slate-950 shadow-sm font-bold'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
             }`}
           >
-            <Layers className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">PLANNER STUDIO</span>
+            <Layers className="w-3 h-3" />
+            <span className="hidden sm:inline">PLANNER</span>
           </button>
 
           <button
             onClick={() => setAppMode('LIVE_MAP')}
-            className={`px-3 py-1 rounded-md text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer ${
               appMode === 'LIVE_MAP'
-                ? 'bg-blue-500 text-slate-950 shadow-md font-bold'
+                ? 'bg-blue-500 text-slate-950 shadow-sm font-bold'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
             }`}
           >
-            <Monitor className="w-3.5 h-3.5" />
+            <Monitor className="w-3 h-3" />
             <span className="hidden sm:inline">LIVE MAP</span>
           </button>
 
           <button
             onClick={() => setAppMode('LIVE')}
-            className={`px-3 py-1 rounded-md text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer ${
               appMode === 'LIVE'
-                ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
+                ? 'bg-emerald-500 text-slate-950 shadow-sm font-bold'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
             }`}
           >
-            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="hidden sm:inline">LIVE MONITOR</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+            <span className="hidden sm:inline">MONITOR</span>
           </button>
 
           <button
             onClick={() => setAppMode('STAGE_DISPLAYS')}
-            className={`px-3 py-1 rounded-md text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer ${
               appMode === 'STAGE_DISPLAYS'
-                ? 'bg-purple-500 text-slate-950 shadow-md font-bold'
+                ? 'bg-purple-500 text-slate-950 shadow-sm font-bold'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
             }`}
             title="Stage Displays & Wireless Confidence Monitors"
           >
-            <Tv className="w-3.5 h-3.5 text-purple-400" />
-            <span className="hidden sm:inline">STAGE DISPLAYS</span>
+            <Tv className="w-3 h-3 text-purple-400" />
+            <span className="hidden sm:inline">STAGE</span>
           </button>
         </div>
       </div>
 
-      {/* Right Controls */}
-      <div className="flex items-center gap-2">
+      {/* Right Controls - Grouped & Compacted */}
+      <div className="flex items-center gap-2 sm:gap-2.5">
         {/* Mirroring Warning Indicator */}
         {isMirroringDetected && (
           <div
-            className="hidden lg:flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border border-[var(--badge-amber-border)] text-[11px] font-mono font-bold animate-pulse"
+            className="hidden lg:flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border border-[var(--badge-amber-border)] text-[10px] font-mono font-bold animate-pulse"
             title="Display Mirroring Active: Both laptop and external display show identical desktop (Presenter notes and private windows may be visible)"
           >
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            <AlertTriangle className="w-3 h-3 text-amber-400" />
             <span>MIRRORED</span>
           </div>
         )}
 
-        {/* Keep-Awake Caffeine Shield Toggle */}
-        <button
-          onClick={toggleKeepAwake}
-          className={`px-2.5 py-1.5 rounded-md border text-xs font-mono transition flex items-center gap-1.5 shadow-sm cursor-pointer ${
-            presentationKeepAwake
-              ? 'bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border-[var(--badge-amber-border)] font-bold shadow-[0_0_12px_rgba(245,158,11,0.25)]'
-              : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)] hover:bg-[var(--bg-subcard)] hover:text-[var(--text-primary)]'
-          }`}
-          title={
-            presentationKeepAwake
-              ? 'Keep-Awake Active: System sleep, display blackout, and screensaver locked out'
-              : 'Keep-Awake Inactive: Click to prevent laptop/display sleep during presentations'
-          }
-        >
-          <Coffee className={`w-3.5 h-3.5 ${presentationKeepAwake ? 'text-amber-400 animate-pulse' : 'text-[var(--text-muted)]'}`} />
-          <span className="hidden xl:inline">{presentationKeepAwake ? 'AWAKE: ON' : 'AWAKE'}</span>
-        </button>
-
-        {/* Flight Recorder / Event Logs Drawer Trigger */}
-        <button
-          onClick={() => setEventLogDrawerOpen(true)}
-          className="px-2.5 py-1.5 rounded-md bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono font-bold text-[var(--text-primary)] flex items-center gap-1.5 transition shadow-sm cursor-pointer hover:border-cyan-500/50 relative"
-          title="Open Blackbox Flight Recorder (Hardware Event Audit Log)"
-        >
-          <FileText className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="hidden md:inline">Logs</span>
-          {eventLogs.some((l) => l.level === 'CRITICAL' || l.level === 'WARN') && (
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-          )}
-        </button>
-
-        {/* Acoustic Audio Delay Calculator Trigger */}
-        <button
-          onClick={() => setAudioDelayModalOpen(true)}
-          className="px-2.5 py-1.5 rounded-md bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono font-bold text-[var(--text-primary)] hover:text-indigo-400 flex items-center gap-1.5 transition shadow-sm cursor-pointer hover:border-indigo-500/50"
-          title="Acoustic Audio-to-Video Delay Calculator (Speed of Sound Compensation)"
-        >
-          <Clock className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="hidden lg:inline">Delay</span>
-        </button>
-
-        {/* Cursor Exposure Toggle */}
-        <button
-          onClick={() => setShowCursorInPreviews(!showCursorInPreviews)}
-          className={`px-2.5 py-1.5 rounded-md border text-xs font-mono transition flex items-center gap-1.5 shadow-sm cursor-pointer ${
-            showCursorInPreviews
-              ? 'bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border-[var(--badge-cyan-border)] font-bold'
-              : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)] hover:bg-[var(--bg-subcard)]'
-          }`}
-          title="Toggle cursor exposure in live preview feeds"
-        >
-          <MousePointer className="w-3.5 h-3.5" />
-          <span className="hidden xl:inline">Cursor: {showCursorInPreviews ? 'ON' : 'OFF'}</span>
-        </button>
-
-        {/* Settings Modal Trigger */}
-        <button
-          onClick={() => setSettingsModalOpen(true)}
-          className="p-2 rounded-md bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)] hover:text-cyan-400 transition shadow-sm cursor-pointer"
-          title="Preferences & Show-Day Settings"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
-
-        {/* Theme Switcher Dropdown */}
-        <div className="relative">
+        {/* Group 1: Presentation & Display Safety Controls */}
+        <div className="p-0.5 rounded-lg bg-[var(--bg-subcard)] border border-[var(--border-color)] flex items-center gap-0.5">
+          {/* Keep-Awake Caffeine Shield */}
           <button
-            onClick={() => setThemeMenuOpen(!themeMenuOpen)}
-            className="p-2 rounded-md bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)] transition shadow-sm cursor-pointer"
-            title="Switch Pro AV Theme"
+            onClick={toggleKeepAwake}
+            className={`px-2 py-1 rounded-md text-[11px] font-mono transition flex items-center gap-1 cursor-pointer ${
+              presentationKeepAwake
+                ? 'bg-[var(--badge-amber-bg)] text-[var(--badge-amber-text)] border border-[var(--badge-amber-border)] font-bold shadow-[0_0_8px_rgba(245,158,11,0.25)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
+            }`}
+            title={
+              presentationKeepAwake
+                ? 'Keep-Awake Active: System sleep, display blackout, and screensaver locked out'
+                : 'Keep-Awake Inactive: Click to prevent laptop/display sleep during presentations'
+            }
           >
-            {themeMode === 'DARK_FOH' ? (
-              <Moon className="w-4 h-4 text-purple-400" />
-            ) : themeMode === 'DAYLIGHT' ? (
-              <Sun className="w-4 h-4 text-amber-500" />
-            ) : (
-              <Tv className="w-4 h-4 text-cyan-400" />
+            <Coffee className={`w-3 h-3 ${presentationKeepAwake ? 'text-amber-400 animate-pulse' : 'text-[var(--text-muted)]'}`} />
+            <span className="hidden xl:inline">{presentationKeepAwake ? 'AWAKE' : 'AWAKE'}</span>
+          </button>
+
+          {/* Cursor Exposure Toggle */}
+          <button
+            onClick={() => setShowCursorInPreviews(!showCursorInPreviews)}
+            className={`px-2 py-1 rounded-md text-[11px] font-mono transition flex items-center gap-1 cursor-pointer ${
+              showCursorInPreviews
+                ? 'bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
+            }`}
+            title="Toggle cursor exposure in live preview feeds"
+          >
+            <MousePointer className="w-3 h-3" />
+            <span className="hidden xl:inline">Cursor</span>
+          </button>
+        </div>
+
+        {/* Group 2: Diagnostics & Timing Tools */}
+        <div className="p-0.5 rounded-lg bg-[var(--bg-subcard)] border border-[var(--border-color)] flex items-center gap-0.5">
+          {/* Flight Recorder / Event Logs Drawer Trigger */}
+          <button
+            onClick={() => setEventLogDrawerOpen(true)}
+            className="px-2 py-1 rounded-md text-[11px] font-mono font-medium text-[var(--text-primary)] hover:bg-[var(--bg-card)] flex items-center gap-1 transition cursor-pointer relative"
+            title="Open Blackbox Flight Recorder (Hardware Event Audit Log)"
+          >
+            <FileText className="w-3 h-3 text-cyan-400" />
+            <span className="hidden md:inline">Logs</span>
+            {eventLogs.some((l) => l.level === 'CRITICAL' || l.level === 'WARN') && (
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
             )}
           </button>
 
-          {themeMenuOpen && (
-            <div
-              className="absolute right-0 mt-2 w-52 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xl p-1.5 space-y-1 font-mono text-xs z-50 text-[var(--text-primary)]"
-              onMouseLeave={() => setThemeMenuOpen(false)}
-            >
-              <button
-                onClick={() => {
-                  setThemeMode('DARK_FOH');
-                  setThemeMenuOpen(false);
-                }}
-                className={`w-full px-2.5 py-1.5 rounded text-left flex items-center gap-2 transition cursor-pointer ${
-                  themeMode === 'DARK_FOH' ? 'bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-subcard)]'
-                }`}
-              >
-                <Moon className="w-3.5 h-3.5 text-purple-400" />
-                <span>FOH Stage Dark (OLED)</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setThemeMode('DAYLIGHT');
-                  setThemeMenuOpen(false);
-                }}
-                className={`w-full px-2.5 py-1.5 rounded text-left flex items-center gap-2 transition cursor-pointer ${
-                  themeMode === 'DAYLIGHT' ? 'bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-subcard)]'
-                }`}
-              >
-                <Sun className="w-3.5 h-3.5 text-amber-500" />
-                <span>Daylight Festival Mode</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setThemeMode('BROADCAST');
-                  setThemeMenuOpen(false);
-                }}
-                className={`w-full px-2.5 py-1.5 rounded text-left flex items-center gap-2 transition cursor-pointer ${
-                  themeMode === 'BROADCAST' ? 'bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-subcard)]'
-                }`}
-              >
-                <Tv className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Broadcast Neutral 18%</span>
-              </button>
-            </div>
-          )}
+          {/* Acoustic Audio Delay Calculator */}
+          <button
+            onClick={() => setAudioDelayModalOpen(true)}
+            className="px-2 py-1 rounded-md text-[11px] font-mono font-medium text-[var(--text-primary)] hover:text-indigo-400 hover:bg-[var(--bg-card)] flex items-center gap-1 transition cursor-pointer"
+            title="Acoustic Audio-to-Video Delay Calculator (Speed of Sound Compensation)"
+          >
+            <Clock className="w-3 h-3 text-indigo-400" />
+            <span className="hidden lg:inline">Delay</span>
+          </button>
         </div>
 
-        {/* Software Auto-Updater Button */}
-        <button
-          onClick={() => setUpdateModalOpen(true)}
-          className="px-2.5 py-1.5 rounded-md bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono font-bold text-[var(--text-primary)] flex items-center gap-1.5 transition shadow-sm cursor-pointer hover:border-cyan-500/50"
-          title="Check for Software Updates from GitHub Releases"
-        >
-          <ArrowUpCircle className="w-4 h-4 text-cyan-400" />
-          <span className="hidden sm:inline">Updates</span>
-        </button>
+        {/* Group 3: Preferences & System Utilities */}
+        <div className="p-0.5 rounded-lg bg-[var(--bg-subcard)] border border-[var(--border-color)] flex items-center gap-0.5">
+          {/* Theme Switcher Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+              className="p-1 rounded-md text-[var(--text-primary)] hover:bg-[var(--bg-card)] transition cursor-pointer"
+              title="Switch Pro AV Theme"
+            >
+              {themeMode === 'DARK_FOH' ? (
+                <Moon className="w-3.5 h-3.5 text-purple-400" />
+              ) : themeMode === 'DAYLIGHT' ? (
+                <Sun className="w-3.5 h-3.5 text-amber-500" />
+              ) : (
+                <Tv className="w-3.5 h-3.5 text-cyan-400" />
+              )}
+            </button>
+
+            {themeMenuOpen && (
+              <div
+                className="absolute right-0 mt-2 w-52 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xl p-1.5 space-y-1 font-mono text-xs z-50 text-[var(--text-primary)]"
+                onMouseLeave={() => setThemeMenuOpen(false)}
+              >
+                <button
+                  onClick={() => {
+                    setThemeMode('DARK_FOH');
+                    setThemeMenuOpen(false);
+                  }}
+                  className={`w-full px-2.5 py-1.5 rounded text-left flex items-center gap-2 transition cursor-pointer ${
+                    themeMode === 'DARK_FOH' ? 'bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-subcard)]'
+                  }`}
+                >
+                  <Moon className="w-3.5 h-3.5 text-purple-400" />
+                  <span>FOH Stage Dark (OLED)</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setThemeMode('DAYLIGHT');
+                    setThemeMenuOpen(false);
+                  }}
+                  className={`w-full px-2.5 py-1.5 rounded text-left flex items-center gap-2 transition cursor-pointer ${
+                    themeMode === 'DAYLIGHT' ? 'bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-subcard)]'
+                  }`}
+                >
+                  <Sun className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Daylight Festival Mode</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setThemeMode('BROADCAST');
+                    setThemeMenuOpen(false);
+                  }}
+                  className={`w-full px-2.5 py-1.5 rounded text-left flex items-center gap-2 transition cursor-pointer ${
+                    themeMode === 'BROADCAST' ? 'bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-subcard)]'
+                  }`}
+                >
+                  <Tv className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Broadcast Neutral 18%</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Settings Modal Trigger */}
+          <button
+            onClick={() => setSettingsModalOpen(true)}
+            className="p-1 rounded-md text-[var(--text-primary)] hover:text-cyan-400 hover:bg-[var(--bg-card)] transition cursor-pointer"
+            title="Preferences & Show-Day Settings"
+          >
+            <Settings className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Software Updates Button */}
+          <button
+            onClick={() => setUpdateModalOpen(true)}
+            className="px-2 py-1 rounded-md text-[11px] font-mono font-medium text-[var(--text-primary)] hover:bg-[var(--bg-card)] hover:text-cyan-400 flex items-center gap-1 transition cursor-pointer"
+            title="Check for Software Updates"
+          >
+            <ArrowUpCircle className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Updates</span>
+          </button>
+        </div>
       </div>
 
       {/* Auto-Updater Modal */}

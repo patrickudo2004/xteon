@@ -96,6 +96,8 @@ export const StageDisplaysView: React.FC = () => {
   );
 
   useEffect(() => {
+    // Automatically close any legacy virtual display window so it never interferes or freezes the app
+    closeVirtualExtendedDisplay().catch(() => {});
     refreshStageLinkSlots(true);
     refreshOsWindows();
     refreshCompanionStatus();
@@ -141,65 +143,43 @@ export const StageDisplaysView: React.FC = () => {
   const handleTriggerWindowsExtend = async () => {
     setIsExtending(true);
     try {
-      if (secondaryDisplay) {
-        const res = await triggerOsDisplayExtend();
-        if (primarySlot) {
-          await upsertStageLinkSlot({
-            id: primarySlot.id,
-            name: primarySlot.name,
-            stage_zone: primarySlot.stage_zone,
-            source_mode: 'DISPLAY',
-            primary_source_id: `D:${secondaryDisplay.id}`,
-            primary_source_label: `Display ${secondaryDisplay.osIndex}: ${secondaryDisplay.customAlias || secondaryDisplay.name}`,
-            target_fps: 60,
-            max_width: 1920,
-          });
-          await refreshStageLinkSlots(true);
-        }
-        setRecallSuccessMsg(res || 'Extended Windows desktop to Display 2 & phone');
-      } else if (virtualDisplay) {
-        if (primarySlot) {
-          await upsertStageLinkSlot({
-            id: primarySlot.id,
-            name: primarySlot.name,
-            stage_zone: primarySlot.stage_zone,
-            source_mode: 'DISPLAY',
-            primary_source_id: `D:${virtualDisplay.id}`,
-            primary_source_label: 'Xteon Virtual Extended Stage Display (Phone)',
-            target_fps: 60,
-            max_width: 1920,
-          });
-          await refreshStageLinkSlots(true);
-        }
-        setRecallSuccessMsg('Streaming Virtual Extended Display to phone receiver!');
+      // 1. Ensure any legacy virtual window is dismissed
+      await closeVirtualExtendedDisplay();
+
+      // 2. Trigger native OS Extend shortcut (Windows: DisplaySwitch.exe /extend)
+      const res = await triggerOsDisplayExtend();
+
+      // 3. Wait briefly for Windows to activate the projector / second screen
+      await new Promise((r) => setTimeout(r, 800));
+      await useRigStore.getState().refreshLiveDisplays();
+
+      const updated = useRigStore.getState().liveDisplays;
+      const secDisp = updated.find((d) => d.osIndex > 1 && d.id !== 'display-virtual-stage');
+
+      if (secDisp && primarySlot) {
+        await upsertStageLinkSlot({
+          id: primarySlot.id,
+          name: primarySlot.name,
+          stage_zone: primarySlot.stage_zone,
+          source_mode: 'DISPLAY',
+          primary_source_id: `D:${secDisp.id}`,
+          primary_source_label: `Display ${secDisp.osIndex}: ${secDisp.customAlias || secDisp.name} (Projector)`,
+          target_fps: 60,
+          max_width: 1920,
+        });
+        await refreshStageLinkSlots(true);
+        setRecallSuccessMsg(res || `Extended Windows desktop! Projector (Display ${secDisp.osIndex}) connected.`);
       } else {
-        await spawnVirtualExtendedDisplay(1920, 1080);
-        await useRigStore.getState().refreshLiveDisplays();
-        const updatedDisplays = useRigStore.getState().liveDisplays;
-        const vDisp = updatedDisplays.find((d) => d.id === 'display-virtual-stage') || updatedDisplays[1];
-        if (primarySlot) {
-          await upsertStageLinkSlot({
-            id: primarySlot.id,
-            name: primarySlot.name,
-            stage_zone: primarySlot.stage_zone,
-            source_mode: 'DISPLAY',
-            primary_source_id: `D:${vDisp?.id || 'display-virtual-stage'}`,
-            primary_source_label: 'Xteon Virtual Extended Stage Display (Phone)',
-            target_fps: 60,
-            max_width: 1920,
-          });
-          await refreshStageLinkSlots(true);
-        }
-        setRecallSuccessMsg('Launched Xteon Virtual Extended Display & Linked Phone!');
+        setRecallSuccessMsg('Switched Windows to Extended Desktop mode. Connect projector or HDMI cable to use Screen 2.');
       }
       setTimeout(() => setRecallSuccessMsg(''), 4500);
-    } catch (e) {
+    } catch (e: any) {
       console.warn('Display extend trigger:', e);
+      setRecallSuccessMsg(`Display extend: ${e?.message || e}`);
+      setTimeout(() => setRecallSuccessMsg(''), 4500);
     } finally {
-      setTimeout(() => {
-        setIsExtending(false);
-        useRigStore.getState().refreshLiveDisplays();
-      }, 1500);
+      setIsExtending(false);
+      await useRigStore.getState().refreshLiveDisplays();
     }
   };
 
@@ -226,7 +206,32 @@ export const StageDisplaysView: React.FC = () => {
       max_width: 1920,
     });
     await refreshStageLinkSlots(true);
-    setRecallSuccessMsg('Broadcasting host desktop screen at 60 FPS zero-install!');
+    setRecallSuccessMsg('Broadcasting host laptop screen (Display 1) at 60 FPS zero-install!');
+    setTimeout(() => setRecallSuccessMsg(''), 4000);
+  };
+
+  // Stream projector screen (Display 2) directly to connected receivers
+  const handleStreamProjectorScreen = async (slotId?: string) => {
+    const targetDisp = secondaryDisplay || liveDisplays.find((d) => d.osIndex > 1 && d.id !== 'display-virtual-stage');
+    if (!targetDisp) {
+      setRecallSuccessMsg('No projector or secondary display detected yet. Click "Activate Windows Extend" first.');
+      setTimeout(() => setRecallSuccessMsg(''), 3500);
+      return;
+    }
+    const targetSlotId = slotId || primarySlot?.id || 'stage-1';
+    const currentSlot = stageLinkSlots.find((s) => s.id === targetSlotId) || primarySlot;
+    await upsertStageLinkSlot({
+      id: targetSlotId,
+      name: currentSlot?.name || 'Projector Confidence Screen',
+      stage_zone: currentSlot?.stage_zone || 'Pulpit Altar',
+      source_mode: 'DISPLAY',
+      primary_source_id: `D:${targetDisp.id}`,
+      primary_source_label: `Display ${targetDisp.osIndex}: ${targetDisp.customAlias || targetDisp.name} (Projector)`,
+      target_fps: 60,
+      max_width: 1920,
+    });
+    await refreshStageLinkSlots(true);
+    setRecallSuccessMsg(`Broadcasting Projector Screen (Display ${targetDisp.osIndex}) to receiver!`);
     setTimeout(() => setRecallSuccessMsg(''), 4000);
   };
 
@@ -288,11 +293,6 @@ export const StageDisplaysView: React.FC = () => {
   // Save changes from Drawer
   const handleSaveDrawer = async () => {
     if (!editingSlotForDrawer) return;
-
-    if (drawerMode === 'DISPLAY' && drawerPrimarySourceId.includes('virtual') && !virtualDisplay) {
-      await spawnVirtualExtendedDisplay(1920, 1080);
-      await useRigStore.getState().refreshLiveDisplays();
-    }
 
     await upsertStageLinkSlot({
       id: editingSlotForDrawer.id,
@@ -421,7 +421,7 @@ export const StageDisplaysView: React.FC = () => {
 
       {/* Two Core Operation Modes Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* MODE 1: ZERO-INSTALL EXTERNAL MONITOR & DESKTOP SCREEN (GLIDEX STYLE) */}
+        {/* MODE 1: ZERO-INSTALL EXTERNAL MONITOR & PROJECTOR (GLIDEX STYLE) */}
         <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col justify-between gap-5 relative overflow-hidden">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -431,118 +431,125 @@ export const StageDisplaysView: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="font-bold font-mono text-sm sm:text-base text-[var(--text-primary)]">
-                    External Monitor & Desktop Screen (GlideX Style)
+                    External Monitor & Projector Screen
                   </h2>
                   <div className="text-[11px] text-[var(--text-muted)]">
-                    Zero-install external display & desktop mirroring for any phone, tablet, or laptop
+                    Zero-install extended desktop for projectors, tablets, and phones
                   </div>
                 </div>
               </div>
 
               {secondaryDisplay ? (
-                <span className="px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
-                  ● Display 2 Active
-                </span>
-              ) : virtualDisplay ? (
-                <span className="px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
-                  ● Virtual Stage Active
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
+                  ● Projector / Display 2 Active
                 </span>
               ) : (
-                <span className="px-2 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-[10px] font-mono font-bold">
-                  Zero-Install Ready
+                <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-[10px] font-mono font-bold">
+                  Single Screen
                 </span>
               )}
             </div>
 
             <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              Streams your laptop desktop or dedicated extended screen directly to any phone, tablet, or secondary laptop with full 60 FPS and mouse cursor tracking — <strong>no app or driver installation required</strong> on any device.
+              Activate Windows <strong>"Extend"</strong> mode to use a projector or secondary display, and stream your screen directly to any phone or tablet with 60 FPS zero-install.
             </p>
 
-            {effectiveSecondaryDisplay && (
-              <div className="p-3 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono space-y-1">
+            {secondaryDisplay && (
+              <div className="p-3 rounded-xl bg-[var(--bg-subcard)] border border-blue-500/30 text-xs font-mono space-y-1">
                 <div className="text-[var(--text-primary)] font-bold flex items-center justify-between">
-                  <span>Screen {effectiveSecondaryDisplay.osIndex}: {effectiveSecondaryDisplay.customAlias || effectiveSecondaryDisplay.name}</span>
-                  {virtualDisplay && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      LIVE ON PHONE
-                    </span>
-                  )}
+                  <span>Screen {secondaryDisplay.osIndex}: {secondaryDisplay.customAlias || secondaryDisplay.name}</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">
+                    PROJECTOR / EXTENDED
+                  </span>
                 </div>
                 <div className="text-[10px] text-[var(--text-muted)]">
-                  {effectiveSecondaryDisplay.activeResolution.width}×{effectiveSecondaryDisplay.activeResolution.height} @ {effectiveSecondaryDisplay.refreshRateHz}Hz • {effectiveSecondaryDisplay.portType}
+                  {secondaryDisplay.activeResolution.width}×{secondaryDisplay.activeResolution.height} @ {secondaryDisplay.refreshRateHz}Hz • {secondaryDisplay.portType}
                 </div>
               </div>
             )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[var(--border-color)]">
-            <button
-              onClick={() => handleStreamDesktop()}
-              className="px-3.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[40px]"
-              title="Immediately stream host laptop desktop screen to connected receivers"
-            >
-              <Laptop className="w-3.5 h-3.5" />
-              <span>Stream Entire Desktop (Display 1)</span>
-            </button>
-
-            <button
-              onClick={handleTriggerWindowsExtend}
-              disabled={isExtending}
-              className="px-3.5 py-2 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-cyan-500/40 text-cyan-300 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[40px]"
-              title="Activate extended monitor workspace and stream to connected receivers"
-            >
-              <Zap className="w-3.5 h-3.5" />
-              <span>
-                {isExtending
-                  ? 'Activating...'
-                  : virtualDisplay
-                  ? 'Re-Link Phone to Virtual Display'
-                  : secondaryDisplay
-                  ? 'Extend to Display 2 & Phone'
-                  : 'Launch Virtual Extended Screen'}
-              </span>
-            </button>
-
-            {virtualDisplay && (
+          {/* Action Buttons - Grouped & Compacted */}
+          <div className="space-y-2 pt-3 border-t border-[var(--border-color)]">
+            <div className="flex flex-wrap items-center gap-2">
               <button
-                onClick={handleCloseVirtualDisplay}
-                className="px-3 py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer min-h-[40px]"
-                title="Close Virtual Extended Stage Display"
+                onClick={() => handleStreamDesktop()}
+                className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[36px]"
+                title="Immediately stream host laptop desktop screen to connected receivers"
               >
-                <X className="w-3.5 h-3.5" />
-                <span>Close Virtual Screen</span>
+                <Laptop className="w-3.5 h-3.5" />
+                <span>Stream Laptop Screen (Display 1)</span>
               </button>
-            )}
 
-            {effectiveSecondaryDisplay && (
+              {secondaryDisplay && (
+                <button
+                  onClick={() => handleStreamProjectorScreen(primarySlot?.id)}
+                  className="px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-400 text-slate-950 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[36px]"
+                  title="Stream projector / second screen directly to connected devices"
+                >
+                  <Monitor className="w-3.5 h-3.5" />
+                  <span>Stream Projector (Display {secondaryDisplay.osIndex})</span>
+                </button>
+              )}
+
               <button
-                onClick={handleTeleportToDisplay2}
-                className="px-3 py-2 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer min-h-[40px]"
-                title="Send active window borderless fullscreen to Extended Screen"
+                onClick={handleTriggerWindowsExtend}
+                disabled={isExtending}
+                className="px-3 py-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-cyan-500/40 text-cyan-300 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[36px]"
+                title="Activate Windows Extended Desktop mode (DisplaySwitch /extend)"
               >
-                <Maximize2 className="w-3.5 h-3.5" />
-                <span>Snap Window to Extended Screen</span>
+                <Zap className="w-3.5 h-3.5" />
+                <span>
+                  {isExtending
+                    ? 'Activating Extend Mode...'
+                    : secondaryDisplay
+                    ? 'Re-Trigger Windows Extend'
+                    : 'Activate Windows Extend (Projector)'}
+                </span>
               </button>
-            )}
+            </div>
 
-            <button
-              onClick={handleOpenDisplaySettings}
-              className="px-3 py-2 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer min-h-[40px]"
-              title="Open OS Display Settings panel"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>OS Display Settings</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              {virtualDisplay && (
+                <button
+                  onClick={handleCloseVirtualDisplay}
+                  className="px-2.5 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-mono font-semibold transition flex items-center gap-1 cursor-pointer min-h-[34px]"
+                  title="Close Virtual Window"
+                >
+                  <X className="w-3 h-3" />
+                  <span>Close Virtual Window</span>
+                </button>
+              )}
 
-            <button
-              onClick={handleRecallWindows}
-              className="px-3 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer ml-auto min-h-[40px]"
-              title="Recall any off-screen or lost windows back onto laptop screen"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Emergency Recall</span>
-            </button>
+              {secondaryDisplay && (
+                <button
+                  onClick={handleTeleportToDisplay2}
+                  className="px-2.5 py-1.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 text-xs font-mono font-semibold transition flex items-center gap-1 cursor-pointer min-h-[34px]"
+                  title="Send active window borderless fullscreen to Projector"
+                >
+                  <Maximize2 className="w-3 h-3" />
+                  <span>Snap Window to Projector</span>
+                </button>
+              )}
+
+              <button
+                onClick={handleOpenDisplaySettings}
+                className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-mono font-semibold transition flex items-center gap-1 cursor-pointer min-h-[34px]"
+                title="Open OS Display Settings panel"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>OS Settings</span>
+              </button>
+
+              <button
+                onClick={handleRecallWindows}
+                className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-mono font-semibold transition flex items-center gap-1 cursor-pointer ml-auto min-h-[34px]"
+                title="Recall any off-screen or lost windows back onto laptop screen"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Emergency Recall</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1158,37 +1165,37 @@ export const StageDisplaysView: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Mode 4: Virtual Extended Monitor (GlideX Style) */}
+                  {/* Mode 4: Projector / Extended Display Screen */}
                   <div
                     onClick={async () => {
                       setDrawerMode('DISPLAY');
-                      let targetDisp = secondaryDisplay || liveDisplays.find((d) => d.id === 'display-virtual-stage');
+                      let targetDisp = secondaryDisplay || liveDisplays.find((d) => d.osIndex > 1 && d.id !== 'display-virtual-stage');
                       if (!targetDisp) {
-                        await spawnVirtualExtendedDisplay(1920, 1080);
+                        await triggerOsDisplayExtend();
+                        await new Promise((r) => setTimeout(r, 600));
                         await useRigStore.getState().refreshLiveDisplays();
-                        targetDisp = useRigStore.getState().liveDisplays.find((d) => d.id === 'display-virtual-stage');
+                        targetDisp = useRigStore.getState().liveDisplays.find((d) => d.osIndex > 1 && d.id !== 'display-virtual-stage');
                       }
                       if (targetDisp) {
                         setDrawerPrimarySourceId(`D:${targetDisp.id}`);
-                        setDrawerPrimarySourceLabel(
-                          targetDisp.id === 'display-virtual-stage'
-                            ? 'Xteon Virtual Extended Display'
-                            : `Screen ${targetDisp.osIndex}: ${targetDisp.customAlias || targetDisp.name}`
-                        );
+                        setDrawerPrimarySourceLabel(`Screen ${targetDisp.osIndex}: ${targetDisp.customAlias || targetDisp.name} (Projector)`);
+                      } else {
+                        setDrawerPrimarySourceId('D:display-1');
+                        setDrawerPrimarySourceLabel('Desktop Screen (Host Laptop)');
                       }
                     }}
                     className={`p-3.5 rounded-xl border cursor-pointer transition flex flex-col justify-between gap-2 ${
-                      drawerMode === 'DISPLAY' && drawerPrimarySourceId.includes('virtual')
+                      drawerMode === 'DISPLAY' && drawerPrimarySourceId !== 'D:display-1'
                         ? 'bg-emerald-500/15 border-emerald-400 text-[var(--text-primary)] ring-1 ring-emerald-400/50'
                         : 'border-dashed border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10 text-[var(--text-muted)]'
                     }`}
                   >
                     <div className="flex items-center gap-2">
                       <Laptop className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="font-bold text-xs text-emerald-300">OS Extended Desktop</span>
+                      <span className="font-bold text-xs text-emerald-300">Projector / Extended Screen</span>
                     </div>
                     <p className="text-[11px] leading-relaxed">
-                      Turns this device into an independent extended monitor workspace just like ASUS GlideX.
+                      Streams the projector or secondary extended display directly to this receiver.
                     </p>
                   </div>
                 </div>
