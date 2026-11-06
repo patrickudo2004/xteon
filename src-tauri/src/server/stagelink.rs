@@ -133,6 +133,9 @@ static STAGE_SLOTS: LazyLock<Mutex<HashMap<String, Arc<SlotRuntime>>>> =
 static LAST_ALLOCATED_SLOT_TIME: LazyLock<Mutex<HashMap<String, u64>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
+static CLIENT_SLOT_MAP: LazyLock<Mutex<HashMap<String, String>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
 pub fn now_epoch_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -247,25 +250,45 @@ pub fn ensure_default_slot_exists() -> Arc<SlotRuntime> {
         .expect("default slot stage-1 must exist after upsert")
 }
 
-pub fn allocate_slot_for_new_client() -> String {
+pub fn allocate_slot_for_client(client_id: Option<&str>, user_agent: Option<&str>) -> String {
+    let now = now_epoch_ms();
+    let cid_clean = client_id
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty());
+
+    // 1. If this exact client ID already has a designated slot that still exists, return it!
+    if let Some(cid) = cid_clean {
+        if let Ok(c_map) = CLIENT_SLOT_MAP.lock() {
+            if let Some(existing_slot) = c_map.get(cid) {
+                if let Ok(slots) = STAGE_SLOTS.lock() {
+                    if slots.contains_key(existing_slot) {
+                        return existing_slot.clone();
+                    }
+                }
+            }
+        }
+    }
+
     let runtimes: Vec<Arc<SlotRuntime>> = STAGE_SLOTS
         .lock()
         .map(|m| m.values().cloned().collect())
         .unwrap_or_default();
 
-    let now = now_epoch_ms();
-    let recent_allocations = LAST_ALLOCATED_SLOT_TIME.lock().ok();
+    // 2. Check if there is an unassigned existing slot (not claimed by any active client in CLIENT_SLOT_MAP and has 0 subscribers)
+    let claimed_slots: std::collections::HashSet<String> = CLIENT_SLOT_MAP
+        .lock()
+        .map(|m| m.values().cloned().collect())
+        .unwrap_or_default();
 
-    // 1. Look for an existing slot that has 0 subscribers AND has not been allocated in the last 10 seconds
     for rt in &runtimes {
         if rt.subscriber_count.load(Ordering::Relaxed) == 0 {
             if let Ok(slot) = rt.slot.lock() {
-                let is_recent = recent_allocations
-                    .as_ref()
-                    .and_then(|m| m.get(&slot.id))
-                    .map(|&ts| now.saturating_sub(ts) < 10_000)
-                    .unwrap_or(false);
-                if !is_recent {
+                if !claimed_slots.contains(&slot.id) {
+                    if let Some(cid) = cid_clean {
+                        if let Ok(mut m) = CLIENT_SLOT_MAP.lock() {
+                            m.insert(cid.to_string(), slot.id.clone());
+                        }
+                    }
                     if let Ok(mut m) = LAST_ALLOCATED_SLOT_TIME.lock() {
                         m.insert(slot.id.clone(), now);
                     }
@@ -275,19 +298,35 @@ pub fn allocate_slot_for_new_client() -> String {
         }
     }
 
-    // 2. If all existing slots have active subscribers or are recently reserved, allocate the next slot (stage-1, stage-2, stage-3...)
+    // 3. Otherwise, allocate the next slot (stage-1, stage-2, stage-3...)
     let existing_ids: std::collections::HashSet<String> = runtimes
         .iter()
         .filter_map(|rt| rt.slot.lock().ok().map(|s| s.id.clone()))
         .collect();
 
+    let ua = user_agent.unwrap_or("").to_lowercase();
+    let is_phone = ua.contains("iphone") || (ua.contains("android") && ua.contains("mobile"));
+    let is_tablet = ua.contains("ipad") || (ua.contains("android") && !ua.contains("mobile"));
+
     for i in 1..=50 {
         let candidate = format!("stage-{}", i);
         if !existing_ids.contains(&candidate) {
             let label = if i == 1 {
-                "Pulpit Confidence Screen".to_string()
+                if is_phone {
+                    "Pulpit Mobile Screen".to_string()
+                } else if is_tablet {
+                    "Pulpit Stage Tablet".to_string()
+                } else {
+                    "Pulpit Confidence Screen".to_string()
+                }
             } else if i == 2 {
-                "Secondary Stage Monitor".to_string()
+                if is_tablet {
+                    "Downstage Wedge Tablet".to_string()
+                } else if is_phone {
+                    "Downstage Mobile Monitor".to_string()
+                } else {
+                    "Secondary Stage Monitor".to_string()
+                }
             } else {
                 format!("Stage Receiver {}", i)
             };
@@ -311,6 +350,11 @@ pub fn allocate_slot_for_new_client() -> String {
                 target_fps: Some(30),
                 max_width: Some(1920),
             });
+            if let Some(cid) = cid_clean {
+                if let Ok(mut m) = CLIENT_SLOT_MAP.lock() {
+                    m.insert(cid.to_string(), candidate.clone());
+                }
+            }
             if let Ok(mut m) = LAST_ALLOCATED_SLOT_TIME.lock() {
                 m.insert(candidate.clone(), now);
             }
@@ -321,12 +365,11 @@ pub fn allocate_slot_for_new_client() -> String {
     "stage-1".to_string()
 }
 
-pub fn list_stage_slots(include_previews: bool) -> Vec<StageLinkSlot> {
-    let is_empty = STAGE_SLOTS.lock().map(|m| m.is_empty()).unwrap_or(false);
-    if is_empty {
-        ensure_default_slot_exists();
-    }
+pub fn allocate_slot_for_new_client() -> String {
+    allocate_slot_for_client(None, None)
+}
 
+pub fn list_stage_slots(include_previews: bool) -> Vec<StageLinkSlot> {
     let runtimes: Vec<Arc<SlotRuntime>> = STAGE_SLOTS
         .lock()
         .map(|m| m.values().cloned().collect())
@@ -482,6 +525,12 @@ pub fn upsert_stage_slot(input: CreateOrUpdateSlotInput) -> StageLinkSlot {
 }
 
 pub fn remove_stage_slot(slot_id: &str) -> bool {
+    if let Ok(mut c_map) = CLIENT_SLOT_MAP.lock() {
+        c_map.retain(|_, v| v != slot_id);
+    }
+    if let Ok(mut t_map) = LAST_ALLOCATED_SLOT_TIME.lock() {
+        t_map.remove(slot_id);
+    }
     let removed_rt = STAGE_SLOTS
         .lock()
         .ok()

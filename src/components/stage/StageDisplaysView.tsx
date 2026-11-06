@@ -394,27 +394,29 @@ export const StageDisplaysView: React.FC = () => {
     await refreshStageLinkSlots(true);
   };
 
-  // Add a new stage receiver slot (with recycled slug allocation)
+  // Add a new stage receiver slot and display its pairing QR code
   const handleAddStageReceiver = async () => {
     const slotCount = stageLinkSlots.length;
     const newSlot = await upsertStageLinkSlot({
-      name: `Stage Receiver ${slotCount + 1}`,
+      name: slotCount === 0 ? 'Pulpit Confidence Screen' : `Stage Receiver ${slotCount + 1}`,
       stage_zone: slotCount === 0 ? 'Pulpit Altar' : slotCount === 1 ? 'Downstage Wedge' : 'Choir Loft',
-      source_mode: 'WINDOW',
-      primary_source_id: '',
-      primary_source_label: '',
+      source_mode: 'DISPLAY',
+      primary_source_id: 'D:display-1',
+      primary_source_label: 'Desktop Screen (Host Laptop)',
       target_fps: 30,
-      max_width: 1280,
+      max_width: 1920,
     });
+    await refreshStageLinkSlots(true);
     if (newSlot) {
-      handleOpenDrawer(newSlot);
+      openQrForStageSlot(newSlot.id);
     }
   };
 
   // Copy direct device URL
   const handleCopySlotLink = (slotId: string) => {
-    const ip = preferredInterface?.ip || 'localhost';
-    const url = `http://${ip}:8765/${slotId}`;
+    const ip = preferredInterface?.ip || companionStatus?.host || 'localhost';
+    const key = companionStatus?.session_token ? `?key=${encodeURIComponent(companionStatus.session_token)}` : '';
+    const url = `http://${ip}:8765/stage/${encodeURIComponent(slotId)}${key}`;
     if (navigator?.clipboard?.writeText) {
       navigator.clipboard.writeText(url);
     }
