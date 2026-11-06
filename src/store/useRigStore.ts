@@ -871,6 +871,12 @@ interface RigState {
     durationSecs?: number
   ) => Promise<void>;
   clearStageLinkWhisper: (slotId: string) => Promise<void>;
+  broadcastStageLinkWhisper: (
+    text: string,
+    tone: 'INFO' | 'WARN' | 'CRITICAL',
+    durationSecs?: number
+  ) => Promise<void>;
+  clearAllStageLinkWhispers: () => Promise<void>;
   triggerOsDisplayExtend: () => Promise<string>;
   openOsDisplaySettings: () => Promise<string>;
   getWindowThumbnails: (hwndIds: string[]) => Promise<Record<string, string>>;
@@ -2930,6 +2936,48 @@ export const useRigStore = create<RigState>((set, get) => ({
     }
   },
 
+  broadcastStageLinkWhisper: async (text, tone, durationSecs) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const updated: StageLinkSlot[] = await invoke('broadcast_stagelink_whisper', {
+          message: text.trim(),
+          tone,
+          durationSeconds: durationSecs,
+        });
+        if (Array.isArray(updated)) {
+          const map = new Map(updated.map((s) => [s.id, s]));
+          set({
+            stageLinkSlots: get().stageLinkSlots.map((s) => map.get(s.id) || s),
+          });
+        }
+        await get().refreshStageLinkSlots(false);
+        get().addEventLog({
+          category: 'DISPLAY',
+          level: tone === 'CRITICAL' ? 'CRITICAL' : tone === 'WARN' ? 'WARN' : 'INFO',
+          severity: tone === 'CRITICAL' ? 'CRITICAL' : tone === 'WARN' ? 'WARN' : 'INFO',
+          message: `Broadcast Stage Whisper [${tone}] to ALL (${get().stageLinkSlots.length} screens): ${text.trim()}`,
+        });
+      } catch (_) {}
+    }
+  },
+
+  clearAllStageLinkWhispers: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const updated: StageLinkSlot[] = await invoke('clear_all_stagelink_whispers');
+        if (Array.isArray(updated)) {
+          const map = new Map(updated.map((s) => [s.id, s]));
+          set({
+            stageLinkSlots: get().stageLinkSlots.map((s) => map.get(s.id) || s),
+          });
+        }
+        await get().refreshStageLinkSlots(false);
+      } catch (_) {}
+    }
+  },
+
   triggerOsDisplayExtend: async () => {
     if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
       try {
@@ -3054,7 +3102,7 @@ if (typeof window !== 'undefined') {
   // Demand-driven StageLink & OS Window Director polling (0% CPU in Planner Studio)
   setInterval(() => {
     const st = useRigStore.getState();
-    const isLiveView = st.appMode === 'LIVE' || st.appMode === 'LIVE_MAP';
+    const isLiveView = st.appMode === 'LIVE' || st.appMode === 'LIVE_MAP' || st.appMode === 'STAGE_DISPLAYS';
     if (isLiveView || st.stageLinkModalOpen || st.mobileModalOpen) {
       st.refreshOsWindows();
       st.refreshStageLinkSlots(isLiveView);

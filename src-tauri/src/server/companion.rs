@@ -4,7 +4,7 @@ use axum::{
         Path, Query, State,
     },
     http::StatusCode,
-    response::{Html, IntoResponse, Json},
+    response::{Html, IntoResponse, Json, Redirect},
     routing::{delete, get, post},
     Router,
 };
@@ -20,11 +20,12 @@ use crate::display::window_manager::{
 };
 use super::network::{get_preferred_lan_ip, list_network_interfaces, NetworkAdapterInfo};
 use super::stagelink::{
-    allocate_slot_for_new_client, clear_stage_whisper, ensure_default_slot_exists,
-    ensure_slot_worker_running, get_security_config, get_slot_runtime,
-    get_total_live_client_count, list_stage_slots, record_companion_heartbeat, remove_stage_slot,
-    send_stage_whisper, set_slot_blackout, set_slot_freeze, trigger_slot_flash, upsert_stage_slot,
-    verify_access_key_or_pin, CreateOrUpdateSlotInput, SlotRuntime, StageBroadcastPacket,
+    allocate_slot_for_new_client, broadcast_stage_whisper, clear_all_stage_whispers,
+    clear_stage_whisper, ensure_default_slot_exists, ensure_slot_worker_running,
+    get_security_config, get_slot_runtime, get_total_live_client_count, list_stage_slots,
+    record_companion_heartbeat, remove_stage_slot, send_stage_whisper, set_slot_blackout,
+    set_slot_freeze, trigger_slot_flash, upsert_stage_slot, verify_access_key_or_pin,
+    CreateOrUpdateSlotInput, SlotRuntime, StageBroadcastPacket,
 };
 use super::web_views::{render_companion_director_html, render_stage_receiver_html};
 
@@ -138,6 +139,7 @@ pub fn build_companion_router(state: AppState) -> Router {
     Router::new()
         .route("/", get(serve_mobile_ui))
         .route("/stage", get(serve_stage_default_ui))
+        .route("/stage/join", get(serve_stage_default_ui))
         .route("/stage/:slot_id", get(serve_stage_ui))
         .route("/ws/stage", get(ws_stage_default_handler))
         .route("/ws/stage/:slot_id", get(ws_stage_handler))
@@ -161,6 +163,8 @@ pub fn build_companion_router(state: AppState) -> Router {
             "/api/stagelink/slots/:id/whisper/clear",
             post(api_clear_whisper_slot),
         )
+        .route("/api/stagelink/whisper/broadcast", post(api_broadcast_whisper))
+        .route("/api/stagelink/whisper/clear_all", post(api_clear_all_whispers))
         .layer(cors)
         .with_state(state)
 }
@@ -204,9 +208,14 @@ async fn serve_mobile_ui() -> Html<&'static str> {
     Html(render_companion_director_html())
 }
 
-async fn serve_stage_default_ui() -> Html<String> {
+async fn serve_stage_default_ui(Query(params): Query<HashMap<String, String>>) -> impl IntoResponse {
     let slot_id = allocate_slot_for_new_client();
-    Html(render_stage_receiver_html(&slot_id))
+    let key_query = if let Some(key) = params.get("key") {
+        format!("?key={}", key)
+    } else {
+        "".to_string()
+    };
+    Redirect::temporary(&format!("/stage/{}{}", slot_id, key_query))
 }
 
 async fn serve_stage_ui(Path(slot_id): Path<String>) -> Html<String> {
@@ -617,4 +626,25 @@ async fn api_clear_whisper_slot(
     check_query_auth(&params)?;
     let res = clear_stage_whisper(&id);
     Ok(Json(serde_json::json!({ "slot": res })))
+}
+
+async fn api_broadcast_whisper(
+    Query(params): Query<HashMap<String, String>>,
+    Json(body): Json<WhisperBody>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    check_query_auth(&params)?;
+    let updated = broadcast_stage_whisper(
+        body.message,
+        body.tone.unwrap_or_else(|| "WARN".to_string()),
+        body.duration_seconds,
+    );
+    Ok(Json(serde_json::json!({ "ok": true, "slots": updated })))
+}
+
+async fn api_clear_all_whispers(
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    check_query_auth(&params)?;
+    let updated = clear_all_stage_whispers();
+    Ok(Json(serde_json::json!({ "ok": true, "slots": updated })))
 }

@@ -37,14 +37,14 @@ export const MobileCompanionModal: React.FC = () => {
   const [pinDraft, setPinDraft] = useState<string>('');
   const [editingPin, setEditingPin] = useState<boolean>(false);
 
-  // Selected target: 'DIRECTOR' or stage slot id
-  const [targetId, setTargetId] = useState<string>('DIRECTOR');
+  // Selected target: 'AUTO_STAGE', 'DIRECTOR', or stage slot id
+  const [targetId, setTargetId] = useState<string>('AUTO_STAGE');
 
   useEffect(() => {
     if (mobileModalOpen) {
       refreshCompanionStatus();
       refreshStageLinkSlots(false);
-      setTargetId(qrStageSlotId || 'DIRECTOR');
+      setTargetId(qrStageSlotId || 'AUTO_STAGE');
     }
   }, [mobileModalOpen, qrStageSlotId]);
 
@@ -77,16 +77,24 @@ export const MobileCompanionModal: React.FC = () => {
 
   // Full QR URL embeds session token for zero-tap pairing on stage tablets
   const pairingUrl = useMemo(() => {
-    const basePath = selectedSlot ? `/stage/${encodeURIComponent(selectedSlot.id)}` : '';
+    const basePath = targetId === 'AUTO_STAGE'
+      ? '/stage'
+      : selectedSlot
+      ? `/stage/${encodeURIComponent(selectedSlot.id)}`
+      : '';
     const tokenQuery = sessionToken ? `?key=${encodeURIComponent(sessionToken)}` : '';
     return `http://${activeHost}:${activePort}${basePath}${tokenQuery}`;
-  }, [activeHost, activePort, selectedSlot, sessionToken]);
+  }, [activeHost, activePort, targetId, selectedSlot, sessionToken]);
 
   // Clean manual URL for typing into browser (prompts PIN if PIN lock is enabled)
   const manualShortUrl = useMemo(() => {
-    const basePath = selectedSlot ? `/stage/${encodeURIComponent(selectedSlot.id)}` : '';
+    const basePath = targetId === 'AUTO_STAGE'
+      ? '/stage'
+      : selectedSlot
+      ? `/stage/${encodeURIComponent(selectedSlot.id)}`
+      : '';
     return `http://${activeHost}:${activePort}${basePath}`;
-  }, [activeHost, activePort, selectedSlot]);
+  }, [activeHost, activePort, targetId, selectedSlot]);
 
   useEffect(() => {
     if (!mobileModalOpen) return;
@@ -149,7 +157,11 @@ export const MobileCompanionModal: React.FC = () => {
             <div className="min-w-0">
               <h2 className="font-mono text-sm font-bold text-[var(--text-primary)] flex flex-wrap items-center gap-2">
                 <span className="truncate">
-                  {selectedSlot ? `PAIR STAGE TABLET: ${selectedSlot.name}` : 'WIRELESS COMPANION & STAGELINK QR'}
+                  {targetId === 'AUTO_STAGE'
+                    ? 'PAIR STAGE SCREEN (AUTO-ALLOCATE)'
+                    : selectedSlot
+                    ? `PAIR STAGE TABLET: ${selectedSlot.name}`
+                    : 'WIRELESS COMPANION & STAGELINK QR'}
                 </span>
                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--badge-emerald-bg)] text-[var(--badge-emerald-text)] border border-[var(--badge-emerald-border)] font-bold">
                   LIVE :{activePort}
@@ -196,10 +208,11 @@ export const MobileCompanionModal: React.FC = () => {
               onChange={(e) => {
                 const v = e.target.value;
                 setTargetId(v);
-                openQrForStageSlot(v === 'DIRECTOR' ? null : v);
+                openQrForStageSlot(v === 'DIRECTOR' || v === 'AUTO_STAGE' ? null : v);
               }}
               className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)] text-xs font-mono font-bold focus:outline-none focus:border-[var(--accent-cyan)]"
             >
+              <option value="AUTO_STAGE">⚡ Universal Stage Screen (Auto-assigns each connected device its own screen)</option>
               <option value="DIRECTOR">🎛️ Walk-the-Room FOH Remote Controller (All Displays & Stages)</option>
               {stageLinkSlots.map((s) => (
                 <option key={s.id} value={s.id}>
