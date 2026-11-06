@@ -876,6 +876,9 @@ interface RigState {
   getWindowThumbnails: (hwndIds: string[]) => Promise<Record<string, string>>;
   setHostSleepInhibit: (inhibit: boolean) => Promise<boolean>;
   stopStageLinkStream: (slotId?: string) => Promise<void>;
+  spawnVirtualExtendedDisplay: (width?: number, height?: number) => Promise<boolean>;
+  closeVirtualExtendedDisplay: () => Promise<boolean>;
+  installVirtualDisplayDriver: () => Promise<string>;
 }
 
 let isCapturingInProgress = false;
@@ -2974,6 +2977,49 @@ export const useRigStore = create<RigState>((set, get) => ({
       } catch (_) {}
     }
     return false;
+  },
+
+  spawnVirtualExtendedDisplay: async (width?: number, height?: number) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('spawn_virtual_extended_display', { width, height });
+        await get().refreshLiveDisplays();
+        return true;
+      } catch (err) {
+        console.warn('spawn_virtual_extended_display error:', err);
+        return false;
+      }
+    }
+    return false;
+  },
+
+  closeVirtualExtendedDisplay: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('close_virtual_extended_display');
+        await get().refreshLiveDisplays();
+        return true;
+      } catch (err) {
+        console.warn('close_virtual_extended_display error:', err);
+        return false;
+      }
+    }
+    return false;
+  },
+
+  installVirtualDisplayDriver: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke<string>('install_os_virtual_display_driver');
+      } catch (err: any) {
+        console.warn('install_os_virtual_display_driver error:', err);
+        return String(err);
+      }
+    }
+    return 'Driver installation only supported in native desktop app';
   },
 
   stopStageLinkStream: async (slotId?: string) => {

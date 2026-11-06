@@ -201,6 +201,18 @@ async function runStageLinkTests() {
         return true;
       }
 
+      if (cmd === 'spawn_virtual_extended_display') {
+        return 'Created Xteon Virtual Extended Stage Display';
+      }
+
+      if (cmd === 'close_virtual_extended_display') {
+        return true;
+      }
+
+      if (cmd === 'install_os_virtual_display_driver') {
+        return 'Launched Windows Virtual Display Driver installer with Administrator prompt.';
+      }
+
       return null;
     },
   };
@@ -479,6 +491,37 @@ async function runStageLinkTests() {
 
   // 10. Clean Recycled Slot Index Verification
   assert(stagelinkSource.includes('for i in 1..=50'), 'stagelink.rs contains recycled slot allocation logic (stage-1, stage-2)');
+
+  // 11. Virtual Extended Display IPC Commands
+  const spawnVirt = await store.spawnVirtualExtendedDisplay(1920, 1080);
+  assertEqual(spawnVirt, true, 'spawnVirtualExtendedDisplay dispatches native window creation');
+  const spawnCall = invokedCommands.find((c) => c.cmd === 'spawn_virtual_extended_display');
+  assert(Boolean(spawnCall), 'Invoked spawn_virtual_extended_display command');
+
+  const closeVirt = await store.closeVirtualExtendedDisplay();
+  assertEqual(closeVirt, true, 'closeVirtualExtendedDisplay dispatches native window close');
+  const closeCall = invokedCommands.find((c) => c.cmd === 'close_virtual_extended_display');
+  assert(Boolean(closeCall), 'Invoked close_virtual_extended_display command');
+
+  const vddInstall = await store.installVirtualDisplayDriver();
+  assert(Boolean(vddInstall.includes('Administrator')), 'installVirtualDisplayDriver dispatches elevated installer');
+
+  // 12. Virtual Stage Display View File Structure
+  const virtViewSource = fs.readFileSync('src/components/stage/VirtualStageDisplayView.tsx', 'utf8');
+  assert(virtViewSource.includes('XTEON VIRTUAL EXTENDED DISPLAY (DISPLAY 2)'), 'VirtualStageDisplayView defines Display 2 header');
+  assert(virtViewSource.includes('STAGE SERVICE TIMER'), 'VirtualStageDisplayView provides live countdown timer');
+  assert(virtViewSource.includes('FOH STAGE MESSAGE'), 'VirtualStageDisplayView supports live stage whisper messages');
+
+  // 13. App.tsx Virtual Display Route
+  const appTsxSource = fs.readFileSync('src/App.tsx', 'utf8');
+  assert(appTsxSource.includes("label === 'xteon_virtual_display'"), 'src/App.tsx routes xteon_virtual_display window');
+  assert(appTsxSource.includes('<VirtualStageDisplayView />'), 'src/App.tsx renders VirtualStageDisplayView');
+
+  // 14. Rust lib.rs Virtual Extended Display Handlers
+  const libRsSource = fs.readFileSync('src-tauri/src/lib.rs', 'utf8');
+  assert(libRsSource.includes('spawn_virtual_extended_display'), 'lib.rs exposes spawn_virtual_extended_display command');
+  assert(libRsSource.includes('install_os_virtual_display_driver'), 'lib.rs exposes install_os_virtual_display_driver command');
+  assert(libRsSource.includes('display-virtual-stage'), 'lib.rs dynamically injects display-virtual-stage into get_connected_displays');
 
   // --- FINAL REPORT ---
   console.log('\n===============================================================================');

@@ -13,6 +13,7 @@ import {
   Layers,
   ArrowRight,
   Square,
+  Laptop,
 } from 'lucide-react';
 import { StageLinkSourceMode, StageSplitLayout } from '../../types';
 
@@ -37,6 +38,7 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
     upsertStageLinkSlot,
     getWindowThumbnails,
     stopStageLinkStream,
+    spawnVirtualExtendedDisplay,
   } = useRigStore();
 
   const [activeTab, setActiveTab] = useState<'WINDOW' | 'DISPLAY' | 'SPLIT'>('WINDOW');
@@ -378,6 +380,41 @@ export const AppWindowPickerModal: React.FC<AppWindowPickerModalProps> = ({
                   </div>
                 );
               })}
+
+              {!liveDisplays.some((d) => d.id === 'display-virtual-stage') && (
+                <div
+                  onClick={async () => {
+                    await spawnVirtualExtendedDisplay(1920, 1080);
+                    await useRigStore.getState().refreshLiveDisplays();
+                    setSelectedPrimId('D:display-virtual-stage');
+                    setSelectedPrimLabel('Xteon Virtual Extended Display (Display 2)');
+                  }}
+                  className={`p-4 rounded-xl border border-dashed transition-all cursor-pointer flex flex-col justify-between gap-3 text-left ${
+                    selectedPrimId === 'D:display-virtual-stage'
+                      ? 'bg-emerald-500/15 border-emerald-400 shadow-md ring-1 ring-emerald-400/50'
+                      : 'border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10'
+                  }`}
+                >
+                  <div className="relative w-full h-32 rounded-lg overflow-hidden bg-slate-950/80 border border-emerald-500/30 flex flex-col items-center justify-center p-3 text-center gap-1.5">
+                    <Laptop className="w-8 h-8 text-emerald-400" />
+                    <span className="text-xs font-bold text-emerald-300">Launch Virtual Extended Display</span>
+                    <span className="text-[10px] text-slate-400">Independent second screen for phone • Zero Driver</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-sm text-emerald-300">
+                        + Virtual Extended Stage Display
+                      </div>
+                      <div className="text-xs text-[var(--text-muted)] font-mono mt-0.5">
+                        1920×1080 @ 60 FPS • Extended Workspace
+                      </div>
+                    </div>
+                    {selectedPrimId === 'D:display-virtual-stage' && (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

@@ -63,6 +63,9 @@ export const StageDisplaysView: React.FC = () => {
     stopStageLinkStream,
     deleteStageLinkSlot,
     upsertStageLinkSlot,
+    spawnVirtualExtendedDisplay,
+    closeVirtualExtendedDisplay,
+    installVirtualDisplayDriver,
   } = useRigStore();
 
   const [pickerModalOpen, setPickerModalOpen] = useState(false);
@@ -106,9 +109,17 @@ export const StageDisplaysView: React.FC = () => {
 
   // Check if a second physical or virtual display is detected by Windows / OS
   const secondaryDisplay = useMemo(
-    () => liveDisplays.find((d) => d.osIndex > 1) || null,
+    () => liveDisplays.find((d) => d.osIndex > 1 && d.id !== 'display-virtual-stage') || null,
     [liveDisplays]
   );
+
+  // Check if Xteon Virtual Extended Stage Display is currently running
+  const virtualDisplay = useMemo(
+    () => liveDisplays.find((d) => d.id === 'display-virtual-stage') || null,
+    [liveDisplays]
+  );
+
+  const effectiveSecondaryDisplay = secondaryDisplay || virtualDisplay;
 
   // Preferred network interface
   const preferredInterface = useMemo(() => {
@@ -125,9 +136,58 @@ export const StageDisplaysView: React.FC = () => {
   const handleTriggerWindowsExtend = async () => {
     setIsExtending(true);
     try {
-      const res = await triggerOsDisplayExtend();
-      setRecallSuccessMsg(res || 'Triggered OS display extension');
-      setTimeout(() => setRecallSuccessMsg(''), 4000);
+      if (secondaryDisplay) {
+        const res = await triggerOsDisplayExtend();
+        if (primarySlot) {
+          await upsertStageLinkSlot({
+            id: primarySlot.id,
+            name: primarySlot.name,
+            stage_zone: primarySlot.stage_zone,
+            source_mode: 'DISPLAY',
+            primary_source_id: `D:${secondaryDisplay.id}`,
+            primary_source_label: `Display ${secondaryDisplay.osIndex}: ${secondaryDisplay.customAlias || secondaryDisplay.name}`,
+            target_fps: 60,
+            max_width: 1920,
+          });
+          await refreshStageLinkSlots(true);
+        }
+        setRecallSuccessMsg(res || 'Extended Windows desktop to Display 2 & phone');
+      } else if (virtualDisplay) {
+        if (primarySlot) {
+          await upsertStageLinkSlot({
+            id: primarySlot.id,
+            name: primarySlot.name,
+            stage_zone: primarySlot.stage_zone,
+            source_mode: 'DISPLAY',
+            primary_source_id: `D:${virtualDisplay.id}`,
+            primary_source_label: 'Xteon Virtual Extended Stage Display (Phone)',
+            target_fps: 60,
+            max_width: 1920,
+          });
+          await refreshStageLinkSlots(true);
+        }
+        setRecallSuccessMsg('Streaming Virtual Extended Display to phone receiver!');
+      } else {
+        await spawnVirtualExtendedDisplay(1920, 1080);
+        await useRigStore.getState().refreshLiveDisplays();
+        const updatedDisplays = useRigStore.getState().liveDisplays;
+        const vDisp = updatedDisplays.find((d) => d.id === 'display-virtual-stage') || updatedDisplays[1];
+        if (primarySlot) {
+          await upsertStageLinkSlot({
+            id: primarySlot.id,
+            name: primarySlot.name,
+            stage_zone: primarySlot.stage_zone,
+            source_mode: 'DISPLAY',
+            primary_source_id: `D:${vDisp?.id || 'display-virtual-stage'}`,
+            primary_source_label: 'Xteon Virtual Extended Stage Display (Phone)',
+            target_fps: 60,
+            max_width: 1920,
+          });
+          await refreshStageLinkSlots(true);
+        }
+        setRecallSuccessMsg('Launched Xteon Virtual Extended Display & Linked Phone!');
+      }
+      setTimeout(() => setRecallSuccessMsg(''), 4500);
     } catch (e) {
       console.warn('Display extend trigger:', e);
     } finally {
@@ -135,6 +195,26 @@ export const StageDisplaysView: React.FC = () => {
         setIsExtending(false);
         useRigStore.getState().refreshLiveDisplays();
       }, 1500);
+    }
+  };
+
+  // Close Xteon Virtual Extended Display
+  const handleCloseVirtualDisplay = async () => {
+    await closeVirtualExtendedDisplay();
+    await useRigStore.getState().refreshLiveDisplays();
+    setRecallSuccessMsg('Closed Virtual Extended Stage Display');
+    setTimeout(() => setRecallSuccessMsg(''), 3000);
+  };
+
+  // Launch Windows Virtual Display Driver (IddCx) installer
+  const handleInstallVdd = async () => {
+    try {
+      const msg = await installVirtualDisplayDriver();
+      setRecallSuccessMsg(msg);
+      setTimeout(() => setRecallSuccessMsg(''), 6000);
+    } catch (err: any) {
+      setRecallSuccessMsg(String(err));
+      setTimeout(() => setRecallSuccessMsg(''), 5000);
     }
   };
 
@@ -149,12 +229,13 @@ export const StageDisplaysView: React.FC = () => {
 
   // Teleport the first detected timer/presentation window to Display 2 borderless
   const handleTeleportToDisplay2 = async () => {
-    if (!secondaryDisplay) return;
+    const targetDisp = effectiveSecondaryDisplay;
+    if (!targetDisp) return;
     const targetWin = osWindows.find((w) => !w.is_xteon_self);
     if (!targetWin) return;
 
-    await routeOsWindow(targetWin.hwnd_id, secondaryDisplay.id, true, true);
-    setRecallSuccessMsg(`Routed "${targetWin.title}" to Display 2`);
+    await routeOsWindow(targetWin.hwnd_id, targetDisp.id, true, true);
+    setRecallSuccessMsg(`Routed "${targetWin.title}" to Extended Stage Display`);
     setTimeout(() => setRecallSuccessMsg(''), 3000);
   };
 
@@ -195,6 +276,12 @@ export const StageDisplaysView: React.FC = () => {
   // Save changes from Drawer
   const handleSaveDrawer = async () => {
     if (!editingSlotForDrawer) return;
+
+    if (drawerMode === 'DISPLAY' && drawerPrimarySourceId.includes('virtual') && !virtualDisplay) {
+      await spawnVirtualExtendedDisplay(1920, 1080);
+      await useRigStore.getState().refreshLiveDisplays();
+    }
+
     await upsertStageLinkSlot({
       id: editingSlotForDrawer.id,
       name: drawerName.trim() || 'Stage Receiver',
@@ -322,7 +409,7 @@ export const StageDisplaysView: React.FC = () => {
 
       {/* Two Core Operation Modes Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* MODE 1: TRUE VIRTUAL EXTENDED MONITOR (OS EXTEND / WIN + P) */}
+        {/* MODE 1: TRUE VIRTUAL EXTENDED MONITOR (GLIDEX STYLE / OS EXTEND) */}
         <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col justify-between gap-5 relative overflow-hidden">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -332,10 +419,10 @@ export const StageDisplaysView: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="font-bold font-mono text-sm sm:text-base text-[var(--text-primary)]">
-                    Virtual Extended Monitor (OS Extend)
+                    Virtual Extended Monitor (GlideX Style)
                   </h2>
                   <div className="text-[11px] text-[var(--text-muted)]">
-                    Secondary OS desktop workspace for dual-monitor staging (Windows, macOS, Linux)
+                    Turns connected phone or tablet into an independent extended desktop monitor
                   </div>
                 </div>
               </div>
@@ -343,6 +430,10 @@ export const StageDisplaysView: React.FC = () => {
               {secondaryDisplay ? (
                 <span className="px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
                   ● Display 2 Active
+                </span>
+              ) : virtualDisplay ? (
+                <span className="px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
+                  ● Virtual Stage Active
                 </span>
               ) : (
                 <span className="px-2 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold">
@@ -352,16 +443,21 @@ export const StageDisplaysView: React.FC = () => {
             </div>
 
             <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              Enables OS <strong>"Extend"</strong> desktop mode. Your operating system treats the connected tablet or screen as a physical second display. Your mouse glides across smoothly, and you can drag any window onto it.
+              Enables OS <strong>"Extend"</strong> desktop mode. Your phone or tablet becomes an independent secondary monitor. You can drag or snap presentation windows, timers, and Chiron graphics onto it without covering your laptop screen.
             </p>
 
-            {secondaryDisplay && (
+            {effectiveSecondaryDisplay && (
               <div className="p-3 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono space-y-1">
-                <div className="text-[var(--text-primary)] font-bold">
-                  Screen {secondaryDisplay.osIndex}: {secondaryDisplay.customAlias || secondaryDisplay.name}
+                <div className="text-[var(--text-primary)] font-bold flex items-center justify-between">
+                  <span>Screen {effectiveSecondaryDisplay.osIndex}: {effectiveSecondaryDisplay.customAlias || effectiveSecondaryDisplay.name}</span>
+                  {virtualDisplay && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      LIVE ON PHONE
+                    </span>
+                  )}
                 </div>
                 <div className="text-[10px] text-[var(--text-muted)]">
-                  {secondaryDisplay.activeResolution.width}×{secondaryDisplay.activeResolution.height} @ {secondaryDisplay.refreshRateHz}Hz • {secondaryDisplay.portType}
+                  {effectiveSecondaryDisplay.activeResolution.width}×{effectiveSecondaryDisplay.activeResolution.height} @ {effectiveSecondaryDisplay.refreshRateHz}Hz • {effectiveSecondaryDisplay.portType}
                 </div>
               </div>
             )}
@@ -372,12 +468,53 @@ export const StageDisplaysView: React.FC = () => {
             <button
               onClick={handleTriggerWindowsExtend}
               disabled={isExtending}
-              className="px-3.5 py-2 rounded-lg bg-blue-500 hover:bg-blue-400 text-slate-950 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[40px]"
-              title="Trigger native OS 'Extend' display mode (Win+P / macOS Displays / Linux xrandr)"
+              className="px-3.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[40px]"
+              title="Activate extended monitor and stream to connected phone"
             >
               <Zap className="w-3.5 h-3.5" />
-              <span>{isExtending ? 'Switching...' : 'Switch to Extend (Win + P)'}</span>
+              <span>
+                {isExtending
+                  ? 'Activating...'
+                  : virtualDisplay
+                  ? 'Re-Link Phone to Virtual Display'
+                  : secondaryDisplay
+                  ? 'Extend to Display 2 & Phone'
+                  : 'Launch Virtual Extended Monitor'}
+              </span>
             </button>
+
+            {virtualDisplay && (
+              <button
+                onClick={handleCloseVirtualDisplay}
+                className="px-3 py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer min-h-[40px]"
+                title="Close Virtual Extended Stage Display"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Close Virtual Screen</span>
+              </button>
+            )}
+
+            {!secondaryDisplay && !virtualDisplay && (
+              <button
+                onClick={handleInstallVdd}
+                className="px-3 py-2 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-cyan-500/40 text-cyan-300 text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer min-h-[40px]"
+                title="Install Windows Virtual Display Driver (IddCx) with admin prompt for native OS mouse-crossing"
+              >
+                <Laptop className="w-3.5 h-3.5" />
+                <span>Install Windows VDD Driver (IddCx)</span>
+              </button>
+            )}
+
+            {effectiveSecondaryDisplay && (
+              <button
+                onClick={handleTeleportToDisplay2}
+                className="px-3 py-2 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer min-h-[40px]"
+                title="Send active window borderless fullscreen to Extended Screen"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>Snap Window to Extended Screen</span>
+              </button>
+            )}
 
             <button
               onClick={handleOpenDisplaySettings}
@@ -388,24 +525,13 @@ export const StageDisplaysView: React.FC = () => {
               <span>OS Display Settings</span>
             </button>
 
-            {secondaryDisplay && (
-              <button
-                onClick={handleTeleportToDisplay2}
-                className="px-3 py-2 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer min-h-[40px]"
-                title="Send active window borderless fullscreen to Display 2"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-                <span>Snap Window to Display 2</span>
-              </button>
-            )}
-
             <button
               onClick={handleRecallWindows}
               className="px-3 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer ml-auto min-h-[40px]"
               title="Recall any off-screen or lost windows back onto laptop screen"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Emergency Recall to Laptop</span>
+              <span>Emergency Recall</span>
             </button>
           </div>
         </div>
@@ -950,17 +1076,37 @@ export const StageDisplaysView: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Mode 4: Virtual Extended Monitor Info */}
+                  {/* Mode 4: Virtual Extended Monitor (GlideX Style) */}
                   <div
-                    onClick={handleTriggerWindowsExtend}
-                    className="p-3.5 rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10 cursor-pointer transition flex flex-col justify-between gap-2"
+                    onClick={async () => {
+                      setDrawerMode('DISPLAY');
+                      let targetDisp = secondaryDisplay || liveDisplays.find((d) => d.id === 'display-virtual-stage');
+                      if (!targetDisp) {
+                        await spawnVirtualExtendedDisplay(1920, 1080);
+                        await useRigStore.getState().refreshLiveDisplays();
+                        targetDisp = useRigStore.getState().liveDisplays.find((d) => d.id === 'display-virtual-stage');
+                      }
+                      if (targetDisp) {
+                        setDrawerPrimarySourceId(`D:${targetDisp.id}`);
+                        setDrawerPrimarySourceLabel(
+                          targetDisp.id === 'display-virtual-stage'
+                            ? 'Xteon Virtual Extended Display'
+                            : `Screen ${targetDisp.osIndex}: ${targetDisp.customAlias || targetDisp.name}`
+                        );
+                      }
+                    }}
+                    className={`p-3.5 rounded-xl border cursor-pointer transition flex flex-col justify-between gap-2 ${
+                      drawerMode === 'DISPLAY' && drawerPrimarySourceId.includes('virtual')
+                        ? 'bg-emerald-500/15 border-emerald-400 text-[var(--text-primary)] ring-1 ring-emerald-400/50'
+                        : 'border-dashed border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10 text-[var(--text-muted)]'
+                    }`}
                   >
                     <div className="flex items-center gap-2">
                       <Laptop className="w-4 h-4 text-emerald-400 shrink-0" />
                       <span className="font-bold text-xs text-emerald-300">OS Extended Desktop</span>
                     </div>
-                    <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                      Trigger native OS Extend (Win+P). Moves windows across screens like a real secondary monitor.
+                    <p className="text-[11px] leading-relaxed">
+                      Turns this device into an independent extended monitor workspace just like ASUS GlideX.
                     </p>
                   </div>
                 </div>
