@@ -20,11 +20,11 @@ use crate::display::window_manager::{
 };
 use super::network::{get_preferred_lan_ip, list_network_interfaces, NetworkAdapterInfo};
 use super::stagelink::{
-    clear_stage_whisper, ensure_default_slot_exists, ensure_slot_worker_running, get_security_config,
-    get_slot_runtime, get_total_live_client_count, list_stage_slots, record_companion_heartbeat,
-    remove_stage_slot, send_stage_whisper, set_slot_blackout, set_slot_freeze, trigger_slot_flash,
-    upsert_stage_slot, verify_access_key_or_pin, CreateOrUpdateSlotInput, SlotRuntime,
-    StageBroadcastPacket,
+    allocate_slot_for_new_client, clear_stage_whisper, ensure_default_slot_exists,
+    ensure_slot_worker_running, get_security_config, get_slot_runtime,
+    get_total_live_client_count, list_stage_slots, record_companion_heartbeat, remove_stage_slot,
+    send_stage_whisper, set_slot_blackout, set_slot_freeze, trigger_slot_flash, upsert_stage_slot,
+    verify_access_key_or_pin, CreateOrUpdateSlotInput, SlotRuntime, StageBroadcastPacket,
 };
 use super::web_views::{render_companion_director_html, render_stage_receiver_html};
 
@@ -205,13 +205,7 @@ async fn serve_mobile_ui() -> Html<&'static str> {
 }
 
 async fn serve_stage_default_ui() -> Html<String> {
-    let slots = list_stage_slots(false);
-    let slot_id = if let Some(first) = slots.first() {
-        first.id.clone()
-    } else {
-        let rt = ensure_default_slot_exists();
-        rt.slot.lock().map(|s| s.id.clone()).unwrap_or_else(|_| "stage-1".to_string())
-    };
+    let slot_id = allocate_slot_for_new_client();
     Html(render_stage_receiver_html(&slot_id))
 }
 
@@ -223,13 +217,7 @@ async fn ws_stage_default_handler(
     params: Query<HashMap<String, String>>,
     ws: WebSocketUpgrade,
 ) -> impl IntoResponse {
-    let slots = list_stage_slots(false);
-    let slot_id = if let Some(first) = slots.first() {
-        first.id.clone()
-    } else {
-        let rt = ensure_default_slot_exists();
-        rt.slot.lock().map(|s| s.id.clone()).unwrap_or_else(|_| "stage-1".to_string())
-    };
+    let slot_id = allocate_slot_for_new_client();
     ws_stage_handler(Path(slot_id), params, ws).await
 }
 
@@ -264,7 +252,20 @@ impl Drop for SubscriberGuard {
 async fn handle_stage_ws(mut socket: WebSocket, slot_id: String, cid: String) {
     let rt = match get_slot_runtime(&slot_id) {
         Some(rt) => rt,
-        None => ensure_default_slot_exists(),
+        None => {
+            if slot_id == "stage" || slot_id == "stage-default" {
+                let candidate = allocate_slot_for_new_client();
+                get_slot_runtime(&candidate).unwrap_or_else(|| ensure_default_slot_exists())
+            } else {
+                let _ = socket
+                    .send(axum::extract::ws::Message::Text(
+                        serde_json::json!({ "type": "slot_removed", "slot_id": slot_id }).to_string(),
+                    ))
+                    .await;
+                let _ = socket.close().await;
+                return;
+            }
+        }
     };
     rt.subscriber_count.fetch_add(1, Ordering::SeqCst);
     if let Ok(mut s) = rt.slot.lock() {

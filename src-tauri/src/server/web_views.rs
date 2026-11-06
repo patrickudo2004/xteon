@@ -812,7 +812,14 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
           try {
             const msg = JSON.parse(ev.data);
             if (msg.type === 'slot_state') applySlotMetadata(msg.slot);
-            else if (msg.type === 'slot_reset' || msg.type === 'slot_removed') {
+            else if (msg.type === 'slot_removed') {
+              hasFrame = false;
+              if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+              if (ws) { try { ws.close(); } catch(e){} ws = null; }
+              document.getElementById('standby-card').style.display = 'block';
+              document.getElementById('standby-title').textContent = 'Receiver Disconnected';
+              document.getElementById('standby-sub').innerHTML = 'This stage receiver was removed by the FOH operator.<br><br><a href="/stage" style="display:inline-block;padding:8px 16px;background:var(--cyan);color:#000;border-radius:8px;font-weight:bold;text-decoration:none;">Connect Available Screen</a>';
+            } else if (msg.type === 'slot_reset') {
               hasFrame = false;
               document.getElementById('standby-card').style.display = 'block';
               document.getElementById('standby-title').textContent = 'Live Link Connected';

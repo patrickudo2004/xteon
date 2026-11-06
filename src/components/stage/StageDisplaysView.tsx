@@ -65,7 +65,6 @@ export const StageDisplaysView: React.FC = () => {
     upsertStageLinkSlot,
     spawnVirtualExtendedDisplay,
     closeVirtualExtendedDisplay,
-    installVirtualDisplayDriver,
   } = useRigStore();
 
   const [pickerModalOpen, setPickerModalOpen] = useState(false);
@@ -103,13 +102,19 @@ export const StageDisplaysView: React.FC = () => {
     const interval = setInterval(() => {
       refreshStageLinkSlots(false);
       refreshCompanionStatus();
-    }, 2000);
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
   // Check if a second physical or virtual display is detected by Windows / OS
   const secondaryDisplay = useMemo(
     () => liveDisplays.find((d) => d.osIndex > 1 && d.id !== 'display-virtual-stage') || null,
+    [liveDisplays]
+  );
+
+  // Wired secondary physical displays (HDMI, DP, USB-C)
+  const wiredDisplays = useMemo(
+    () => liveDisplays.filter((d) => d.osIndex > 1 && d.id !== 'display-virtual-stage'),
     [liveDisplays]
   );
 
@@ -206,16 +211,23 @@ export const StageDisplaysView: React.FC = () => {
     setTimeout(() => setRecallSuccessMsg(''), 3000);
   };
 
-  // Launch Windows Virtual Display Driver (IddCx) installer
-  const handleInstallVdd = async () => {
-    try {
-      const msg = await installVirtualDisplayDriver();
-      setRecallSuccessMsg(msg);
-      setTimeout(() => setRecallSuccessMsg(''), 6000);
-    } catch (err: any) {
-      setRecallSuccessMsg(String(err));
-      setTimeout(() => setRecallSuccessMsg(''), 5000);
-    }
+  // Instantly stream host desktop screen (Display 1) at 60 FPS zero-install
+  const handleStreamDesktop = async (slotId?: string) => {
+    const targetSlotId = slotId || primarySlot?.id || 'stage-1';
+    const currentSlot = stageLinkSlots.find((s) => s.id === targetSlotId) || primarySlot;
+    await upsertStageLinkSlot({
+      id: targetSlotId,
+      name: currentSlot?.name || 'External Monitor',
+      stage_zone: currentSlot?.stage_zone || 'Pulpit Altar',
+      source_mode: 'DISPLAY',
+      primary_source_id: 'D:display-1',
+      primary_source_label: 'Desktop Screen (Host Laptop)',
+      target_fps: 60,
+      max_width: 1920,
+    });
+    await refreshStageLinkSlots(true);
+    setRecallSuccessMsg('Broadcasting host desktop screen at 60 FPS zero-install!');
+    setTimeout(() => setRecallSuccessMsg(''), 4000);
   };
 
   // Open native OS Display Settings
@@ -409,7 +421,7 @@ export const StageDisplaysView: React.FC = () => {
 
       {/* Two Core Operation Modes Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* MODE 1: TRUE VIRTUAL EXTENDED MONITOR (GLIDEX STYLE / OS EXTEND) */}
+        {/* MODE 1: ZERO-INSTALL EXTERNAL MONITOR & DESKTOP SCREEN (GLIDEX STYLE) */}
         <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col justify-between gap-5 relative overflow-hidden">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -419,10 +431,10 @@ export const StageDisplaysView: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="font-bold font-mono text-sm sm:text-base text-[var(--text-primary)]">
-                    Virtual Extended Monitor (GlideX Style)
+                    External Monitor & Desktop Screen (GlideX Style)
                   </h2>
                   <div className="text-[11px] text-[var(--text-muted)]">
-                    Turns connected phone or tablet into an independent extended desktop monitor
+                    Zero-install external display & desktop mirroring for any phone, tablet, or laptop
                   </div>
                 </div>
               </div>
@@ -436,14 +448,14 @@ export const StageDisplaysView: React.FC = () => {
                   ● Virtual Stage Active
                 </span>
               ) : (
-                <span className="px-2 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold">
-                  Single Screen
+                <span className="px-2 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-[10px] font-mono font-bold">
+                  Zero-Install Ready
                 </span>
               )}
             </div>
 
             <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              Enables OS <strong>"Extend"</strong> desktop mode. Your phone or tablet becomes an independent secondary monitor. You can drag or snap presentation windows, timers, and Chiron graphics onto it without covering your laptop screen.
+              Streams your laptop desktop or dedicated extended screen directly to any phone, tablet, or secondary laptop with full 60 FPS and mouse cursor tracking — <strong>no app or driver installation required</strong> on any device.
             </p>
 
             {effectiveSecondaryDisplay && (
@@ -466,10 +478,19 @@ export const StageDisplaysView: React.FC = () => {
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[var(--border-color)]">
             <button
+              onClick={() => handleStreamDesktop()}
+              className="px-3.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[40px]"
+              title="Immediately stream host laptop desktop screen to connected receivers"
+            >
+              <Laptop className="w-3.5 h-3.5" />
+              <span>Stream Entire Desktop (Display 1)</span>
+            </button>
+
+            <button
               onClick={handleTriggerWindowsExtend}
               disabled={isExtending}
-              className="px-3.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[40px]"
-              title="Activate extended monitor and stream to connected phone"
+              className="px-3.5 py-2 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-cyan-500/40 text-cyan-300 text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer shadow-sm min-h-[40px]"
+              title="Activate extended monitor workspace and stream to connected receivers"
             >
               <Zap className="w-3.5 h-3.5" />
               <span>
@@ -479,7 +500,7 @@ export const StageDisplaysView: React.FC = () => {
                   ? 'Re-Link Phone to Virtual Display'
                   : secondaryDisplay
                   ? 'Extend to Display 2 & Phone'
-                  : 'Launch Virtual Extended Monitor'}
+                  : 'Launch Virtual Extended Screen'}
               </span>
             </button>
 
@@ -491,17 +512,6 @@ export const StageDisplaysView: React.FC = () => {
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Close Virtual Screen</span>
-              </button>
-            )}
-
-            {!secondaryDisplay && !virtualDisplay && (
-              <button
-                onClick={handleInstallVdd}
-                className="px-3 py-2 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-cyan-500/40 text-cyan-300 text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer min-h-[40px]"
-                title="Install Windows Virtual Display Driver (IddCx) with admin prompt for native OS mouse-crossing"
-              >
-                <Laptop className="w-3.5 h-3.5" />
-                <span>Install Windows VDD Driver (IddCx)</span>
               </button>
             )}
 
@@ -660,7 +670,7 @@ export const StageDisplaysView: React.FC = () => {
         </div>
       </div>
 
-      {/* CONNECTED RECEIVERS & DEVICES HUD (ENHANCED MULTI-DEVICE MANAGEMENT) */}
+      {/* CONNECTED RECEIVERS & MONITORS HUD (ENHANCED MULTI-DEVICE MANAGEMENT) */}
       <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -670,14 +680,14 @@ export const StageDisplaysView: React.FC = () => {
                 Connected Stage Receivers & Monitors
               </h2>
               <div className="text-[11px] text-[var(--text-muted)]">
-                Live phones, tablets, smart screens, and wireless confidence displays on this network
+                Live phones, tablets, smart screens, and wired external confidence displays
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold">
-              {totalConnectedClients} Online
+              {totalConnectedClients + wiredDisplays.length} Active ({stageLinkSlots.length} Wireless, {wiredDisplays.length} Wired)
             </span>
             <button
               onClick={handleAddStageReceiver}
@@ -690,13 +700,12 @@ export const StageDisplaysView: React.FC = () => {
           </div>
         </div>
 
-        {/* Devices Cards Grid */}
-        {stageLinkSlots.length > 0 ? (
+        {/* Devices Cards Grid (Both Wireless and Wired Displays) */}
+        {stageLinkSlots.length > 0 || wiredDisplays.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {/* WIRELESS RECEIVERS (PHONES, TABLETS, LAPTOPS) */}
             {stageLinkSlots.map((slot, index) => {
               const isLive = slot.connected_clients > 0;
-              const isOnline = !isLive && (companionStatus?.client_count || 0) > 0;
-              const hasFeed = Boolean(slot.primary_source_label);
 
               return (
                 <div
@@ -704,7 +713,7 @@ export const StageDisplaysView: React.FC = () => {
                   className="p-4 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] hover:border-cyan-500/40 transition flex flex-col justify-between gap-3 text-left group"
                 >
                   <div className="space-y-2">
-                    {/* Header Row: Title + Live Status Badge */}
+                    {/* Header Row: Title + Status Badges */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className="p-2 rounded-lg bg-emerald-500/15 text-emerald-400 text-base shrink-0">
@@ -726,24 +735,29 @@ export const StageDisplaysView: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Connection Status Pill */}
-                      {isLive ? (
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[9px] font-mono font-bold shrink-0 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          LIVE ({slot.connected_clients})
+                      {/* Pill Badges */}
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono font-bold">
+                          WIRELESS (Wi-Fi)
                         </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/30 text-[9px] font-mono shrink-0">
-                          AWAITING RECEIVER
-                        </span>
-                      )}
+                        {isLive ? (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[9px] font-mono font-bold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            LIVE ({slot.connected_clients})
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/30 text-[9px] font-mono">
+                            READY (0 Connected)
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Feed Info */}
                     <div className="p-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-xs space-y-1">
                       <div className="text-[11px] font-medium text-[var(--text-primary)] truncate flex items-center gap-1.5">
                         <span className="text-[var(--text-muted)] text-[10px]">Source:</span>
-                        <span className="truncate">{slot.primary_source_label || 'Standby (Awaiting Cast)'}</span>
+                        <span className="truncate">{slot.primary_source_label || 'Desktop Screen (Host Laptop)'}</span>
                       </div>
                       <div className="text-[10px] text-[var(--text-muted)] font-mono flex items-center justify-between">
                         <span>Mode: {slot.source_mode}</span>
@@ -772,7 +786,16 @@ export const StageDisplaysView: React.FC = () => {
                       title="Choose application or window to cast to this device"
                     >
                       <AppWindow className="w-3 h-3 text-cyan-400" />
-                      <span>Cast</span>
+                      <span>Cast App</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleStreamDesktop(slot.id)}
+                      className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono font-bold transition flex items-center gap-1 cursor-pointer min-h-[34px]"
+                      title="Set this device to display your laptop desktop screen (External Monitor)"
+                    >
+                      <Laptop className="w-3 h-3 text-emerald-400" />
+                      <span>Desktop Screen</span>
                     </button>
 
                     <button
@@ -814,15 +837,74 @@ export const StageDisplaysView: React.FC = () => {
                 </div>
               );
             })}
+
+            {/* WIRED EXTERNAL DISPLAYS (HDMI, DP, USB-C) */}
+            {wiredDisplays.map((disp) => (
+              <div
+                key={disp.id}
+                className="p-4 rounded-xl bg-[var(--bg-subcard)] border border-blue-500/30 hover:border-blue-500/60 transition flex flex-col justify-between gap-3 text-left group"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="p-2 rounded-lg bg-blue-500/15 text-blue-400 text-base shrink-0">
+                        <Monitor className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs text-[var(--text-primary)] truncate flex items-center gap-1.5">
+                          <span>Display {disp.osIndex}: {disp.customAlias || disp.name}</span>
+                        </div>
+                        <div className="text-[10px] text-blue-400 font-mono mt-0.5">
+                          Port: {disp.portType || 'HDMI / DP'} • Physical Monitor
+                        </div>
+                      </div>
+                    </div>
+
+                    <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/40 text-[9px] font-mono font-bold shrink-0">
+                      WIRED ({disp.portType || 'HDMI'})
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-xs space-y-1">
+                    <div className="text-[11px] font-medium text-[var(--text-primary)] truncate">
+                      Resolution: {disp.activeResolution.width}×{disp.activeResolution.height} @ {disp.refreshRateHz}Hz
+                    </div>
+                    <div className="text-[10px] text-[var(--text-muted)] font-mono">
+                      Physical external display connected directly to graphics hardware
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[var(--border-color)]">
+                  <button
+                    onClick={handleTeleportToDisplay2}
+                    className="px-2.5 py-1.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 text-[11px] font-mono font-bold transition flex items-center gap-1 cursor-pointer min-h-[34px]"
+                    title="Snap active window borderless fullscreen to this wired screen"
+                  >
+                    <Maximize2 className="w-3 h-3" />
+                    <span>Snap Window</span>
+                  </button>
+
+                  <button
+                    onClick={handleOpenDisplaySettings}
+                    className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] text-[11px] font-mono transition flex items-center gap-1 cursor-pointer ml-auto min-h-[34px]"
+                    title="Open OS Display Settings"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>OS Settings</span>
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="p-8 text-center border border-dashed border-[var(--border-color)] rounded-xl space-y-2">
             <Smartphone className="w-8 h-8 mx-auto text-[var(--text-muted)] opacity-40" />
             <div className="text-xs font-bold text-[var(--text-primary)]">
-              No stage receivers currently configured
+              No stage receivers or external monitors currently connected
             </div>
             <p className="text-[11px] text-[var(--text-muted)] max-w-md mx-auto">
-              Scan the QR code with any tablet or phone camera, or click Add Receiver to configure a new stage endpoint.
+              Scan the QR code with any tablet or phone camera, or plug in a wired HDMI/DP monitor to configure a new stage endpoint.
             </p>
             <div className="flex items-center justify-center gap-2 pt-2">
               <button

@@ -503,24 +503,25 @@ async function runStageLinkTests() {
   const closeCall = invokedCommands.find((c) => c.cmd === 'close_virtual_extended_display');
   assert(Boolean(closeCall), 'Invoked close_virtual_extended_display command');
 
-  const vddInstall = await store.installVirtualDisplayDriver();
-  assert(Boolean(vddInstall.includes('Administrator')), 'installVirtualDisplayDriver dispatches elevated installer');
+  // 12. Dynamic Slot Allocation & Zero-Install Desktop Stream Invariants
+  assert(stagelinkSource.includes('allocate_slot_for_new_client'), 'stagelink.rs contains allocate_slot_for_new_client for multi-device detection');
+  assert(companionSource.includes('allocate_slot_for_new_client'), 'companion.rs uses allocate_slot_for_new_client');
+  assert(stagelinkSource.includes('Desktop Screen (Host Laptop)'), 'stagelink.rs presets zero-install desktop screen streaming');
 
-  // 12. Virtual Stage Display View File Structure
+  // 13. Virtual Stage Display View File Structure
   const virtViewSource = fs.readFileSync('src/components/stage/VirtualStageDisplayView.tsx', 'utf8');
   assert(virtViewSource.includes('XTEON VIRTUAL EXTENDED DISPLAY (DISPLAY 2)'), 'VirtualStageDisplayView defines Display 2 header');
   assert(virtViewSource.includes('STAGE SERVICE TIMER'), 'VirtualStageDisplayView provides live countdown timer');
   assert(virtViewSource.includes('FOH STAGE MESSAGE'), 'VirtualStageDisplayView supports live stage whisper messages');
 
-  // 13. App.tsx Virtual Display Route
+  // 14. App.tsx Virtual Display Route
   const appTsxSource = fs.readFileSync('src/App.tsx', 'utf8');
   assert(appTsxSource.includes("label === 'xteon_virtual_display'"), 'src/App.tsx routes xteon_virtual_display window');
   assert(appTsxSource.includes('<VirtualStageDisplayView />'), 'src/App.tsx renders VirtualStageDisplayView');
 
-  // 14. Rust lib.rs Virtual Extended Display Handlers
+  // 15. Rust lib.rs Virtual Extended Display Handlers
   const libRsSource = fs.readFileSync('src-tauri/src/lib.rs', 'utf8');
   assert(libRsSource.includes('spawn_virtual_extended_display'), 'lib.rs exposes spawn_virtual_extended_display command');
-  assert(libRsSource.includes('install_os_virtual_display_driver'), 'lib.rs exposes install_os_virtual_display_driver command');
   assert(libRsSource.includes('display-virtual-stage'), 'lib.rs dynamically injects display-virtual-stage into get_connected_displays');
 
   // --- FINAL REPORT ---
