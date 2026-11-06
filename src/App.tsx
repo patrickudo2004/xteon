@@ -6,6 +6,7 @@ import { PlannerCanvas } from './components/canvas/PlannerCanvas';
 import { InspectorPanel } from './components/inspector/InspectorPanel';
 import { LiveMonitorView } from './components/live/LiveMonitorView';
 import { LiveMapCanvas } from './components/livemap/LiveMapCanvas';
+import { StageDisplaysView } from './components/stage/StageDisplaysView';
 import { FullscreenOverlayView } from './components/overlays/FullscreenOverlayView';
 import { TestPatternModal } from './components/modals/TestPatternModal';
 import { ReconciliationModal } from './components/modals/ReconciliationModal';
@@ -307,6 +308,9 @@ export const App: React.FC = () => {
         ) : appMode === 'LIVE_MAP' ? (
           /* Live Hardware Topology Map */
           <LiveMapCanvas />
+        ) : appMode === 'STAGE_DISPLAYS' ? (
+          /* Dedicated Stage Displays & Extended Monitors View */
+          <StageDisplaysView />
         ) : (
           /* Live Monitor View */
           <LiveMonitorView />

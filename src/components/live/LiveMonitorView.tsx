@@ -209,14 +209,14 @@ export const LiveMonitorView: React.FC = () => {
             </button>
           </div>
 
-          {/* + Wireless StageLink Button */}
+          {/* Stage Displays Navigation Shortcut */}
           <button
-            onClick={() => openStageLinkModal(null)}
-            className="min-h-[36px] px-3 py-1.5 rounded-lg bg-[var(--badge-cyan-bg)] hover:opacity-90 border border-[var(--badge-cyan-border)] text-[var(--badge-cyan-text)] text-xs font-mono font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
-            title="Stream Kairon Timer, ProPresenter, or Split Confidence view wirelessly to any tablet or phone"
+            onClick={() => useRigStore.getState().setAppMode('STAGE_DISPLAYS')}
+            className="min-h-[36px] px-3 py-1.5 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-mono font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+            title="Open Stage Displays & Extended Monitors Studio"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Wireless Stage</span>
+            <Tv className="w-3.5 h-3.5" />
+            <span>Stage Displays</span>
           </button>
 
           {/* Emergency Recall Stray Windows to FOH */}
@@ -333,333 +333,43 @@ export const LiveMonitorView: React.FC = () => {
         </div>
       </div>
 
-      {/* --- WIRELESS STAGELINK CONFIDENCE MONITORS SECTION --- */}
-      {showStageLink && (stageLinkSlots.length > 0 || activeTab === 'STAGELINK') && (
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-[var(--accent-cyan)]">
-              <Radio className="w-4 h-4" />
-              <span>WIRELESS STAGELINK CONFIDENCE MONITORS ({stageLinkSlots.length})</span>
+      {/* --- STAGE DISPLAYS & WIRELESS CONFIDENCE STUDIO BANNER --- */}
+      {showStageLink && (
+        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-blue-950/20 to-cyan-950/30 border border-purple-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shrink-0">
+              <Tv className="w-5 h-5" />
             </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-bold uppercase tracking-wider text-purple-300">
+                  STAGE DISPLAYS & VIRTUAL EXTENDED MONITORS
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-mono font-bold">
+                  {stageLinkSlots.length} Active Feeds
+                </span>
+              </div>
+              <p className="font-mono text-xs text-[var(--text-muted)] mt-0.5">
+                Extend Windows desktop (Win+P), cast individual app windows (Google Meet style), or stream dual-split stage multiview to tablets and phones.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
             <button
-              onClick={() => openStageLinkModal(null)}
-              className="min-h-[32px] px-2.5 py-1 rounded-lg bg-[var(--badge-cyan-bg)] border border-[var(--badge-cyan-border)] text-[var(--badge-cyan-text)] font-mono text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+              onClick={() => setMobileModalOpen(true)}
+              className="flex-1 sm:flex-none min-h-[36px] px-3 py-1.5 rounded-xl bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)] font-mono text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Wireless Stage</span>
+              <MonitorCheck className="w-3.5 h-3.5 text-[var(--accent-cyan)]" />
+              <span>Pair Device</span>
+            </button>
+            <button
+              onClick={() => useRigStore.getState().setAppMode('STAGE_DISPLAYS')}
+              className="flex-1 sm:flex-none min-h-[36px] px-4 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-mono text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+            >
+              <Tv className="w-3.5 h-3.5" />
+              <span>Open Stage Displays Studio →</span>
             </button>
           </div>
-
-          {stageLinkSlots.length === 0 ? (
-            <div className="p-8 rounded-2xl bg-[var(--bg-card)] border border-dashed border-[var(--border-color)] flex flex-col items-center justify-center text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-[var(--badge-cyan-bg)] border border-[var(--badge-cyan-border)] flex items-center justify-center text-[var(--accent-cyan)]">
-                <Radio className="w-6 h-6" />
-              </div>
-              <div>
-                <div className="font-mono text-sm font-bold text-[var(--text-primary)]">
-                  Turn Any Tablet or Phone Into a Wireless Pulpit / Stage Monitor
-                </div>
-                <div className="font-mono text-xs text-[var(--text-muted)] mt-1 max-w-lg">
-                  Stream an individual app window (like <strong>Kairon Countdown Timer</strong> or <strong>ProPresenter</strong>), a 2-in-1 Split Confidence view, or any screen over local Wi-Fi, Hotspot, or USB Tether—zero mobile app installation required.
-                </div>
-              </div>
-              <button
-                onClick={() => openStageLinkModal(null)}
-                className="min-h-[40px] px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-mono text-xs font-bold transition flex items-center gap-1.5 shadow-md cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Create Wireless Stage Monitor</span>
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {stageLinkSlots.map((slot) => {
-                const rawHwnd = extractHwndFromId(slot.primary_source_id);
-                    const rawSecHwnd = extractHwndFromId(slot.secondary_source_id);
-                    const primWin = osWindows.find((w) => w.hwnd_id === rawHwnd);
-                    const secWin = osWindows.find((w) => w.hwnd_id === rawSecHwnd);
-                    const isMinimized = slot.source_minimized || primWin?.is_minimized || secWin?.is_minimized;
-                    const restoreHwndTarget = (primWin?.is_minimized ? rawHwnd : (secWin?.is_minimized ? rawSecHwnd : (rawHwnd || rawSecHwnd)));
-                const whisperText = whisperDrafts[slot.id] || '';
-                const whisperTone = whisperTones[slot.id] || 'WARN';
-
-                return (
-                  <div
-                    key={slot.id}
-                    className={`rounded-2xl bg-[var(--bg-card)] border-2 shadow-xl overflow-hidden transition-all flex flex-col ${
-                      slot.is_blackout
-                        ? 'border-[var(--badge-rose-border)]'
-                        : slot.is_frozen
-                        ? 'border-[var(--badge-cyan-border)]'
-                        : 'border-[var(--border-color)]'
-                    }`}
-                  >
-                    {/* Card Header */}
-                    <div className="p-3.5 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-7 h-7 rounded-lg bg-[var(--badge-cyan-bg)] border border-[var(--badge-cyan-border)] flex items-center justify-center text-[var(--accent-cyan)] shrink-0">
-                          <Radio className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-mono text-sm font-bold text-[var(--text-primary)] truncate flex items-center gap-1.5">
-                            <span>{slot.name}</span>
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--badge-cyan-bg)] text-[var(--badge-cyan-text)] border border-[var(--badge-cyan-border)] font-bold">
-                              {slot.source_mode}
-                            </span>
-                          </div>
-                          <div className="text-[11px] font-mono text-[var(--text-muted)] truncate">
-                            📍 {slot.stage_zone} • {slot.primary_source_label}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span
-                          className={`px-2 py-1 rounded-md text-[10px] font-mono font-bold border flex items-center gap-1 ${
-                            slot.connected_clients > 0
-                              ? 'bg-[var(--badge-emerald-bg)] text-[var(--badge-emerald-text)] border-[var(--badge-emerald-border)]'
-                              : 'bg-[var(--bg-subcard)] text-[var(--text-muted)] border-[var(--border-color)]'
-                          }`}
-                          title="Live connected stage tablets/browsers"
-                        >
-                          <Users className="w-3 h-3" />
-                          <span>
-                            {slot.connected_clients > 0 ? `${slot.connected_clients} LIVE` : 'IDLE (0% CPU)'}
-                          </span>
-                        </span>
-
-                        <button
-                          onClick={() => openQrForStageSlot(slot.id)}
-                          className="min-h-[32px] px-2.5 py-1 rounded-lg bg-[var(--badge-cyan-bg)] border border-[var(--badge-cyan-border)] text-[var(--badge-cyan-text)] text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer"
-                          title="Show QR Code for stage tablet"
-                        >
-                          <QrCode className="w-3.5 h-3.5" />
-                          <span>QR</span>
-                        </button>
-
-                        <button
-                          onClick={() => openStageLinkModal(slot.id)}
-                          className="min-h-[32px] min-w-[32px] p-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-secondary)] flex items-center justify-center cursor-pointer"
-                          title="Edit StageLink source & layout"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            if (window.confirm(`Delete wireless stage monitor "${slot.name}"?`)) {
-                              deleteStageLinkSlot(slot.id);
-                            }
-                          }}
-                          className="min-h-[32px] min-w-[32px] p-1.5 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--badge-rose-bg)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--badge-rose-text)] flex items-center justify-center cursor-pointer"
-                          title="Remove StageLink slot"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Minimized-Window Guard Alert Banner */}
-                    {isMinimized && restoreHwndTarget && (
-                      <div className="px-3.5 py-2 bg-[var(--badge-amber-bg)] border-b border-[var(--badge-amber-border)] text-[var(--badge-amber-text)] flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
-                        <div className="flex items-center gap-1.5">
-                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                          <span>Source window minimized — holding last clean frame on pulpit</span>
-                        </div>
-                        <button
-                          onClick={() => restoreOsWindowBehind(restoreHwndTarget)}
-                          className="min-h-[30px] px-2.5 py-0.5 rounded-md bg-[var(--bg-card)] border border-[var(--badge-amber-border)] text-[var(--badge-amber-text)] font-bold cursor-pointer"
-                        >
-                          Restore Behind
-                        </button>
-                      </div>
-                    )}
-
-                    {slot.source_missing && (
-                      <div className="px-3.5 py-2 bg-[var(--badge-rose-bg)] border-b border-[var(--badge-rose-border)] text-[var(--badge-rose-text)] flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
-                        <div className="flex items-center gap-1.5">
-                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                          <span>Source window closed — holding last frame</span>
-                        </div>
-                        <button
-                          onClick={() => openStageLinkModal(slot.id)}
-                          className="min-h-[30px] px-2.5 py-0.5 rounded-md bg-[var(--bg-card)] border border-[var(--badge-rose-border)] text-[var(--badge-rose-text)] font-bold cursor-pointer"
-                        >
-                          Rebind Source
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Video Preview Well */}
-                    <div className="relative aspect-video max-h-[320px] w-full bg-[#050608] flex items-center justify-center overflow-hidden border-b border-[var(--border-color)]">
-                      {slot.is_blackout ? (
-                        <div className="text-center space-y-2 p-4 font-mono">
-                          <EyeOff className="w-7 h-7 text-rose-400 mx-auto" />
-                          <div className="text-xs font-bold text-rose-300">STAGE BLACKOUT ACTIVE</div>
-                          <div className="text-[10px] text-slate-400">Tablet screen is blanked to pure OLED black</div>
-                        </div>
-                      ) : slot.preview_data_url ? (
-                        <img
-                          src={slot.preview_data_url}
-                          alt={slot.name}
-                          className="w-full h-full object-contain bg-black"
-                        />
-                      ) : (
-                        <div className="text-center space-y-2 p-6 font-mono">
-                          <QrCode className="w-8 h-8 text-cyan-400 mx-auto opacity-80" />
-                          <div className="text-xs font-bold text-slate-200">{slot.name} Ready</div>
-                          <div className="text-[11px] text-slate-400">
-                            Scan QR on stage tablet to begin {slot.target_fps} FPS stream
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Active Stage Whisper Preview Banner */}
-                      {slot.active_whisper && (
-                        <div className="absolute top-2 left-2 right-2 px-3 py-1.5 rounded-lg bg-amber-500/95 text-slate-950 font-mono text-xs font-bold flex items-center justify-between gap-2 shadow-lg">
-                          <span className="truncate">
-                            💬 [{slot.active_whisper.tone}] {slot.active_whisper.message}
-                          </span>
-                          <button
-                            onClick={() => clearStageLinkWhisper(slot.id)}
-                            className="p-0.5 rounded bg-black/15 hover:bg-black/25 cursor-pointer shrink-0"
-                            title="Dismiss Stage Whisper"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Telemetry Badge */}
-                      <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/80 border border-slate-800 text-[10px] font-mono text-slate-300 flex items-center gap-2">
-                        <span>{slot.max_width}w</span>
-                        <span className="opacity-40">•</span>
-                        <span>{slot.connected_clients > 0 ? (slot.live_fps === 0 ? '0 FPS (Static)' : `${slot.live_fps} FPS`) : `${slot.target_fps} FPS cap`}</span>
-                        {slot.source_mode === 'SPLIT' && (
-                          <>
-                            <span className="opacity-40">•</span>
-                            <span className="text-cyan-400 font-bold">{slot.split_layout.replace('_', ' ')}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Controls + FOH Stage Whisper */}
-                    <div className="p-3.5 bg-[var(--bg-card)] space-y-3 font-mono text-xs">
-                      {/* Hardware-style Transport Buttons */}
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          onClick={() => flashStageLinkSlot(slot.id)}
-                          className="flex-1 min-h-[36px] py-1.5 px-2.5 rounded-lg bg-[var(--badge-amber-bg)] border border-[var(--badge-amber-border)] text-[var(--badge-amber-text)] font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <Zap className="w-3.5 h-3.5" />
-                          <span>Flash</span>
-                        </button>
-
-                        <button
-                          onClick={() => setStageLinkSlotFreeze(slot.id, !slot.is_frozen)}
-                          className={`min-h-[36px] py-1.5 px-3 rounded-lg border font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                            slot.is_frozen
-                              ? 'bg-[var(--badge-cyan-bg)] border-[var(--badge-cyan-border)] text-[var(--badge-cyan-text)]'
-                              : 'bg-[var(--bg-subcard)] border-[var(--border-color)] text-[var(--text-primary)]'
-                          }`}
-                        >
-                          <Snowflake className="w-3.5 h-3.5" />
-                          <span>{slot.is_frozen ? 'Frozen' : 'Freeze'}</span>
-                        </button>
-
-                        <button
-                          onClick={() => setStageLinkSlotBlackout(slot.id, !slot.is_blackout)}
-                          className={`min-h-[36px] py-1.5 px-3 rounded-lg border font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                            slot.is_blackout
-                              ? 'bg-[var(--badge-rose-bg)] border-[var(--badge-rose-border)] text-[var(--badge-rose-text)]'
-                              : 'bg-[var(--bg-subcard)] border-[var(--border-color)] text-[var(--text-primary)]'
-                          }`}
-                        >
-                          {slot.is_blackout ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                          <span>{slot.is_blackout ? 'Restore' : 'Blackout'}</span>
-                        </button>
-                      </div>
-
-                      {/* FOH Stage Whisper Messenger */}
-                      <div className="pt-2.5 border-t border-[var(--border-color)] space-y-2">
-                        <div className="flex flex-wrap items-center justify-between gap-1.5">
-                          <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3 text-[var(--accent-cyan)]" />
-                            <span>Stage Whisper Overlay</span>
-                          </span>
-                          <div className="flex flex-wrap items-center gap-1">
-                            {['2m Left', 'Wrap Up', 'Mic Muted'].map((preset) => (
-                              <button
-                                key={preset}
-                                onClick={() =>
-                                  sendStageLinkWhisper(
-                                    slot.id,
-                                    preset,
-                                    preset === 'Wrap Up' ? 'CRITICAL' : 'WARN',
-                                    20
-                                  )
-                                }
-                                className="px-2 py-0.5 rounded bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[10px] text-[var(--text-secondary)] font-bold cursor-pointer"
-                              >
-                                {preset}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <select
-                            value={whisperTone}
-                            onChange={(e) =>
-                              setWhisperTones({
-                                ...whisperTones,
-                                [slot.id]: e.target.value as 'INFO' | 'WARN' | 'CRITICAL',
-                              })
-                            }
-                            className="min-h-[36px] px-2 rounded-lg bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)] text-[10px] font-bold"
-                          >
-                            <option value="INFO">INFO</option>
-                            <option value="WARN">WARN</option>
-                            <option value="CRITICAL">URGENT</option>
-                          </select>
-
-                          <input
-                            type="text"
-                            value={whisperText}
-                            onChange={(e) =>
-                              setWhisperDrafts({ ...whisperDrafts, [slot.id]: e.target.value })
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && whisperText.trim()) {
-                                sendStageLinkWhisper(slot.id, whisperText, whisperTone, 25);
-                                setWhisperDrafts({ ...whisperDrafts, [slot.id]: '' });
-                              }
-                            }}
-                            placeholder="Silent message to pulpit..."
-                            className="flex-1 min-w-0 min-h-[36px] px-2.5 rounded-lg bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--accent-cyan)]"
-                          />
-
-                          <button
-                            onClick={() => {
-                              if (whisperText.trim()) {
-                                sendStageLinkWhisper(slot.id, whisperText, whisperTone, 25);
-                                setWhisperDrafts({ ...whisperDrafts, [slot.id]: '' });
-                              }
-                            }}
-                            className="min-h-[36px] px-3 rounded-lg bg-[var(--badge-cyan-bg)] border border-[var(--badge-cyan-border)] text-[var(--badge-cyan-text)] font-bold flex items-center gap-1 cursor-pointer shrink-0"
-                            title="Send silent Stage Whisper"
-                          >
-                            <Send className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
       )}
 

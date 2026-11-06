@@ -449,6 +449,19 @@ export const Navbar: React.FC = () => {
             <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span className="hidden sm:inline">LIVE MONITOR</span>
           </button>
+
+          <button
+            onClick={() => setAppMode('STAGE_DISPLAYS')}
+            className={`px-3 py-1 rounded-md text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+              appMode === 'STAGE_DISPLAYS'
+                ? 'bg-purple-500 text-slate-950 shadow-md font-bold'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
+            }`}
+            title="Stage Displays & Wireless Confidence Monitors"
+          >
+            <Tv className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden sm:inline">STAGE DISPLAYS</span>
+          </button>
         </div>
       </div>
 
@@ -527,30 +540,6 @@ export const Navbar: React.FC = () => {
           title="Preferences & Show-Day Settings"
         >
           <Settings className="w-4 h-4" />
-        </button>
-
-        {/* Wireless StageLink Quick Trigger */}
-        <button
-          onClick={() => openStageLinkModal(null)}
-          className="px-2.5 py-1.5 rounded-md bg-[var(--badge-cyan-bg)] hover:opacity-90 border border-[var(--badge-cyan-border)] text-xs font-mono font-bold text-[var(--badge-cyan-text)] flex items-center gap-1.5 transition shadow-sm cursor-pointer"
-          title="Create Wireless StageLink Confidence Monitor (Stream App Window / Split View to Tablet)"
-        >
-          <Radio className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">StageLink</span>
-          {stageLinkSlots.length > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full bg-[var(--bg-card)] text-[10px]">
-              {stageLinkSlots.length}
-            </span>
-          )}
-        </button>
-
-        {/* Mobile Companion Trigger */}
-        <button
-          onClick={() => setMobileModalOpen(true)}
-          className="p-2 rounded-md bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--accent-cyan)] transition shadow-sm cursor-pointer"
-          title="Open Mobile Companion QR Pairing"
-        >
-          <Smartphone className="w-4 h-4 text-cyan-400" />
         </button>
 
         {/* Theme Switcher Dropdown */}

@@ -228,14 +228,14 @@ async function runStageLinkTests() {
   await store.clearStageLinkWhisper('stage-kairon');
   assertEqual(useRigStore.getState().stageLinkSlots[0].active_whisper, null, 'Stage whisper cleared');
 
-  // Create 2nd Slot (SPLIT Mode: ProPresenter 70% + Kairon 30%)
+  // Create 2nd Slot (SPLIT Mode: Presentation App 70% + Timer 30%)
   const slot2 = await store.upsertStageLinkSlot({
     id: 'stage-split-pulpit',
     name: 'Pulpit Split Confidence',
     stage_zone: 'Pulpit Altar',
     source_mode: 'SPLIT',
     primary_source_id: 'W:10930',
-    primary_source_label: 'ProPresenter - Lyrics & Notes',
+    primary_source_label: 'Presentation App - Lyrics & Notes',
     secondary_source_id: 'W:10928',
     secondary_source_label: 'Kairon Timer',
     split_layout: 'SIDE_70_30',

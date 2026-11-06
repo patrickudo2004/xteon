@@ -170,7 +170,7 @@ export const createDefaultPorts = (
       return {
         category: 'SOURCE',
         label: 'FOH Media Server',
-        customModelName: 'Custom RTX 4080 Rig (ProPresenter / Resolume)',
+        customModelName: 'Custom RTX 4080 Media Server',
         inputPorts: [],
         outputPorts: [
           { id: 'p-out-1', name: 'DP 1.4 Out 1 (Main Wall)', type: 'DP_1_4', direction: 'OUTPUT', maxBandwidthGbps: 32.4 },
@@ -1519,7 +1519,7 @@ export const useRigStore = create<RigState>((set, get) => ({
         category: 'SOURCE',
         deviceType: 'MEDIA_SERVER',
         label: 'FOH Media Server',
-        customModelName: 'Custom RTX 4080 Rig (ProPresenter / Resolume)',
+        customModelName: 'Custom RTX 4080 Media Server',
         stageZone: 'FOH Control Booth',
         inputPorts: [],
         outputPorts: [

@@ -31,10 +31,10 @@ export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
           position: { x: 100, y: 250 },
           data: {
             id: 'server-1',
-            label: 'FOH Media Server (ProPresenter)',
+            label: 'FOH Media Server (Main Playback)',
             category: 'SOURCE',
             deviceType: 'MEDIA_SERVER',
-            customModelName: 'ProPresenter Workstation',
+            customModelName: 'Primary Media Workstation',
             stageZone: 'FOH Control Booth',
             inputPorts: [],
             outputPorts: [
