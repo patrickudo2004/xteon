@@ -209,24 +209,6 @@ async function runStageLinkTests() {
         return true;
       }
 
-      if (cmd === 'get_virtual_driver_status') {
-        return {
-          installed: true,
-          is_glidex_present: true,
-          display_active: false,
-          driver_path: 'C:\\VirtualDisplayDriver',
-          message: 'Virtual Display Driver is installed. Toggle to activate.',
-        };
-      }
-
-      if (cmd === 'install_os_virtual_display_driver') {
-        return 'Virtual Display Driver setup initiated. Check User Account Control (UAC) if prompted.';
-      }
-
-      if (cmd === 'toggle_virtual_display_active') {
-        return args.enable ? 'Activated Virtual Extended Display (Display 2).' : 'Deactivated Virtual Extended Display.';
-      }
-
       return null;
     },
   };
@@ -538,40 +520,17 @@ async function runStageLinkTests() {
   assert(libRsSource.includes('spawn_virtual_extended_display'), 'lib.rs exposes spawn_virtual_extended_display command');
   assert(libRsSource.includes('display-virtual-stage'), 'lib.rs dynamically injects display-virtual-stage into get_connected_displays');
 
-  // 16. GlideX-Style Virtual Display Driver Invariants
-  const vddStatus = await store.refreshVirtualDriverStatus();
-  assertEqual(vddStatus?.installed, true, 'refreshVirtualDriverStatus reports driver installed');
-  assertEqual(vddStatus?.is_glidex_present, true, 'refreshVirtualDriverStatus detects existing display adapters');
+  // 16. Clean Zero-Driver Architecture Invariants
+  assert(!fs.existsSync('src-tauri/src/display/virtual_driver.rs'), 'virtual_driver.rs is purged from backend');
+  assert(!fs.existsSync('src-tauri/resources/virtual_display_driver'), 'resources/virtual_display_driver is purged from repo');
+  assert(!fs.existsSync('C:\\VirtualDisplayDriver'), 'C:\\VirtualDisplayDriver directory is purged from system');
 
-  const installDriverRes = await store.installVirtualDisplayDriver();
-  assert(installDriverRes.includes('Virtual Display Driver setup initiated'), 'installVirtualDisplayDriver initiates elevated setup');
-  const installCall = invokedCommands.find((c) => c.cmd === 'install_os_virtual_display_driver');
-  assert(Boolean(installCall), 'Invoked install_os_virtual_display_driver command');
-
-  const toggleRes = await store.toggleVirtualDisplayActive(true);
-  assert(toggleRes.includes('Activated Virtual Extended Display'), 'toggleVirtualDisplayActive(true) enables Display 2');
-  const toggleCall = invokedCommands.find((c) => c.cmd === 'toggle_virtual_display_active');
-  assert(Boolean(toggleCall), 'Invoked toggle_virtual_display_active command');
-  assertEqual(toggleCall?.args?.enable, true, 'Passed enable: true parameter to toggle_virtual_display_active');
-
-  // 17. Embedded Driver Package Verification
-  const virtDriverRs = fs.readFileSync('src-tauri/src/display/virtual_driver.rs', 'utf8');
-  assert(virtDriverRs.includes('devcon.exe'), 'virtual_driver.rs embeds devcon.exe');
-  assert(virtDriverRs.includes('MttVDD.dll'), 'virtual_driver.rs embeds MttVDD.dll');
-  assert(virtDriverRs.includes('MttVDD.inf'), 'virtual_driver.rs embeds MttVDD.inf');
-  assert(virtDriverRs.includes('install_driver.bat'), 'virtual_driver.rs embeds install_driver.bat');
-
-  assert(fs.existsSync('src-tauri/resources/virtual_display_driver/devcon.exe'), 'Bundled devcon.exe exists in resources');
-  assert(fs.existsSync('src-tauri/resources/virtual_display_driver/MttVDD.dll'), 'Bundled MttVDD.dll exists in resources');
-  assert(fs.existsSync('src-tauri/resources/virtual_display_driver/MttVDD.inf'), 'Bundled MttVDD.inf exists in resources');
-  assert(fs.existsSync('src-tauri/resources/virtual_display_driver/mttvdd.cat'), 'Bundled mttvdd.cat exists in resources');
-  assert(fs.existsSync('src-tauri/resources/virtual_display_driver/install_driver.bat'), 'Bundled install_driver.bat exists in resources');
-
-  // 18. StageDisplaysView Virtual Display Controls
+  // 17. StageDisplaysView Zero-Driver Polish
   const stageDisplaysViewSrc = fs.readFileSync('src/components/stage/StageDisplaysView.tsx', 'utf8');
-  assert(stageDisplaysViewSrc.includes('External Monitor & Virtual Stage Screen'), 'StageDisplaysView contains External Monitor & Virtual Stage Screen header');
-  assert(stageDisplaysViewSrc.includes('Setup Virtual Display Engine (One-Time Setup)'), 'StageDisplaysView provides Setup Virtual Display Engine button');
-  assert(stageDisplaysViewSrc.includes('handleToggleVirtualDisplay'), 'StageDisplaysView connects handleToggleVirtualDisplay');
+  assert(stageDisplaysViewSrc.includes('External Monitor & Stage Screen'), 'StageDisplaysView defines clean External Monitor & Stage Screen header');
+  assert(stageDisplaysViewSrc.includes('Cast App Window (PowerPoint / Timer)'), 'StageDisplaysView provides Cast App Window button');
+  assert(!stageDisplaysViewSrc.includes('refreshVirtualDriverStatus'), 'StageDisplaysView has no driver polling intervals');
+  assert(!stageDisplaysViewSrc.includes('Setup Virtual Display Engine'), 'StageDisplaysView has no intrusive driver install buttons');
 
   // --- FINAL REPORT ---
   console.log('\n===============================================================================');
