@@ -281,17 +281,10 @@ pub fn list_stage_slots(include_previews: bool) -> Vec<StageLinkSlot> {
 }
 
 pub fn get_slot_runtime(slot_id: &str) -> Option<Arc<SlotRuntime>> {
-    let direct = STAGE_SLOTS
+    STAGE_SLOTS
         .lock()
         .ok()
-        .and_then(|m| m.get(slot_id).cloned());
-    if direct.is_some() {
-        return direct;
-    }
-    if slot_id == "stage-1" || slot_id == "stage-primary" || slot_id == "stage" {
-        return Some(ensure_default_slot_exists());
-    }
-    None
+        .and_then(|m| m.get(slot_id).cloned())
 }
 
 pub fn upsert_stage_slot(input: CreateOrUpdateSlotInput) -> StageLinkSlot {

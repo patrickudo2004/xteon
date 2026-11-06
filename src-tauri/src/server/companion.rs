@@ -20,10 +20,11 @@ use crate::display::window_manager::{
 };
 use super::network::{get_preferred_lan_ip, list_network_interfaces, NetworkAdapterInfo};
 use super::stagelink::{
-    clear_stage_whisper, ensure_slot_worker_running, get_security_config, get_slot_runtime,
-    get_total_live_client_count, list_stage_slots, record_companion_heartbeat, remove_stage_slot,
-    send_stage_whisper, set_slot_blackout, set_slot_freeze, trigger_slot_flash, upsert_stage_slot,
-    verify_access_key_or_pin, CreateOrUpdateSlotInput, SlotRuntime, StageBroadcastPacket,
+    clear_stage_whisper, ensure_default_slot_exists, ensure_slot_worker_running, get_security_config,
+    get_slot_runtime, get_total_live_client_count, list_stage_slots, record_companion_heartbeat,
+    remove_stage_slot, send_stage_whisper, set_slot_blackout, set_slot_freeze, trigger_slot_flash,
+    upsert_stage_slot, verify_access_key_or_pin, CreateOrUpdateSlotInput, SlotRuntime,
+    StageBroadcastPacket,
 };
 use super::web_views::{render_companion_director_html, render_stage_receiver_html};
 
@@ -251,8 +252,15 @@ impl Drop for SubscriberGuard {
 }
 
 async fn handle_stage_ws(mut socket: WebSocket, slot_id: String, cid: String) {
-    let Some(rt) = get_slot_runtime(&slot_id) else {
-        return;
+    let rt = match get_slot_runtime(&slot_id) {
+        Some(rt) => rt,
+        None => {
+            if slot_id == "stage-1" || slot_id == "stage-primary" || slot_id == "stage" {
+                ensure_default_slot_exists()
+            } else {
+                return;
+            }
+        }
     };
     rt.subscriber_count.fetch_add(1, Ordering::SeqCst);
     if let Ok(mut s) = rt.slot.lock() {
