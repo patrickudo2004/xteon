@@ -38,6 +38,7 @@ pub enum WindowCaptureOutcome {
     NotFound,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 struct SavedWindowStyle {
     style: i32,

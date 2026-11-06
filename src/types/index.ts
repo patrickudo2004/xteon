@@ -1,4 +1,4 @@
-export type AppMode = 'PLANNER' | 'LIVE_MAP' | 'LIVE';
+export type AppMode = 'PLANNER' | 'LIVE_MAP' | 'LIVE' | 'STAGE_DISPLAYS';
 export type ThemeMode = 'DARK_FOH' | 'DAYLIGHT' | 'BROADCAST';
 
 export type PortType = 
@@ -335,4 +335,16 @@ export interface UpsertStageSlotInput {
   split_layout?: StageSplitLayout;
   target_fps?: number;
   max_width?: number;
+}
+
+export interface ConnectedReceiver {
+  clientId: string;
+  deviceLabel: string;
+  ip: string;
+  connectionType: 'WIFI' | 'USB_TETHER' | 'ETHERNET' | 'DIRECT';
+  fps: number;
+  latencyMs: number;
+  feedName: string;
+  connectedAt: string;
+  isFlashing?: boolean;
 }

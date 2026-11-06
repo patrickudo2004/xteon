@@ -11,7 +11,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{LazyLock, Mutex};
+use std::sync::{Arc, LazyLock, Mutex};
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::display::window_manager::{
@@ -23,7 +23,7 @@ use super::stagelink::{
     clear_stage_whisper, ensure_slot_worker_running, get_security_config, get_slot_runtime,
     get_total_live_client_count, list_stage_slots, record_companion_heartbeat, remove_stage_slot,
     send_stage_whisper, set_slot_blackout, set_slot_freeze, trigger_slot_flash, upsert_stage_slot,
-    verify_access_key_or_pin, CreateOrUpdateSlotInput, StageBroadcastPacket,
+    verify_access_key_or_pin, CreateOrUpdateSlotInput, SlotRuntime, StageBroadcastPacket,
 };
 use super::web_views::{render_companion_director_html, render_stage_receiver_html};
 
@@ -223,10 +223,25 @@ async fn ws_stage_handler(
         .into_response()
 }
 
+struct SubscriberGuard(Arc<SlotRuntime>);
+impl Drop for SubscriberGuard {
+    fn drop(&mut self) {
+        self.0.subscriber_count.fetch_sub(1, Ordering::SeqCst);
+        if let Ok(mut s) = self.0.slot.lock() {
+            s.connected_clients = self.0.subscriber_count.load(Ordering::Relaxed);
+        }
+    }
+}
+
 async fn handle_stage_ws(mut socket: WebSocket, slot_id: String, cid: String) {
     let Some(rt) = get_slot_runtime(&slot_id) else {
         return;
     };
+    rt.subscriber_count.fetch_add(1, Ordering::SeqCst);
+    if let Ok(mut s) = rt.slot.lock() {
+        s.connected_clients = rt.subscriber_count.load(Ordering::Relaxed);
+    }
+    let _sub_guard = SubscriberGuard(rt.clone());
     ensure_slot_worker_running(rt.clone());
     let mut rx = rt.tx.subscribe();
 
