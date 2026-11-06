@@ -470,6 +470,15 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
       try { localStorage.setItem('xteon_auth_key', authKey); } catch (e) {}
     }
 
+    let clientCid = params.get('cid') || '';
+    try {
+      if (!clientCid) clientCid = localStorage.getItem('xteon_stage_cid') || '';
+      if (!clientCid) {
+        clientCid = 'dev-' + Math.random().toString(36).substring(2, 9);
+      }
+      localStorage.setItem('xteon_stage_cid', clientCid);
+    } catch (e) {}
+
     let ws = null;
     let reconnectTimer = null;
     let hudTimer = null;
@@ -789,7 +798,7 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
     function connectWebSocket() {
       if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = proto + '//' + window.location.host + '/ws/stage/' + encodeURIComponent(SLOT_ID) + '?key=' + encodeURIComponent(authKey);
+      const wsUrl = proto + '//' + window.location.host + '/ws/stage/' + encodeURIComponent(SLOT_ID) + '?key=' + encodeURIComponent(authKey) + '&cid=' + encodeURIComponent(clientCid);
       try {
         ws = new WebSocket(wsUrl);
         ws.binaryType = 'arraybuffer';

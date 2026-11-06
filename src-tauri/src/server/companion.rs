@@ -3,7 +3,7 @@ use axum::{
         ws::{Message, WebSocket, WebSocketUpgrade},
         Path, Query, State,
     },
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse, Json, Redirect},
     routing::{delete, get, post},
     Router,
@@ -20,7 +20,7 @@ use crate::display::window_manager::{
 };
 use super::network::{get_preferred_lan_ip, list_network_interfaces, NetworkAdapterInfo};
 use super::stagelink::{
-    allocate_slot_for_new_client, broadcast_stage_whisper, clear_all_stage_whispers,
+    allocate_slot_for_client, allocate_slot_for_new_client, broadcast_stage_whisper, clear_all_stage_whispers,
     clear_stage_whisper, ensure_default_slot_exists, ensure_slot_worker_running,
     get_security_config, get_slot_runtime, get_total_live_client_count, list_stage_slots,
     record_companion_heartbeat, remove_stage_slot, send_stage_whisper, set_slot_blackout,
@@ -138,11 +138,12 @@ pub fn build_companion_router(state: AppState) -> Router {
 
     Router::new()
         .route("/", get(serve_mobile_ui))
-        .route("/stage", get(serve_stage_default_ui))
+        .route("/stage", get(serve_stage_gateway))
         .route("/stage/join", get(serve_stage_default_ui))
         .route("/stage/:slot_id", get(serve_stage_ui))
         .route("/ws/stage", get(ws_stage_default_handler))
         .route("/ws/stage/:slot_id", get(ws_stage_handler))
+        .route("/:slot_id", get(serve_stage_fallback_route))
         .route("/api/status", get(api_status))
         .route("/api/network-interfaces", get(api_network_interfaces))
         .route("/api/auth/check", get(api_auth_check))
@@ -179,7 +180,6 @@ pub async fn start_companion_server_with_handle(app_handle: tauri::AppHandle) {
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
     if let Ok(listener) = tokio::net::TcpListener::bind(addr).await {
         SERVER_BOUND_OK.store(true, Ordering::SeqCst);
-        crate::server::stagelink::ensure_default_slot_exists();
         println!(
             "🚀 [Xteon Companion & StageLink] Live Server listening on http://{}:{}",
             get_preferred_lan_ip(),
@@ -209,14 +209,80 @@ async fn serve_mobile_ui() -> Html<&'static str> {
     Html(render_companion_director_html())
 }
 
-async fn serve_stage_default_ui(Query(params): Query<HashMap<String, String>>) -> impl IntoResponse {
-    let slot_id = allocate_slot_for_new_client();
-    let key_query = if let Some(key) = params.get("key") {
-        format!("?key={}", key)
-    } else {
+async fn serve_stage_gateway(Query(params): Query<HashMap<String, String>>) -> impl IntoResponse {
+    let key = params.get("key").cloned().unwrap_or_default();
+    let key_attr = if key.is_empty() { "".to_string() } else { key };
+    let html = format!(
+        r#"<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Connecting to Xteon Stage...</title>
+  <style>
+    body {{ background: #0b0f19; color: #38bdf8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }}
+    .spinner {{ width: 36px; height: 36px; border: 3px solid rgba(56, 189, 248, 0.2); border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }}
+    @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <div style="font-size:14px;font-weight:700;">Connecting Stage Receiver...</div>
+  <script>
+    let cid = '';
+    try {{ cid = localStorage.getItem('xteon_stage_cid') || ''; }} catch (e) {{}}
+    if (!cid) {{
+      cid = 'dev-' + Math.random().toString(36).substring(2, 9);
+      try {{ localStorage.setItem('xteon_stage_cid', cid); }} catch (e) {{}}
+    }}
+    const q = new URLSearchParams(window.location.search);
+    q.set('cid', cid);
+    const key = "{key_attr}";
+    if (key && !q.has('key')) {{ q.set('key', key); }}
+    window.location.replace('/stage/join?' + q.toString());
+  </script>
+</body>
+</html>"#
+    );
+    Html(html)
+}
+
+async fn serve_stage_default_ui(
+    headers: HeaderMap,
+    Query(params): Query<HashMap<String, String>>,
+) -> impl IntoResponse {
+    let cid = params.get("cid").map(|s| s.as_str());
+    let user_agent = headers.get("user-agent").and_then(|h| h.to_str().ok());
+    let slot_id = allocate_slot_for_client(cid, user_agent);
+    let mut q_parts = Vec::new();
+    if let Some(key) = params.get("key") {
+        q_parts.push(format!("key={}", key));
+    }
+    if let Some(c) = cid {
+        q_parts.push(format!("cid={}", c));
+    }
+    let q_str = if q_parts.is_empty() {
         "".to_string()
+    } else {
+        format!("?{}", q_parts.join("&"))
     };
-    Redirect::temporary(&format!("/stage/{}{}", slot_id, key_query))
+    Redirect::temporary(&format!("/stage/{}{}", slot_id, q_str))
+}
+
+async fn serve_stage_fallback_route(
+    Path(slot_id): Path<String>,
+    Query(params): Query<HashMap<String, String>>,
+) -> impl IntoResponse {
+    if slot_id.starts_with("stage") {
+        let q_str = if let Some(key) = params.get("key") {
+            format!("?key={}", key)
+        } else {
+            "".to_string()
+        };
+        Redirect::temporary(&format!("/stage/{}{}", slot_id, q_str)).into_response()
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
 }
 
 async fn serve_stage_ui(Path(slot_id): Path<String>) -> Html<String> {
@@ -224,10 +290,13 @@ async fn serve_stage_ui(Path(slot_id): Path<String>) -> Html<String> {
 }
 
 async fn ws_stage_default_handler(
+    headers: HeaderMap,
     params: Query<HashMap<String, String>>,
     ws: WebSocketUpgrade,
 ) -> impl IntoResponse {
-    let slot_id = allocate_slot_for_new_client();
+    let cid = params.get("cid").map(|s| s.as_str());
+    let user_agent = headers.get("user-agent").and_then(|h| h.to_str().ok());
+    let slot_id = allocate_slot_for_client(cid, user_agent);
     ws_stage_handler(Path(slot_id), params, ws).await
 }
 
