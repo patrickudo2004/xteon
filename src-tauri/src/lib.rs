@@ -21,6 +21,10 @@ use display::window_manager::{
     list_capturable_windows, recall_stray_windows_to_primary, restore_window_behind,
     route_window_to_display, set_window_pinned_stage, unroute_window_to_primary, CapturableWindow,
 };
+use display::virtual_driver::{
+    check_virtual_driver_status, install_virtual_display_driver, set_virtual_display_active,
+    uninstall_virtual_display_driver, VirtualDriverStatus,
+};
 use tauri::Manager;
 
 fn sanitize_label(id: &str) -> String {
@@ -617,6 +621,26 @@ fn close_virtual_extended_display(app: tauri::AppHandle) -> bool {
     false
 }
 
+#[tauri::command]
+fn get_virtual_driver_status() -> VirtualDriverStatus {
+    check_virtual_driver_status()
+}
+
+#[tauri::command]
+fn install_os_virtual_display_driver() -> Result<String, String> {
+    install_virtual_display_driver()
+}
+
+#[tauri::command]
+fn uninstall_os_virtual_display_driver() -> Result<String, String> {
+    uninstall_virtual_display_driver()
+}
+
+#[tauri::command]
+fn toggle_virtual_display_active(enable: bool) -> Result<String, String> {
+    set_virtual_display_active(enable)
+}
+
 
 
 pub fn run() {
@@ -681,7 +705,11 @@ pub fn run() {
             get_window_thumbnails,
             set_host_sleep_inhibit,
             spawn_virtual_extended_display,
-            close_virtual_extended_display
+            close_virtual_extended_display,
+            get_virtual_driver_status,
+            install_os_virtual_display_driver,
+            uninstall_os_virtual_display_driver,
+            toggle_virtual_display_active
         ])
         .run(tauri::generate_context!())
         .expect("error while running xteon application");
