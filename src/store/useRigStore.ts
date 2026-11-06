@@ -871,6 +871,11 @@ interface RigState {
     durationSecs?: number
   ) => Promise<void>;
   clearStageLinkWhisper: (slotId: string) => Promise<void>;
+  triggerOsDisplayExtend: () => Promise<string>;
+  openOsDisplaySettings: () => Promise<string>;
+  getWindowThumbnails: (hwndIds: string[]) => Promise<Record<string, string>>;
+  setHostSleepInhibit: (inhibit: boolean) => Promise<boolean>;
+  stopStageLinkStream: (slotId?: string) => Promise<void>;
 }
 
 let isCapturingInProgress = false;
@@ -2921,6 +2926,73 @@ export const useRigStore = create<RigState>((set, get) => ({
         await get().refreshStageLinkSlots(false);
       } catch (_) {}
     }
+  },
+
+  triggerOsDisplayExtend: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke('trigger_os_display_extend');
+      } catch (err: any) {
+        console.warn('trigger_os_display_extend error:', err);
+        return String(err);
+      }
+    }
+    return 'Desktop extension not supported in browser preview';
+  },
+
+  openOsDisplaySettings: async () => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke('open_os_display_settings');
+      } catch (err: any) {
+        console.warn('open_os_display_settings error:', err);
+        return String(err);
+      }
+    }
+    return 'Display settings not available in browser preview';
+  },
+
+  getWindowThumbnails: async (hwndIds: string[]) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke('get_window_thumbnails', { hwndIds });
+      } catch (err) {
+        console.warn('get_window_thumbnails error:', err);
+      }
+    }
+    return {};
+  },
+
+  setHostSleepInhibit: async (inhibit: boolean) => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke('set_host_sleep_inhibit', { inhibit });
+      } catch (_) {}
+    }
+    return false;
+  },
+
+  stopStageLinkStream: async (slotId?: string) => {
+    const target = slotId ? get().stageLinkSlots.find((s) => s.id === slotId) : get().stageLinkSlots[0];
+    if (!target) return;
+    await get().upsertStageLinkSlot({
+      id: target.id,
+      name: target.name,
+      stage_zone: target.stage_zone,
+      source_mode: 'WINDOW',
+      primary_source_id: '',
+      primary_source_label: '',
+      secondary_source_id: null,
+      secondary_source_label: null,
+      split_layout: target.split_layout,
+      target_fps: target.target_fps,
+      max_width: target.max_width,
+    });
+    await get().refreshStageLinkSlots(true);
   },
 
   importProject: (proj) => {

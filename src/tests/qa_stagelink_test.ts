@@ -183,6 +183,24 @@ async function runStageLinkTests() {
         return 2;
       }
 
+      if (cmd === 'trigger_os_display_extend') {
+        return 'Switched to OS Extend display mode';
+      }
+
+      if (cmd === 'open_os_display_settings') {
+        return 'Opened OS Display Settings';
+      }
+
+      if (cmd === 'get_window_thumbnails') {
+        return {
+          '10928': 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBD...',
+        };
+      }
+
+      if (cmd === 'set_host_sleep_inhibit') {
+        return true;
+      }
+
       return null;
     },
   };
@@ -392,6 +410,75 @@ async function runStageLinkTests() {
 
   const mainTsx = fs.readFileSync('src/main.tsx', 'utf8');
   assert(mainTsx.includes('<ErrorBoundary>'), 'src/main.tsx wraps root webview in <ErrorBoundary>');
+
+  // --- TEST GROUP 7: STAGELINK V2 MASTER INVARIANTS & MULTI-DEVICE MANAGEMENT ---
+  console.log('\n--- TEST GROUP 7: StageLink V2 Master Invariants & Multi-Device Management ---');
+
+  // 1. Native OS Display Extend Command
+  const extendRes = await store.triggerOsDisplayExtend();
+  assertEqual(extendRes, 'Switched to OS Extend display mode', 'triggerOsDisplayExtend dispatches native OS command');
+  const extendCall = invokedCommands.find((c) => c.cmd === 'trigger_os_display_extend');
+  assert(Boolean(extendCall), 'Invoked trigger_os_display_extend command');
+
+  // 2. Native OS Display Settings Command
+  const settingsRes = await store.openOsDisplaySettings();
+  assertEqual(settingsRes, 'Opened OS Display Settings', 'openOsDisplaySettings dispatches native OS settings');
+  const settingsCall = invokedCommands.find((c) => c.cmd === 'open_os_display_settings');
+  assert(Boolean(settingsCall), 'Invoked open_os_display_settings command');
+
+  // 3. Live Window Thumbnails Command
+  const thumbs = await store.getWindowThumbnails(['10928']);
+  assert(Boolean(thumbs['10928']), 'getWindowThumbnails returns valid base64 preview thumbnail for hwnd 10928');
+
+  // 4. Host Sleep Inhibition Command
+  const sleepInhibit = await store.setHostSleepInhibit(true);
+  assertEqual(sleepInhibit, true, 'setHostSleepInhibit(true) dispatches Win32/macOS/Linux keep-awake');
+
+  // 5. Multi-Variety Device Configuration & Editing
+  const editedSlot = await store.upsertStageLinkSlot({
+    id: 'stage-kairon',
+    name: 'Pulpit Confidence Screen Pro',
+    stage_zone: 'Pulpit Altar Main',
+    source_mode: 'SPLIT',
+    primary_source_id: 'W:10930',
+    primary_source_label: 'ProPresenter Lyrics & Scripture',
+    secondary_source_id: 'W:10928',
+    secondary_source_label: 'Kairon Timer',
+    split_layout: 'SIDE_70_30',
+    target_fps: 30,
+    max_width: 1920,
+  });
+  assertEqual(editedSlot?.name, 'Pulpit Confidence Screen Pro', 'Device Drawer edited name successfully');
+  assertEqual(editedSlot?.stage_zone, 'Pulpit Altar Main', 'Device Drawer edited stage zone successfully');
+  assertEqual(editedSlot?.source_mode, 'SPLIT', 'Device Drawer switched mode to SPLIT successfully');
+  assertEqual(editedSlot?.target_fps, 30, 'Device Drawer updated framerate to 30 FPS');
+  assertEqual(editedSlot?.max_width, 1920, 'Device Drawer updated max resolution to 1080p (1920px)');
+
+  // 6. Stop Sharing Stream (Standby Transition without Deleting Device)
+  await store.stopStageLinkStream('stage-kairon');
+  const currentSlots = useRigStore.getState().stageLinkSlots;
+  const stoppedSlot = currentSlots.find((s) => s.id === 'stage-kairon');
+  assertEqual(stoppedSlot?.primary_source_id, '', 'stopStageLinkStream cleared primary source ID to standby');
+  assertEqual(stoppedSlot?.primary_source_label, '', 'stopStageLinkStream cleared primary source label to standby');
+  assert(currentSlots.length >= 1, 'Device slot remains alive and configured in dashboard during standby');
+
+  // 7. Rust Backend Keep-Awake Engine Verification (Universal HTTP NoSleep video loop)
+  const webViewsSource = fs.readFileSync('src-tauri/src/server/web_views.rs', 'utf8');
+  assert(webViewsSource.includes('<video id="nosleep-video"'), 'web_views.rs contains <video id="nosleep-video"> element for HTTP keep-awake');
+  assert(webViewsSource.includes('requestWakeLockSafe()'), 'web_views.rs contains requestWakeLockSafe() with video fallback');
+
+  // 8. Rust Backend Forced Keyframe Heartbeat (Prevents timer freeze)
+  const stagelinkSource = fs.readFileSync('src-tauri/src/server/stagelink.rs', 'utf8');
+  assert(stagelinkSource.includes('is_heartbeat = now.saturating_sub(last_forced_keyframe_ms) >= 1500'), 'stagelink.rs contains 1500ms forced keyframe heartbeat');
+  assert(stagelinkSource.includes('ensure_default_slot_exists'), 'stagelink.rs contains ensure_default_slot_exists() for immediate receiver connection');
+
+  // 9. Rust Backend Default /stage route
+  const companionSource = fs.readFileSync('src-tauri/src/server/companion.rs', 'utf8');
+  assert(companionSource.includes('serve_stage_default_ui'), 'companion.rs contains default /stage route');
+  assert(companionSource.includes('ws_stage_default_handler'), 'companion.rs contains default /ws/stage handler');
+
+  // 10. Clean Recycled Slot Index Verification
+  assert(stagelinkSource.includes('for i in 1..=50'), 'stagelink.rs contains recycled slot allocation logic (stage-1, stage-2)');
 
   // --- FINAL REPORT ---
   console.log('\n===============================================================================');

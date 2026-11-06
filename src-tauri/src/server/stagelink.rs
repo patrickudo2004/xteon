@@ -1,7 +1,7 @@
 use base64::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, LazyLock, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::broadcast;
@@ -129,8 +129,6 @@ static COMPANION_HTTP_SESSIONS: LazyLock<Mutex<HashMap<String, u64>>> =
 static STAGE_SLOTS: LazyLock<Mutex<HashMap<String, Arc<SlotRuntime>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
-static SLOT_SEQ: AtomicU64 = AtomicU64::new(1);
-
 pub fn now_epoch_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -221,7 +219,36 @@ pub fn get_total_live_client_count() -> usize {
     http_clients + ws_clients
 }
 
+pub fn ensure_default_slot_exists() -> Arc<SlotRuntime> {
+    if let Some(rt) = STAGE_SLOTS.lock().ok().and_then(|m| m.get("stage-1").cloned()) {
+        return rt;
+    }
+    upsert_stage_slot(CreateOrUpdateSlotInput {
+        id: Some("stage-1".to_string()),
+        name: "Pulpit Confidence Tablet".to_string(),
+        stage_zone: "Pulpit Altar".to_string(),
+        source_mode: "WINDOW".to_string(),
+        primary_source_id: "".to_string(),
+        primary_source_label: "".to_string(),
+        secondary_source_id: None,
+        secondary_source_label: None,
+        split_layout: Some("SIDE_70_30".to_string()),
+        target_fps: Some(30),
+        max_width: Some(1280),
+    });
+    STAGE_SLOTS
+        .lock()
+        .ok()
+        .and_then(|m| m.get("stage-1").cloned())
+        .expect("default slot stage-1 must exist after upsert")
+}
+
 pub fn list_stage_slots(include_previews: bool) -> Vec<StageLinkSlot> {
+    let is_empty = STAGE_SLOTS.lock().map(|m| m.is_empty()).unwrap_or(false);
+    if is_empty {
+        ensure_default_slot_exists();
+    }
+
     let runtimes: Vec<Arc<SlotRuntime>> = STAGE_SLOTS
         .lock()
         .map(|m| m.values().cloned().collect())
@@ -254,10 +281,17 @@ pub fn list_stage_slots(include_previews: bool) -> Vec<StageLinkSlot> {
 }
 
 pub fn get_slot_runtime(slot_id: &str) -> Option<Arc<SlotRuntime>> {
-    STAGE_SLOTS
+    let direct = STAGE_SLOTS
         .lock()
         .ok()
-        .and_then(|m| m.get(slot_id).cloned())
+        .and_then(|m| m.get(slot_id).cloned());
+    if direct.is_some() {
+        return direct;
+    }
+    if slot_id == "stage-1" || slot_id == "stage-primary" || slot_id == "stage" {
+        return Some(ensure_default_slot_exists());
+    }
+    None
 }
 
 pub fn upsert_stage_slot(input: CreateOrUpdateSlotInput) -> StageLinkSlot {
@@ -266,11 +300,18 @@ pub fn upsert_stage_slot(input: CreateOrUpdateSlotInput) -> StageLinkSlot {
         .filter(|s| !s.trim().is_empty())
         .map(|s| {
             let clean: String = s.chars().filter(|c| c.is_alphanumeric() || *c == '-' || *c == '_').collect();
-            if clean.is_empty() { format!("stage-{}", SLOT_SEQ.fetch_add(1, Ordering::Relaxed)) } else { clean }
+            if clean.is_empty() { "stage-1".to_string() } else { clean }
         })
         .unwrap_or_else(|| {
-            let n = SLOT_SEQ.fetch_add(1, Ordering::Relaxed);
-            format!("stage-{n}")
+            if let Ok(guard) = STAGE_SLOTS.lock() {
+                for i in 1..=50 {
+                    let candidate = format!("stage-{i}");
+                    if !guard.contains_key(&candidate) {
+                        return candidate;
+                    }
+                }
+            }
+            "stage-1".to_string()
         });
 
     let split_layout = input
@@ -664,6 +705,7 @@ pub fn ensure_slot_worker_running(rt: Arc<SlotRuntime>) {
         let mut last_disp_refresh_ms = window_start_ms;
         let mut prev_minimized = false;
         let mut prev_missing = false;
+        let mut last_forced_keyframe_ms = window_start_ms;
 
         loop {
             if rt.removed.load(Ordering::Relaxed)
@@ -714,12 +756,18 @@ pub fn ensure_slot_worker_running(rt: Arc<SlotRuntime>) {
                 last_disp_refresh_ms = now;
             }
 
+            // Forced keyframe heartbeat every 1500ms guarantees receivers never freeze on static windows
+            let is_heartbeat = now.saturating_sub(last_forced_keyframe_ms) >= 1500;
+            if is_heartbeat {
+                last_forced_keyframe_ms = now;
+            }
+
             let disp_clone = displays_cache.clone();
             let mode_clone = source_mode.clone();
             let prim_clone = prim_id.clone();
             let sec_clone = sec_id.clone();
-            let prev_a = prev_checksum_a;
-            let prev_b = prev_checksum_b;
+            let prev_a = if is_heartbeat { None } else { prev_checksum_a };
+            let prev_b = if is_heartbeat { None } else { prev_checksum_b };
 
             let capture_res = tokio::task::spawn_blocking(move || {
                 let out_a = capture_any_source_raw(

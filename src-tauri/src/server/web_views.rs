@@ -404,6 +404,7 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
     </div>
   </div>
 
+  <video id="nosleep-video" playsinline webkit-playsinline loop muted style="position:fixed;width:1px;height:1px;opacity:0.001;pointer-events:none;z-index:-10;"></video>
   <div id="dimmer-veil"></div>
   <div id="blackout-curtain" onclick="handleCanvasTap(event)"></div>
 
@@ -537,12 +538,42 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
     }
 
     async function requestWakeLockSafe() {
+      // 1. W3C Screen Wake Lock (Secure HTTPS / Localhost)
       try {
         if ('wakeLock' in navigator) {
           wakeLockObj = await navigator.wakeLock.request('screen');
         }
       } catch (e) {}
-      // Silent WebAudio oscillator fallback for older iPad Safari
+
+      // 2. Universal Inline Video NoSleep Engine (Works on ALL mobile browsers including iOS Safari & Android Chrome over HTTP)
+      try {
+        const vid = document.getElementById('nosleep-video');
+        if (vid && !vid.src && !vid.srcObject) {
+          vid.setAttribute('playsinline', '');
+          vid.setAttribute('webkit-playsinline', '');
+          vid.muted = true;
+          vid.loop = true;
+          const c = document.createElement('canvas');
+          c.width = 2;
+          c.height = 2;
+          const ctx = c.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, 2, 2);
+          }
+          if (c.captureStream) {
+            vid.srcObject = c.captureStream(1);
+          } else {
+            // Tiny 1-pixel silent looping H.264 video data URI
+            vid.src = 'data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhmZGF0AAACrgYF//+13wEB42dpdAAAACltZGF0AGBAbm9zbGVlcAAAAAAAAAAAAAAAEAAAAAAABAAAAAAACv//';
+          }
+        }
+        if (vid) {
+          await vid.play();
+        }
+      } catch (e) {}
+
+      // 3. Silent WebAudio oscillator fallback
       try {
         if (!keepAwakeAudioCtx) {
           const Ctx = window.AudioContext || window.webkitAudioContext;

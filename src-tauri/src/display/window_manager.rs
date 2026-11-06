@@ -1,3 +1,5 @@
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::{LazyLock, Mutex};
@@ -21,6 +23,8 @@ pub struct CapturableWindow {
     pub is_xteon_self: bool,
     pub display_id: Option<String>,
     pub display_os_index: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub thumbnail_data_url: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -357,6 +361,7 @@ mod win_impl {
                     is_xteon_self,
                     display_id,
                     display_os_index,
+                    thumbnail_data_url: None,
                 });
             }
         }
@@ -801,6 +806,7 @@ mod mac_impl {
                     is_borderless_snapped: false,
                     display_id,
                     display_os_index,
+                    thumbnail_data_url: None,
                 });
             }
         }
@@ -873,6 +879,19 @@ pub fn capture_window_frame_jpeg(
         let _ = (hwnd_id, max_target_width, jpeg_quality, prev_checksum);
         WindowCaptureOutcome::NotFound
     }
+}
+
+pub fn capture_windows_thumbnails(hwnd_ids: &[String]) -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    for hwnd_id in hwnd_ids {
+        if let WindowCaptureOutcome::Frame { jpeg_bytes, .. } =
+            capture_window_frame_jpeg(hwnd_id, 320, 65, None)
+        {
+            let b64 = BASE64_STANDARD.encode(&jpeg_bytes);
+            map.insert(hwnd_id.clone(), format!("data:image/jpeg;base64,{b64}"));
+        }
+    }
+    map
 }
 
 pub fn restore_window_behind(hwnd_id: &str) -> Result<String, String> {
