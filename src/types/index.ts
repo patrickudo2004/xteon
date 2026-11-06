@@ -349,3 +349,11 @@ export interface ConnectedReceiver {
   connectedAt: string;
   isFlashing?: boolean;
 }
+
+export interface VirtualDriverStatus {
+  is_installed: boolean;
+  is_active: boolean;
+  display_count: number;
+  message: string;
+}
+

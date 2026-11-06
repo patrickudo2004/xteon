@@ -322,6 +322,11 @@ pub fn allocate_slot_for_new_client() -> String {
 }
 
 pub fn list_stage_slots(include_previews: bool) -> Vec<StageLinkSlot> {
+    let is_empty = STAGE_SLOTS.lock().map(|m| m.is_empty()).unwrap_or(false);
+    if is_empty {
+        ensure_default_slot_exists();
+    }
+
     let runtimes: Vec<Arc<SlotRuntime>> = STAGE_SLOTS
         .lock()
         .map(|m| m.values().cloned().collect())

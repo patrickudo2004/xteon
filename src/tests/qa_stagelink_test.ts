@@ -520,9 +520,10 @@ async function runStageLinkTests() {
   assert(libRsSource.includes('spawn_virtual_extended_display'), 'lib.rs exposes spawn_virtual_extended_display command');
   assert(libRsSource.includes('display-virtual-stage'), 'lib.rs dynamically injects display-virtual-stage into get_connected_displays');
 
-  // 16. Clean Zero-Driver Architecture Invariants
-  assert(!fs.existsSync('src-tauri/src/display/virtual_driver.rs'), 'virtual_driver.rs is purged from backend');
-  assert(!fs.existsSync('src-tauri/resources/virtual_display_driver'), 'resources/virtual_display_driver is purged from repo');
+  // 16. Clean Sandboxed Virtual Driver & Zero Root C:\ Pollution Invariants
+  const vddSource = fs.readFileSync('src-tauri/src/display/virtual_driver.rs', 'utf8');
+  assert(vddSource.includes('tokio::task::spawn_blocking'), 'virtual_driver.rs uses spawn_blocking for zero UI freezes');
+  assert(vddSource.includes('CREATE_NO_WINDOW'), 'virtual_driver.rs suppresses console windows');
   assert(!fs.existsSync('C:\\VirtualDisplayDriver'), 'C:\\VirtualDisplayDriver directory is purged from system');
 
   // 17. StageDisplaysView Zero-Driver Polish
