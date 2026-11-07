@@ -605,14 +605,17 @@ export const Navbar: React.FC = () => {
             )}
           </div>
 
-          {/* Mobile Companion Trigger */}
+          {/* Mobile Companion Trigger (Screen Tester & Remote Director) */}
           <button
-            onClick={() => setMobileModalOpen(true)}
-            className="px-2 py-1 rounded-md text-[11px] font-mono font-medium text-[var(--text-primary)] hover:bg-[var(--bg-card)] flex items-center gap-1 transition cursor-pointer relative"
-            title="Open Mobile Companion & StageLink QR Pairing"
+            onClick={() => {
+              useRigStore.setState({ qrStageSlotId: 'DIRECTOR' });
+              setMobileModalOpen(true);
+            }}
+            className="px-2.5 py-1 rounded-md text-[11px] font-mono font-medium text-[var(--text-primary)] hover:bg-[var(--bg-card)] flex items-center gap-1.5 transition cursor-pointer relative"
+            title="Open Walk-the-Room Mobile Companion (Test Screens, Flash Displays & Remote Director)"
           >
             <Smartphone className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Mobile</span>
+            <span className="hidden sm:inline">Mobile Companion</span>
             {companionStatus && (companionStatus.client_count ?? 0) > 0 && (
               <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-bold">
                 {companionStatus.client_count}

@@ -394,9 +394,9 @@ export const StageDisplaysView: React.FC = () => {
           )}
 
           <button
-            onClick={() => openQrForStageSlot(null)}
+            onClick={() => openQrForStageSlot('AUTO_STAGE')}
             className="px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold font-mono text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer ml-auto md:ml-0 min-h-[34px]"
-            title="Scan Universal QR code with any tablet or phone to connect"
+            title="Scan Universal QR code with any tablet or phone to connect as a stage receiver"
           >
             <QrCode className="w-3.5 h-3.5" />
             <span>Pair Stage Device (QR)</span>
