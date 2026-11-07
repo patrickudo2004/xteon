@@ -37,14 +37,14 @@ export const MobileCompanionModal: React.FC = () => {
   const [pinDraft, setPinDraft] = useState<string>('');
   const [editingPin, setEditingPin] = useState<boolean>(false);
 
-  // Selected target: 'AUTO_STAGE', 'DIRECTOR', or stage slot id
-  const [targetId, setTargetId] = useState<string>('AUTO_STAGE');
+  // Selected target: 'DIRECTOR', 'AUTO_STAGE', or stage slot id
+  const [targetId, setTargetId] = useState<string>('DIRECTOR');
 
   useEffect(() => {
     if (mobileModalOpen) {
       refreshCompanionStatus();
       refreshStageLinkSlots(false);
-      setTargetId(qrStageSlotId || 'AUTO_STAGE');
+      setTargetId(qrStageSlotId || 'DIRECTOR');
     }
   }, [mobileModalOpen, qrStageSlotId]);
 
@@ -75,9 +75,11 @@ export const MobileCompanionModal: React.FC = () => {
     [stageLinkSlots, targetId]
   );
 
-  // Full QR URL embeds session token for zero-tap pairing on stage tablets
+  // Full QR URL embeds session token for zero-tap pairing
   const pairingUrl = useMemo(() => {
-    const basePath = targetId === 'AUTO_STAGE'
+    const basePath = targetId === 'DIRECTOR'
+      ? ''
+      : targetId === 'AUTO_STAGE'
       ? '/stage'
       : selectedSlot
       ? `/stage/${encodeURIComponent(selectedSlot.id)}`
@@ -88,7 +90,9 @@ export const MobileCompanionModal: React.FC = () => {
 
   // Clean manual URL for typing into browser (prompts PIN if PIN lock is enabled)
   const manualShortUrl = useMemo(() => {
-    const basePath = targetId === 'AUTO_STAGE'
+    const basePath = targetId === 'DIRECTOR'
+      ? ''
+      : targetId === 'AUTO_STAGE'
       ? '/stage'
       : selectedSlot
       ? `/stage/${encodeURIComponent(selectedSlot.id)}`
@@ -152,23 +156,27 @@ export const MobileCompanionModal: React.FC = () => {
         <div className="px-4 sm:px-5 py-3.5 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-[var(--badge-cyan-bg)] border border-[var(--badge-cyan-border)] flex items-center justify-center text-[var(--accent-cyan)] shrink-0">
-              {selectedSlot ? <Radio className="w-5 h-5" /> : <Smartphone className="w-5 h-5" />}
+              {targetId === 'DIRECTOR' ? <Smartphone className="w-5 h-5 text-amber-400" /> : selectedSlot ? <Radio className="w-5 h-5" /> : <Smartphone className="w-5 h-5" />}
             </div>
             <div className="min-w-0">
               <h2 className="font-mono text-sm font-bold text-[var(--text-primary)] flex flex-wrap items-center gap-2">
                 <span className="truncate">
-                  {targetId === 'AUTO_STAGE'
+                  {targetId === 'DIRECTOR'
+                    ? 'WALK-THE-ROOM MOBILE COMPANION (SCREEN TESTER)'
+                    : targetId === 'AUTO_STAGE'
                     ? 'PAIR STAGE SCREEN (AUTO-ALLOCATE)'
                     : selectedSlot
                     ? `PAIR STAGE TABLET: ${selectedSlot.name}`
-                    : 'WIRELESS COMPANION & STAGELINK QR'}
+                    : 'WALK-THE-ROOM MOBILE COMPANION'}
                 </span>
                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--badge-emerald-bg)] text-[var(--badge-emerald-text)] border border-[var(--badge-emerald-border)] font-bold">
                   LIVE :{activePort}
                 </span>
               </h2>
               <div className="text-[11px] font-mono text-[var(--text-muted)] truncate">
-                100% Offline Local LAN • Zero Mobile App Install Required
+                {targetId === 'DIRECTOR'
+                  ? 'Walk venue with your phone to flash displays, test screens & control FOH'
+                  : '100% Offline Local LAN • Zero Mobile App Install Required'}
               </div>
             </div>
           </div>
@@ -212,8 +220,8 @@ export const MobileCompanionModal: React.FC = () => {
               }}
               className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-[var(--text-primary)] text-xs font-mono font-bold focus:outline-none focus:border-[var(--accent-cyan)]"
             >
-              <option value="AUTO_STAGE">⚡ Universal Stage Screen (Auto-assigns each connected device its own screen)</option>
-              <option value="DIRECTOR">🎛️ Walk-the-Room FOH Remote Controller (All Displays & Stages)</option>
+              <option value="DIRECTOR">🎛️ Walk-the-Room Mobile Companion (Test Screens, Flash Displays & FOH Director)</option>
+              <option value="AUTO_STAGE">⚡ Stage Monitor Screen (Cast video feed to this phone/tablet)</option>
               {stageLinkSlots.map((s) => (
                 <option key={s.id} value={s.id}>
                   📺 Stage Monitor: {s.name} ({s.source_mode} • 📍 {s.stage_zone})
