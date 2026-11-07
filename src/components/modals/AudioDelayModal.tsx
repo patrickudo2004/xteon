@@ -57,37 +57,37 @@ export const AudioDelayModal: React.FC<AudioDelayModalProps> = ({ isOpen, onClos
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 select-none font-sans"
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 select-none font-sans"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden flex flex-col text-[var(--text-primary)]"
+        className="w-full max-w-xl max-h-[90dvh] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden flex flex-col text-[var(--text-primary)]"
       >
         {/* Header */}
-        <div className="p-4 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 font-bold">
+        <div className="p-4 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 font-bold shrink-0">
               <Clock className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-sm font-mono font-bold uppercase tracking-wide">
+            <div className="min-w-0">
+              <h2 className="text-sm font-mono font-bold uppercase tracking-wide truncate">
                 Acoustic Audio-to-Video Delay Calculator
               </h2>
-              <p className="text-[11px] text-[var(--text-muted)] font-mono">
+              <p className="text-[11px] text-[var(--text-muted)] font-mono truncate">
                 Speed-of-sound latency compensation for arena IMAG & delay towers
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-[var(--bg-subcard)] text-[var(--text-muted)] hover:text-white transition cursor-pointer"
+            className="p-1.5 rounded-lg hover:bg-[var(--bg-subcard)] text-[var(--text-muted)] hover:text-white transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 space-y-5 font-mono text-xs">
+        <div className="p-4 sm:p-5 space-y-5 font-mono text-xs min-h-0 flex-1 overflow-y-auto">
           {/* Main Calculation Hero Banner */}
           <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-950/40 via-cyan-950/30 to-slate-900 border border-indigo-500/30 grid grid-cols-2 gap-4 text-center">
             <div className="border-r border-indigo-500/20 pr-4">
@@ -263,13 +263,13 @@ export const AudioDelayModal: React.FC<AudioDelayModalProps> = ({ isOpen, onClos
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-[var(--bg-header)] border-t border-[var(--border-color)] flex items-center justify-between shrink-0 font-mono text-xs">
-          <span className="text-[11px] text-[var(--text-muted)]">
+        <div className="p-4 bg-[var(--bg-header)] border-t border-[var(--border-color)] flex items-center justify-between gap-3 shrink-0 font-mono text-xs">
+          <span className="text-[11px] text-[var(--text-muted)] truncate min-w-0">
             Acoustic equation: v = 331.3 + (0.606 × T°C) m/s
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition shadow-lg cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition shadow-lg cursor-pointer shrink-0"
           >
             Done
           </button>

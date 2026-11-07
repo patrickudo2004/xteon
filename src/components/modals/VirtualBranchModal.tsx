@@ -122,30 +122,30 @@ export const VirtualBranchModal: React.FC = () => {
         className="w-full max-w-2xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-[var(--text-primary)]"
       >
         {/* Header */}
-        <div className="p-4 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400 font-bold">
+        <div className="p-4 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400 font-bold shrink-0">
               <Split className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-sm font-mono font-bold tracking-wide uppercase text-[var(--text-primary)]">
+            <div className="min-w-0">
+              <h2 className="text-sm font-mono font-bold tracking-wide uppercase text-[var(--text-primary)] truncate">
                 Branch Output / Add Virtual Splitter
               </h2>
-              <p className="text-[11px] text-[var(--text-muted)] font-mono">
+              <p className="text-[11px] text-[var(--text-muted)] font-mono truncate">
                 Branch feed for: <span className="text-cyan-400 font-bold">{targetDisplay.customAlias || targetDisplay.name}</span>
               </p>
             </div>
           </div>
           <button
             onClick={() => setBranchModalOpen(false)}
-            className="p-1.5 rounded-lg hover:bg-[var(--bg-subcard)] text-[var(--text-muted)] hover:text-white transition cursor-pointer"
+            className="p-1.5 rounded-lg hover:bg-[var(--bg-subcard)] text-[var(--text-muted)] hover:text-white transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto space-y-5 font-mono text-xs flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-5 font-mono text-xs min-h-0 flex-1">
           {/* Explanation Banner */}
           <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/30 text-[11px] text-amber-300/90 leading-relaxed flex items-start gap-2.5">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
@@ -231,7 +231,7 @@ export const VirtualBranchModal: React.FC = () => {
                     {idx + 1}
                   </div>
 
-                  <div className="flex-1 grid grid-cols-3 gap-2">
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div>
                       <input
                         type="text"
@@ -270,30 +270,30 @@ export const VirtualBranchModal: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-[var(--bg-header)] border-t border-[var(--border-color)] flex items-center justify-between shrink-0 font-mono text-xs">
+        <div className="p-4 bg-[var(--bg-header)] border-t border-[var(--border-color)] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 font-mono text-xs">
           {existingBranch ? (
             <button
               onClick={handleRemove}
-              className="text-rose-400 hover:text-rose-300 flex items-center gap-1 transition cursor-pointer"
+              className="text-rose-400 hover:text-rose-300 flex items-center gap-1 transition cursor-pointer shrink-0"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Remove Branching</span>
             </button>
           ) : (
-            <div />
+            <div className="hidden sm:block" />
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
             <button
               onClick={() => setBranchModalOpen(false)}
-              className="px-4 py-2 rounded-xl bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] transition cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[var(--bg-subcard)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] transition cursor-pointer shrink-0"
             >
               Cancel
             </button>
 
             <button
               onClick={handleSave}
-              className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition flex items-center gap-1.5 shadow-lg cursor-pointer"
+              className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition flex items-center justify-center gap-1.5 shadow-lg cursor-pointer shrink-0"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Save & Branch Topology</span>

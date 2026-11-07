@@ -34,33 +34,33 @@ export const SmartTvGuideModal: React.FC = () => {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh] text-[var(--text-primary)]"
+        className="w-full max-w-2xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] text-[var(--text-primary)]"
       >
         {/* Header */}
-        <div className="p-4 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-400 font-bold">
+        <div className="p-4 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-400 font-bold shrink-0">
               <Tv className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-sm font-mono font-bold tracking-wide uppercase text-[var(--text-primary)]">
+            <div className="min-w-0">
+              <h2 className="text-sm font-mono font-bold tracking-wide uppercase text-[var(--text-primary)] truncate">
                 Smart TV & Splitter Field Guide
               </h2>
-              <p className="text-[11px] text-[var(--text-muted)] font-mono">
+              <p className="text-[11px] text-[var(--text-muted)] font-mono truncate">
                 Prevent auto-dimming, multi-view shrinking, overscan cropping & splitter pitfalls
               </p>
             </div>
           </div>
           <button
             onClick={() => setSmartTvGuideModalOpen(false)}
-            className="p-1.5 rounded-lg hover:bg-[var(--bg-subcard)] text-[var(--text-muted)] hover:text-white transition cursor-pointer"
+            className="p-1.5 rounded-lg hover:bg-[var(--bg-subcard)] text-[var(--text-muted)] hover:text-white transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Brand Selector Rail */}
-        <div className="flex items-center border-b border-[var(--border-color)] bg-[var(--bg-subcard)] px-4 shrink-0 font-mono text-xs">
+        <div className="flex items-center border-b border-[var(--border-color)] bg-[var(--bg-subcard)] px-4 shrink-0 font-mono text-xs overflow-x-auto">
           <button
             onClick={() => setActiveBrand('SAMSUNG')}
             className={`py-3 px-3 border-b-2 font-bold flex items-center gap-1.5 transition cursor-pointer ${
@@ -268,8 +268,8 @@ export const SmartTvGuideModal: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-[var(--bg-header)] border-t border-[var(--border-color)] flex items-center justify-between shrink-0">
-          <div className="text-[11px] text-[var(--text-muted)] font-mono">
+        <div className="p-4 bg-[var(--bg-header)] border-t border-[var(--border-color)] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+          <div className="text-[11px] text-[var(--text-muted)] font-mono truncate min-w-0">
             Pro Tip: Use the Overscan & Framing test pattern to visually verify 100% raster boundaries.
           </div>
           <button
@@ -282,7 +282,7 @@ export const SmartTvGuideModal: React.FC = () => {
                 setTestPatternModalOpen(true);
               }
             }}
-            className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs font-mono transition flex items-center gap-1.5 shadow-md cursor-pointer"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs font-mono transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer shrink-0"
           >
             <Sliders className="w-3.5 h-3.5" />
             <span>Launch Test Pattern</span>

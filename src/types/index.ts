@@ -297,7 +297,7 @@ export interface StageWhisperPayload {
   expires_at_ms?: number | null;
 }
 
-export type StageLinkSourceMode = 'WINDOW' | 'DISPLAY' | 'SPLIT';
+export type StageLinkSourceMode = 'WINDOW' | 'DISPLAY';
 export type StageSplitLayout = 'SIDE_70_30' | 'SIDE_50_50' | 'TOP_BOTTOM' | 'PIP_CORNER';
 
 export interface StageLinkSlot {
@@ -309,7 +309,7 @@ export interface StageLinkSlot {
   primary_source_label: string;
   secondary_source_id?: string | null;
   secondary_source_label?: string | null;
-  split_layout: StageSplitLayout;
+  split_layout?: StageSplitLayout | null;
   target_fps: number;
   max_width: number;
   jpeg_quality: number;
@@ -334,7 +334,7 @@ export interface UpsertStageSlotInput {
   primary_source_label: string;
   secondary_source_id?: string | null;
   secondary_source_label?: string | null;
-  split_layout?: StageSplitLayout;
+  split_layout?: StageSplitLayout | null;
   target_fps?: number;
   max_width?: number;
 }

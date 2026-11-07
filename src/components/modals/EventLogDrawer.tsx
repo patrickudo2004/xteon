@@ -118,23 +118,23 @@ export const EventLogDrawer: React.FC = () => {
         className="w-full max-w-lg h-full bg-[var(--bg-card)] border-l border-[var(--border-color)] shadow-2xl flex flex-col text-[var(--text-primary)]"
       >
         {/* Drawer Header */}
-        <div className="p-4 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-400 font-bold">
+        <div className="p-4 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-400 font-bold shrink-0">
               <FileText className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold tracking-wide uppercase text-[var(--text-primary)]">
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold tracking-wide uppercase text-[var(--text-primary)] truncate">
                 Flight Recorder / Event Log
               </h2>
-              <p className="text-[10px] text-[var(--text-muted)]">
+              <p className="text-[10px] text-[var(--text-muted)] truncate">
                 Blackbox audit trail of show-day hardware events & triggers
               </p>
             </div>
           </div>
           <button
             onClick={() => setEventLogDrawerOpen(false)}
-            className="p-1.5 rounded-lg hover:bg-[var(--bg-subcard)] text-[var(--text-muted)] hover:text-white transition cursor-pointer"
+            className="p-1.5 rounded-lg hover:bg-[var(--bg-subcard)] text-[var(--text-muted)] hover:text-white transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
