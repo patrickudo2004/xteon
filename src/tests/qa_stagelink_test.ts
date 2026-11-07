@@ -75,11 +75,11 @@ async function runStageLinkTests() {
   assertEqual(useRigStore.getState().editingStageSlotId, null, 'closeStageLinkModal clears editingStageSlotId');
 
   store.openQrForStageSlot('stage-pulpit-1');
-  assertEqual(useRigStore.getState().mobileModalOpen, true, 'openQrForStageSlot opens mobile companion modal');
-  assertEqual(useRigStore.getState().qrStageSlotId, 'stage-pulpit-1', 'openQrForStageSlot stores target slot ID');
+  assertEqual(useRigStore.getState().stagePairModalOpen, true, 'openQrForStageSlot opens stage receiver pair modal');
+  assertEqual(useRigStore.getState().stagePairSlotId, 'stage-pulpit-1', 'openQrForStageSlot stores target slot ID');
 
-  store.setMobileModalOpen(false);
-  assertEqual(useRigStore.getState().qrStageSlotId, null, 'Closing mobile modal resets qrStageSlotId to null');
+  store.closeStagePairModal();
+  assertEqual(useRigStore.getState().stagePairSlotId, null, 'Closing stage pair modal resets stagePairSlotId to null');
 
   // Attach deterministic Tauri v2 IPC mock harness for StageLink actions
   const invokedCommands: Array<{ cmd: string; args: any }> = [];

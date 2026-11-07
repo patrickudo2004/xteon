@@ -840,10 +840,14 @@ interface RigState {
   stageLinkModalOpen: boolean;
   editingStageSlotId: string | null;
   qrStageSlotId: string | null;
+  stagePairModalOpen: boolean;
+  stagePairSlotId: string | null;
 
   openStageLinkModal: (slotId?: string | null) => void;
   closeStageLinkModal: () => void;
   openQrForStageSlot: (slotId: string | null) => void;
+  setStagePairModalOpen: (open: boolean) => void;
+  closeStagePairModal: () => void;
 
   refreshOsWindows: () => Promise<void>;
   routeOsWindow: (
@@ -2470,7 +2474,7 @@ export const useRigStore = create<RigState>((set, get) => ({
   },
 
   setReconciliationModalOpen: (open) => set({ reconciliationModalOpen: open }),
-  setMobileModalOpen: (open) => set({ mobileModalOpen: open, ...(open ? {} : { qrStageSlotId: null }) }),
+  setMobileModalOpen: (open) => set({ mobileModalOpen: open }),
 
   refreshLiveDisplays: async () => {
     try {
@@ -2634,6 +2638,8 @@ export const useRigStore = create<RigState>((set, get) => ({
   stageLinkModalOpen: false,
   editingStageSlotId: null,
   qrStageSlotId: null,
+  stagePairModalOpen: false,
+  stagePairSlotId: null,
   virtualDriverStatus: null,
   isVirtualDriverBusy: false,
 
@@ -2642,9 +2648,12 @@ export const useRigStore = create<RigState>((set, get) => ({
     get().refreshOsWindows();
   },
   closeStageLinkModal: () => set({ stageLinkModalOpen: false, editingStageSlotId: null }),
+  setStagePairModalOpen: (open) => set({ stagePairModalOpen: open, ...(open ? {} : { stagePairSlotId: null }) }),
+  closeStagePairModal: () => set({ stagePairModalOpen: false, stagePairSlotId: null }),
   openQrForStageSlot: (slotId) => {
-    set({ qrStageSlotId: slotId, mobileModalOpen: true });
+    set({ stagePairModalOpen: true, stagePairSlotId: slotId });
     get().refreshCompanionStatus();
+    get().refreshStageLinkSlots(false);
   },
 
   refreshOsWindows: async () => {
@@ -3186,7 +3195,7 @@ if (typeof window !== 'undefined') {
   setInterval(() => {
     const st = useRigStore.getState();
     const isLiveView = st.appMode === 'LIVE' || st.appMode === 'LIVE_MAP' || st.appMode === 'STAGE_DISPLAYS';
-    if (isLiveView || st.stageLinkModalOpen || st.mobileModalOpen) {
+    if (isLiveView || st.stageLinkModalOpen || st.mobileModalOpen || st.stagePairModalOpen) {
       st.refreshOsWindows();
       st.refreshStageLinkSlots(isLiveView);
       st.refreshCompanionStatus();

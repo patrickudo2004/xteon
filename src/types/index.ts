@@ -262,6 +262,7 @@ export interface NetworkAdapterInfo {
 export interface CompanionServerStatus {
   is_running: boolean;
   port: number;
+  companion_port?: number;
   host: string;
   interfaces: NetworkAdapterInfo[];
   active_pin: string;

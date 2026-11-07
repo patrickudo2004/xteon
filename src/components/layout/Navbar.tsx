@@ -605,22 +605,16 @@ export const Navbar: React.FC = () => {
             )}
           </div>
 
-          {/* Mobile Companion Trigger (Screen Tester & Remote Director) */}
+          {/* Mobile Companion Trigger (Walk-the-Room Screen Tester) */}
           <button
             onClick={() => {
-              useRigStore.setState({ qrStageSlotId: 'DIRECTOR' });
               setMobileModalOpen(true);
             }}
             className="px-2.5 py-1 rounded-md text-[11px] font-mono font-medium text-[var(--text-primary)] hover:bg-[var(--bg-card)] flex items-center gap-1.5 transition cursor-pointer relative"
-            title="Open Walk-the-Room Mobile Companion (Test Screens, Flash Displays & Remote Director)"
+            title="Open Walk-the-Room Mobile Companion (Identify & Test Screens, Flash Displays)"
           >
             <Smartphone className="w-3.5 h-3.5 text-amber-400" />
             <span className="hidden sm:inline">Mobile Companion</span>
-            {companionStatus && (companionStatus.client_count ?? 0) > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-bold">
-                {companionStatus.client_count}
-              </span>
-            )}
           </button>
 
           {/* Settings Modal Trigger */}

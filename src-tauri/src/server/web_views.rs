@@ -877,6 +877,568 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
     template.replace("__SLOT_ID__", &safe_slot)
 }
 
+pub fn render_screen_tester_html() -> &'static str {
+    r##"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>⚡ Xteon Screen Tester</title>
+  <style>
+    :root {
+      --bg: #121214;
+      --header-bg: rgba(22, 22, 26, 0.96);
+      --card: #18181c;
+      --card-border: #2a2a32;
+      --subcard: #141417;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --gold: #d4b28c;
+      --gold-bg: rgba(212, 178, 140, 0.12);
+      --gold-border: rgba(212, 178, 140, 0.35);
+      --amber: #f59e0b;
+      --amber-bg: rgba(245, 158, 11, 0.15);
+      --amber-border: rgba(245, 158, 11, 0.38);
+      --emerald: #10b981;
+      --emerald-bg: rgba(16, 185, 129, 0.15);
+      --emerald-border: rgba(16, 185, 129, 0.35);
+      --cyan: #38bdf8;
+      --cyan-bg: rgba(56, 189, 248, 0.14);
+      --cyan-border: rgba(56, 189, 248, 0.35);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 0 0 calc(40px + env(safe-area-inset-bottom)) 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--card-border);
+      padding: max(12px, env(safe-area-inset-top)) 16px 12px 16px;
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #f59e0b, #d4b28c);
+      color: #0b0c0e;
+      font-size: 18px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+    }
+    .brand-title {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--text-main);
+    }
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--gold);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 600;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: var(--emerald-bg);
+      color: var(--emerald);
+      border: 1px solid var(--emerald-border);
+    }
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 8px var(--emerald);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .btn-refresh {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: var(--subcard);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-refresh:active {
+      transform: rotate(180deg) scale(0.92);
+      color: var(--gold);
+    }
+    .main-content {
+      padding: 16px;
+      max-width: 680px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .status-banner {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+    }
+    .status-text {
+      color: var(--text-muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .status-count {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+    .awake-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+      background: var(--gold-bg);
+      border: 1px solid var(--gold-border);
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    .displays-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .display-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      transition: border-color 0.2s ease;
+    }
+    .display-card.flashing {
+      border-color: var(--amber);
+      box-shadow: 0 0 24px rgba(245, 158, 11, 0.4);
+    }
+    .display-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .display-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .display-number-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .screen-badge {
+      font-size: 11px;
+      font-weight: 800;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: var(--amber-bg);
+      color: var(--amber);
+      border: 1px solid var(--amber-border);
+    }
+    .primary-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: var(--cyan-bg);
+      color: var(--cyan);
+      border: 1px solid var(--cyan-border);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .display-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      word-break: break-word;
+    }
+    .display-specs {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      padding: 8px 12px;
+      background: var(--subcard);
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+    .spec-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-flash {
+      width: 100%;
+      min-height: 52px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.22), rgba(212, 178, 140, 0.14));
+      border: 1.5px solid var(--amber);
+      color: #fbbf24;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.2);
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+    }
+    .btn-flash:active {
+      transform: scale(0.97);
+      background: rgba(245, 158, 11, 0.4);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+    }
+    .btn-flash.flashing-btn {
+      background: #f59e0b;
+      color: #0b0c0e;
+      border-color: #f59e0b;
+      box-shadow: 0 0 28px rgba(245, 158, 11, 0.8);
+    }
+    .help-card {
+      background: var(--subcard);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      display: flex;
+      gap: 10px;
+    }
+    .help-icon {
+      color: var(--gold);
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #18181c;
+      color: #f3f4f6;
+      border: 1px solid var(--amber);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 16px rgba(245, 158, 11, 0.35);
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .empty-state {
+      padding: 32px 16px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      background: var(--card);
+      border: 1px dashed var(--card-border);
+      border-radius: 16px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Hidden looping video to enforce mobile HTTP wake lock -->
+  <video id="nosleep-video" playsinline webkit-playsinline muted loop style="position:fixed;width:1px;height:1px;top:-100px;left:-100px;opacity:0.01;pointer-events:none;">
+    <source src="data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAsVmdatAAACrgYF//+13wEB42dpdAAAACltZGF0AGBAbm9zbGVlcAAAAAAAAAAAAAAAEAAAAAAABAAAAAAACv//AAAAFnVoZHIBAAEAAAABAAABAAIAAAAAAAAVc3RzYwAAAAAAAAABAAAAAQAAAAEAAAAUc3RzenAAAAAAAAAEAAAABAAAABRzdGNvAAAAAAAAAAEAAAA4AAAAY3N0dHMAAAAAAAAAAQAAAAEAAAAU" type="video/mp4">
+  </video>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <div class="brand-title">XTEON COMPANION</div>
+        <div class="brand-subtitle">SCREEN TESTER</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div class="live-badge">
+        <span class="live-dot"></span>
+        <span>CONNECTED</span>
+      </div>
+      <button id="btn-refresh" class="btn-refresh" title="Refresh Displays" onclick="loadDisplays(true)">↻</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="status-banner">
+      <div class="status-text">
+        <span>Detected: </span>
+        <span id="displays-count" class="status-count">Scanning...</span>
+      </div>
+      <div class="awake-indicator">
+        <span>📱 Keep-Awake Active</span>
+      </div>
+    </div>
+
+    <div id="displays-list" class="displays-grid">
+      <div class="empty-state">Scanning for connected displays...</div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-icon">💡</div>
+      <div>
+        <strong>Walk-the-Room Mode:</strong> Tap any <strong>Flash Screen</strong> button to verify cable routing, projector alignment, and display numbering across your venue.
+      </div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast">
+    <span style="color:#f59e0b;">⚡</span>
+    <span id="toast-text">Flash command sent</span>
+  </div>
+
+  <script>
+    let displaysCache = [];
+    let wakeLock = null;
+    let audioKeepAwake = null;
+
+    // Triple-Redundant Keep-Awake Engine
+    async function initStayAwake() {
+      // 1. W3C Screen Wake Lock API
+      try {
+        if ('wakeLock' in navigator && (!wakeLock || wakeLock.released)) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          wakeLock.addEventListener('release', () => { wakeLock = null; });
+        }
+      } catch (e) {}
+
+      // 2. Looping inline MP4 video
+      try {
+        const vid = document.getElementById('nosleep-video');
+        if (vid) {
+          vid.setAttribute('playsinline', '');
+          vid.setAttribute('webkit-playsinline', '');
+          vid.muted = true;
+          vid.loop = true;
+          const p = vid.play();
+          if (p && p.catch) p.catch(() => {});
+        }
+      } catch (e) {}
+
+      // 3. WebAudio silent oscillator
+      try {
+        if (!audioKeepAwake) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (Ctx) {
+            audioKeepAwake = new Ctx();
+            const osc = audioKeepAwake.createOscillator();
+            const gain = audioKeepAwake.createGain();
+            gain.gain.value = 0.00001;
+            osc.connect(gain);
+            gain.connect(audioKeepAwake.destination);
+            osc.start();
+          }
+        } else if (audioKeepAwake.state === 'suspended') {
+          audioKeepAwake.resume().catch(() => {});
+        }
+      } catch (e) {}
+    }
+
+    ['click', 'touchstart', 'visibilitychange'].forEach(evt => {
+      document.addEventListener(evt, () => {
+        if (evt === 'visibilitychange' && document.visibilityState !== 'visible') return;
+        initStayAwake();
+      }, { passive: true });
+    });
+    initStayAwake();
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      const txt = document.getElementById('toast-text');
+      txt.innerText = msg;
+      t.classList.add('show');
+      setTimeout(() => {
+        t.classList.remove('show');
+      }, 2200);
+    }
+
+    async function flashDisplay(id, osIndex, name) {
+      if (navigator.vibrate) {
+        try { navigator.vibrate([60, 40, 60]); } catch (e) {}
+      }
+      const card = document.getElementById('card-' + id);
+      const btn = document.getElementById('btn-flash-' + id);
+      if (card) card.classList.add('flashing');
+      if (btn) {
+        btn.classList.add('flashing-btn');
+        btn.innerText = '⚡ FLASHING...';
+      }
+      showToast('⚡ Flashing Screen ' + osIndex + ' (' + name + ')');
+
+      try {
+        await fetch('/api/flash/' + encodeURIComponent(id), { method: 'POST' });
+      } catch (e) {
+        console.error('Flash failed', e);
+      }
+
+      setTimeout(() => {
+        if (card) card.classList.remove('flashing');
+        if (btn) {
+          btn.classList.remove('flashing-btn');
+          btn.innerText = '⚡ Flash Screen (' + osIndex + ')';
+        }
+      }, 1400);
+    }
+
+    async function loadDisplays(manual = false) {
+      const refreshBtn = document.getElementById('btn-refresh');
+      if (manual && refreshBtn) refreshBtn.style.transform = 'rotate(360deg)';
+
+      try {
+        const res = await fetch('/api/displays');
+        if (!res.ok) throw new Error('Status ' + res.status);
+        const displays = await res.json();
+        displaysCache = displays;
+
+        const countEl = document.getElementById('displays-count');
+        if (countEl) {
+          countEl.innerText = displays.length + ' Physical Display' + (displays.length === 1 ? '' : 's');
+        }
+
+        const container = document.getElementById('displays-list');
+        if (!container) return;
+
+        if (!displays || displays.length === 0) {
+          container.innerHTML = '<div class="empty-state">No active display outputs detected.<br><span style="font-size:11px;color:#9ca3af;margin-top:6px;display:inline-block;">Connect an HDMI, DisplayPort, or virtual display on the PC to test.</span></div>';
+          return;
+        }
+
+        container.innerHTML = displays.map(d => {
+          const isPrimary = d.is_primary || d.os_index === 1;
+          const alias = d.custom_alias || d.name || ('Display ' + d.os_index);
+          const port = d.port_type || (isPrimary ? 'Internal / Primary' : 'External Video Out');
+          const resText = (d.width && d.height) ? (d.width + ' × ' + d.height) : 'Unknown Resolution';
+          const hzText = d.refresh_rate_hz ? (' @ ' + d.refresh_rate_hz + 'Hz') : '';
+          const boundsText = d.bounds ? ('pos: ' + d.bounds.x + ', ' + d.bounds.y) : '';
+
+          return `
+            <div id="card-${d.id}" class="display-card">
+              <div class="display-header">
+                <div class="display-title-group">
+                  <div class="display-number-row">
+                    <span class="screen-badge">SCREEN ${d.os_index}</span>
+                    ${isPrimary ? '<span class="primary-badge">PRIMARY</span>' : ''}
+                  </div>
+                  <div class="display-name">${alias}</div>
+                </div>
+              </div>
+
+              <div class="display-specs">
+                <div class="spec-item">📐 <strong>${resText}${hzText}</strong></div>
+                <div class="spec-item">🔌 <span>${port}</span></div>
+                ${boundsText ? '<div class="spec-item">📍 <span>' + boundsText + '</span></div>' : ''}
+              </div>
+
+              <button
+                id="btn-flash-${d.id}"
+                class="btn-flash"
+                onclick="flashDisplay('${d.id}', ${d.os_index}, '${alias.replace(/'/g, "\\'")}')"
+              >
+                ⚡ Flash Screen (${d.os_index})
+              </button>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Error fetching displays', err);
+      } finally {
+        if (manual && refreshBtn) {
+          setTimeout(() => { refreshBtn.style.transform = 'none'; }, 400);
+        }
+      }
+    }
+
+    loadDisplays();
+    setInterval(() => loadDisplays(false), 3000);
+  </script>
+</body>
+</html>"##
+}
+
 pub fn render_companion_director_html() -> &'static str {
     r##"<!DOCTYPE html>
 <html lang="en" data-theme="dark">
