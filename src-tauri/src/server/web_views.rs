@@ -388,12 +388,9 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
 </head>
 <body>
   <div id="viewport-root" onclick="handleCanvasTap(event)">
-    <div id="stage-rotator" class="layout-single pip-br">
+    <div id="stage-rotator" class="layout-single">
       <div id="pane-primary" class="stream-pane">
-        <img id="img-primary" class="stream-img" alt="Primary Stage Stream" />
-      </div>
-      <div id="pane-secondary" class="stream-pane" onclick="cyclePipCorner(event)" title="Tap to move PiP corner">
-        <img id="img-secondary" class="stream-img" alt="Secondary Stage Stream" />
+        <img id="img-primary" class="stream-img" alt="Stage Stream" />
       </div>
     </div>
 
@@ -404,6 +401,20 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
     </div>
   </div>
 
+  <!-- Mandatory User Gesture Stay-Awake Splash Screen -->
+  <div id="stayawake-splash" onclick="dismissStayAwakeSplash(event)" style="position:fixed;inset:0;z-index:9999;background:rgba(7,9,14,0.96);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:pointer;">
+    <div style="width:min(92vw,400px);background:#121726;border:2px solid #06B6D4;border-radius:24px;padding:28px 24px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.8),0 0 32px rgba(6,182,212,0.25);display:flex;flex-direction:column;align-items:center;gap:14px;">
+      <div style="width:58px;height:58px;border-radius:18px;background:rgba(6,182,212,0.15);border:1.5px solid #06B6D4;display:flex;align-items:center;justify-content:center;font-size:28px;">📱</div>
+      <div style="font-size:18px;font-weight:900;color:#F8FAFC;letter-spacing:0.5px;">LOCK STAGE DISPLAY</div>
+      <div style="font-size:12px;color:#94A3B8;line-height:1.5;">Tap anywhere to enter Fullscreen and lock the screen awake. This prevents iPads, tablets, and phones from going dim during the service or event.</div>
+      <button style="width:100%;min-height:50px;border-radius:14px;background:linear-gradient(135deg,#06B6D4,#2563EB);border:none;color:#000;font-size:14px;font-weight:900;letter-spacing:0.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 24px rgba(6,182,212,0.4);">
+        ⚡ TAP TO ACTIVATE STAY-AWAKE
+      </button>
+      <div style="font-size:10px;font-family:ui-monospace,monospace;color:#64748B;">WORKS ON ALL MOBILE & DESKTOP BROWSERS OVER LOCAL WI-FI</div>
+    </div>
+  </div>
+
+  <canvas id="heartbeat-canvas" width="2" height="2" style="position:fixed;top:-10px;left:-10px;opacity:0.01;pointer-events:none;"></canvas>
   <video id="nosleep-video" playsinline webkit-playsinline loop muted style="position:fixed;width:1px;height:1px;opacity:0.001;pointer-events:none;z-index:-10;"></video>
   <div id="dimmer-veil"></div>
   <div id="blackout-curtain" onclick="handleCanvasTap(event)"></div>
@@ -433,6 +444,10 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
+      <div id="stayawake-indicator" style="font-size:10px;font-family:ui-monospace,monospace;font-weight:bold;color:#10B981;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);padding:3px 8px;border-radius:999px;display:none;align-items:center;gap:5px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#10B981;"></span>
+        <span>AWAKE LOCKED</span>
+      </div>
       <button class="ctrl-btn" onclick="toggleTheme()" id="btn-theme" title="Toggle Light / Dark Mode">🌙 Dark</button>
       <button class="ctrl-btn" onclick="goDirector()" title="Switch to FOH Walk-the-Room Controller">🎛️ FOH Remote</button>
     </div>
@@ -610,8 +625,50 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
     // Auto-engage immediately on script initialization
     requestWakeLockSafe();
 
+    let heartbeatTimer = null;
+    function startSurfaceHeartbeat() {
+      if (heartbeatTimer) return;
+      const cvs = document.getElementById('heartbeat-canvas');
+      if (!cvs) return;
+      const ctx = cvs.getContext('2d');
+      let flip = false;
+      heartbeatTimer = setInterval(() => {
+        if (ctx) {
+          ctx.fillStyle = flip ? '#000000' : '#010101';
+          ctx.fillRect(0, 0, 2, 2);
+          flip = !flip;
+        }
+      }, 1000);
+    }
+
+    async function dismissStayAwakeSplash(ev) {
+      if (ev) ev.stopPropagation();
+      const splash = document.getElementById('stayawake-splash');
+      if (splash) splash.style.display = 'none';
+
+      try {
+        const el = document.documentElement;
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          if (el.requestFullscreen) await el.requestFullscreen();
+          else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        }
+      } catch (err) {}
+
+      await requestWakeLockSafe();
+      startSurfaceHeartbeat();
+
+      const ind = document.getElementById('stayawake-indicator');
+      if (ind) ind.style.display = 'flex';
+      const btn = document.getElementById('btn-stage-lock');
+      if (btn) {
+        btn.classList.add('active-ok');
+        btn.textContent = '🟢 Stage Awake Active';
+      }
+    }
+
     async function engageStageMode() {
       await requestWakeLockSafe();
+      startSurfaceHeartbeat();
       const btn = document.getElementById('btn-stage-lock');
       try {
         const el = document.documentElement;
@@ -625,6 +682,8 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
       } catch (e) {}
       btn.classList.add('active-ok');
       btn.textContent = '🟢 Stage Awake Active';
+      const ind = document.getElementById('stayawake-indicator');
+      if (ind) ind.style.display = 'flex';
       scheduleHudAutoHide();
     }
 
@@ -698,17 +757,10 @@ pub fn render_stage_receiver_html(initial_slot_id: &str) -> String {
       document.getElementById('blackout-curtain').style.display = slot.is_blackout ? 'block' : 'none';
       document.getElementById('min-banner').style.display = slot.source_minimized ? 'inline-flex' : 'none';
 
-      // Layout class
+      // Always 100% clean full-screen stage layout
       const rot = document.getElementById('stage-rotator');
-      rot.classList.remove('layout-single', 'layout-side-70-30', 'layout-side-50-50', 'layout-top-bottom', 'layout-pip');
-      if (slot.source_mode === 'SPLIT') {
-        if (slot.split_layout === 'SIDE_50_50') rot.classList.add('layout-side-50-50');
-        else if (slot.split_layout === 'TOP_BOTTOM') rot.classList.add('layout-top-bottom');
-        else if (slot.split_layout === 'PIP_CORNER') rot.classList.add('layout-pip');
-        else rot.classList.add('layout-side-70-30');
-      } else {
-        rot.classList.add('layout-single');
-      }
+      rot.classList.remove('layout-side-70-30', 'layout-side-50-50', 'layout-top-bottom', 'layout-pip');
+      rot.classList.add('layout-single');
 
       // Whisper banner
       const wb = document.getElementById('whisper-banner');

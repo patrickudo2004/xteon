@@ -789,12 +789,11 @@ fn capture_any_source_raw(
 }
 
 pub fn capture_single_preview_for_runtime(rt: &Arc<SlotRuntime>) {
-    let (source_mode, prim_id, sec_id, max_w, qual, is_frozen, is_blackout) = {
+    let (source_mode, prim_id, max_w, qual, is_frozen, is_blackout) = {
         let Ok(slot) = rt.slot.lock() else { return };
         (
             slot.source_mode.clone(),
             slot.primary_source_id.clone(),
-            slot.secondary_source_id.clone(),
             slot.max_width,
             slot.jpeg_quality,
             slot.is_frozen,
@@ -841,21 +840,6 @@ pub fn capture_single_preview_for_runtime(rt: &Arc<SlotRuntime>) {
         }
         WindowCaptureOutcome::Unchanged { .. } => {}
     }
-
-    if source_mode == "SPLIT" {
-        if let Some(sec) = sec_id.filter(|s| !s.is_empty()) {
-            if let WindowCaptureOutcome::Frame { jpeg_bytes, .. } =
-                capture_any_source_raw(&sec, "WINDOW", 720, qual, None, &displays)
-            {
-                let mut packet = Vec::with_capacity(jpeg_bytes.len() + 1);
-                packet.push(0x02u8);
-                packet.extend_from_slice(&jpeg_bytes);
-                if let Ok(mut last_s) = rt.last_frame_secondary.lock() {
-                    *last_s = Some(Arc::new(packet));
-                }
-            }
-        }
-    }
 }
 
 pub fn refresh_all_slot_previews() -> Vec<StageLinkSlot> {
@@ -885,7 +869,6 @@ pub fn ensure_slot_worker_running(rt: Arc<SlotRuntime>) {
 
     tokio::spawn(async move {
         let mut prev_checksum_a: Option<u64> = None;
-        let mut prev_checksum_b: Option<u64> = None;
         let mut frames_sent_window: u32 = 0;
         let mut window_start_ms = now_epoch_ms();
         let mut displays_cache = enumerate_real_displays_fallback();
@@ -912,12 +895,11 @@ pub fn ensure_slot_worker_running(rt: Arc<SlotRuntime>) {
                 break;
             }
 
-            let (source_mode, prim_id, sec_id, target_fps, max_w, qual, is_frozen, is_blackout) = {
+            let (source_mode, prim_id, target_fps, max_w, qual, is_frozen, is_blackout) = {
                 match rt.slot.lock() {
                     Ok(s) => (
                         s.source_mode.clone(),
                         s.primary_source_id.clone(),
-                        s.secondary_source_id.clone(),
                         s.target_fps.clamp(5, 30),
                         s.max_width.clamp(640, 1920),
                         s.jpeg_quality,
@@ -932,7 +914,6 @@ pub fn ensure_slot_worker_running(rt: Arc<SlotRuntime>) {
 
             if is_frozen || is_blackout || prim_id.is_empty() {
                 prev_checksum_a = None;
-                prev_checksum_b = None;
                 tokio::time::sleep(tokio::time::Duration::from_millis(120)).await;
                 continue;
             }
@@ -952,9 +933,7 @@ pub fn ensure_slot_worker_running(rt: Arc<SlotRuntime>) {
             let disp_clone = displays_cache.clone();
             let mode_clone = source_mode.clone();
             let prim_clone = prim_id.clone();
-            let sec_clone = sec_id.clone();
             let prev_a = if is_heartbeat { None } else { prev_checksum_a };
-            let prev_b = if is_heartbeat { None } else { prev_checksum_b };
 
             let capture_res = tokio::task::spawn_blocking(move || {
                 let out_a = capture_any_source_raw(
@@ -965,18 +944,11 @@ pub fn ensure_slot_worker_running(rt: Arc<SlotRuntime>) {
                     prev_a,
                     &disp_clone,
                 );
-                let out_b = if mode_clone == "SPLIT" {
-                    sec_clone
-                        .filter(|s| !s.is_empty())
-                        .map(|sec| capture_any_source_raw(&sec, "WINDOW", 768, qual, prev_b, &disp_clone))
-                } else {
-                    None
-                };
-                (out_a, out_b)
+                out_a
             })
             .await;
 
-            if let Ok((out_a, out_b)) = capture_res {
+            if let Ok(out_a) = capture_res {
                 let mut state_flag_changed = false;
 
                 match out_a {
@@ -1043,32 +1015,6 @@ pub fn ensure_slot_worker_running(rt: Arc<SlotRuntime>) {
                                 state_flag_changed = true;
                             }
                         }
-                    }
-                }
-
-                if let Some(ref outcome_b) = out_b {
-                    match outcome_b {
-                        WindowCaptureOutcome::Frame { jpeg_bytes, checksum, .. } => {
-                            prev_checksum_b = Some(*checksum);
-                            let mut packet = Vec::with_capacity(jpeg_bytes.len() + 1);
-                            packet.push(0x02u8);
-                            packet.extend_from_slice(jpeg_bytes);
-                            let arc_pkt = Arc::new(packet);
-                            if let Ok(mut ls) = rt.last_frame_secondary.lock() {
-                                *ls = Some(arc_pkt.clone());
-                            }
-                            let _ = rt.tx.send(StageBroadcastPacket::BinaryFrame(arc_pkt));
-                        }
-                        WindowCaptureOutcome::Minimized => {
-                            if !prev_minimized {
-                                prev_minimized = true;
-                                if let Ok(mut s) = rt.slot.lock() {
-                                    s.source_minimized = true;
-                                    state_flag_changed = true;
-                                }
-                            }
-                        }
-                        _ => {}
                     }
                 }
 

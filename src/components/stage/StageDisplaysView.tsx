@@ -85,14 +85,11 @@ export const StageDisplaysView: React.FC = () => {
   const [editingSlotForDrawer, setEditingSlotForDrawer] = useState<StageLinkSlot | null>(null);
   const [drawerName, setDrawerName] = useState('');
   const [drawerZone, setDrawerZone] = useState('');
-  const [drawerMode, setDrawerMode] = useState<'WINDOW' | 'DISPLAY' | 'SPLIT'>('WINDOW');
+  const [drawerMode, setDrawerMode] = useState<'WINDOW' | 'DISPLAY'>('WINDOW');
   const [drawerFps, setDrawerFps] = useState<number>(30);
   const [drawerMaxWidth, setDrawerMaxWidth] = useState<number>(1280);
-  const [drawerSplitLayout, setDrawerSplitLayout] = useState<StageSplitLayout>('SIDE_70_30');
   const [drawerPrimarySourceId, setDrawerPrimarySourceId] = useState('');
   const [drawerPrimarySourceLabel, setDrawerPrimarySourceLabel] = useState('');
-  const [drawerSecondarySourceId, setDrawerSecondarySourceId] = useState('');
-  const [drawerSecondarySourceLabel, setDrawerSecondarySourceLabel] = useState('');
 
   // Primary active stage slot
   const primarySlot = useMemo(
@@ -270,14 +267,11 @@ export const StageDisplaysView: React.FC = () => {
     setEditingSlotForDrawer(slot);
     setDrawerName(slot.name || 'Stage Receiver');
     setDrawerZone(slot.stage_zone || 'Pulpit Altar');
-    setDrawerMode(slot.source_mode || 'WINDOW');
+    setDrawerMode(slot.source_mode === 'DISPLAY' ? 'DISPLAY' : 'WINDOW');
     setDrawerFps(slot.target_fps || 30);
     setDrawerMaxWidth(slot.max_width || 1280);
-    setDrawerSplitLayout(slot.split_layout || 'SIDE_70_30');
     setDrawerPrimarySourceId(slot.primary_source_id || '');
     setDrawerPrimarySourceLabel(slot.primary_source_label || '');
-    setDrawerSecondarySourceId(slot.secondary_source_id || '');
-    setDrawerSecondarySourceLabel(slot.secondary_source_label || '');
   };
 
   // Save changes from Drawer
@@ -291,9 +285,9 @@ export const StageDisplaysView: React.FC = () => {
       source_mode: drawerMode,
       primary_source_id: drawerPrimarySourceId,
       primary_source_label: drawerPrimarySourceLabel,
-      secondary_source_id: drawerSecondarySourceId || null,
-      secondary_source_label: drawerSecondarySourceLabel || null,
-      split_layout: drawerSplitLayout,
+      secondary_source_id: null,
+      secondary_source_label: null,
+      split_layout: null,
       target_fps: drawerFps,
       max_width: drawerMaxWidth,
     });
@@ -429,12 +423,12 @@ export const StageDisplaysView: React.FC = () => {
                   </span>
                 </div>
                 <div className="text-xs text-[var(--text-muted)]">
-                  Zero-install real-time streaming of any application window, display surface, or split layout to connected stage devices
+                  Zero-install real-time streaming of any application window or display surface to connected stage devices
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {primarySlot?.is_frozen ? (
                 <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[11px] font-mono font-bold flex items-center gap-1.5">
                   <Snowflake className="w-3 h-3" />
@@ -460,11 +454,11 @@ export const StageDisplaysView: React.FC = () => {
 
           {/* Currently Streaming Preview Tile */}
           <div className="p-3.5 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5 min-w-0">
+            <div className="flex items-center gap-3.5 min-w-0 flex-1">
               <div className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-amber-300 text-xl shrink-0">
-                {primarySlot?.source_mode === 'DISPLAY' ? '🖥️' : primarySlot?.source_mode === 'SPLIT' ? '⚡' : '🪟'}
+                {primarySlot?.source_mode === 'DISPLAY' ? '🖥️' : '🪟'}
               </div>
-              <div className="min-w-0 space-y-0.5">
+              <div className="min-w-0 space-y-0.5 flex-1">
                 <div className="text-sm font-bold text-[var(--text-primary)] truncate">
                   {primarySlot?.primary_source_label || 'Standby — Ready for source assignment'}
                 </div>
@@ -1161,16 +1155,16 @@ export const StageDisplaysView: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto animate-fadeIn">
           <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
             {/* Drawer Header */}
-            <div className="p-4 sm:p-5 border-b border-[var(--border-color)] flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
+            <div className="p-4 sm:p-5 border-b border-[var(--border-color)] flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="p-2 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 shrink-0">
                   <Sliders className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold font-mono text-[var(--text-primary)]">
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-bold font-mono text-[var(--text-primary)] truncate">
                     Configure Stage Device: {editingSlotForDrawer.name}
                   </h3>
-                  <p className="text-xs text-[var(--text-muted)]">
+                  <p className="text-xs text-[var(--text-muted)] truncate">
                     Slot ID: <span className="font-mono text-cyan-400">{editingSlotForDrawer.id}</span> • Adjust identity, mode, resolution, and stage zones
                   </p>
                 </div>
@@ -1178,7 +1172,7 @@ export const StageDisplaysView: React.FC = () => {
 
               <button
                 onClick={() => setEditingSlotForDrawer(null)}
-                className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subcard)] transition cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
+                className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subcard)] transition cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1272,90 +1266,8 @@ export const StageDisplaysView: React.FC = () => {
                       Mirrors primary display or secondary monitor full-screen directly to this receiver.
                     </p>
                   </div>
-
-                  {/* Mode 3: Stage Multi-View Split */}
-                  <div
-                    onClick={() => setDrawerMode('SPLIT')}
-                    className={`p-3.5 rounded-xl border cursor-pointer transition flex flex-col justify-between gap-2 ${
-                      drawerMode === 'SPLIT'
-                        ? 'bg-purple-500/10 border-purple-400 text-[var(--text-primary)]'
-                        : 'bg-[var(--bg-subcard)] border-[var(--border-color)] text-[var(--text-muted)] hover:border-purple-500/40'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Columns2 className="w-4 h-4 text-purple-400 shrink-0" />
-                      <span className="font-bold text-xs text-[var(--text-primary)]">Stage Multi-View Split</span>
-                    </div>
-                    <p className="text-[11px] leading-relaxed">
-                      Dual-split composite: e.g. Countdown Timer (35%) on left, Sermon Presentation (65%) on right.
-                    </p>
-                  </div>
-
-                  {/* Mode 4: Projector / Extended Display Screen */}
-                  <div
-                    onClick={async () => {
-                      setDrawerMode('DISPLAY');
-                      let targetDisp = secondaryDisplay || liveDisplays.find((d) => d.osIndex > 1 && d.id !== 'display-virtual-stage');
-                      if (!targetDisp) {
-                        await triggerOsDisplayExtend();
-                        await new Promise((r) => setTimeout(r, 600));
-                        await useRigStore.getState().refreshLiveDisplays();
-                        targetDisp = useRigStore.getState().liveDisplays.find((d) => d.osIndex > 1 && d.id !== 'display-virtual-stage');
-                      }
-                      if (targetDisp) {
-                        setDrawerPrimarySourceId(`D:${targetDisp.id}`);
-                        setDrawerPrimarySourceLabel(`Screen ${targetDisp.osIndex}: ${targetDisp.customAlias || targetDisp.name} (Projector)`);
-                      } else {
-                        setDrawerPrimarySourceId('D:display-1');
-                        setDrawerPrimarySourceLabel('Desktop Screen (Host Laptop)');
-                      }
-                    }}
-                    className={`p-3.5 rounded-xl border cursor-pointer transition flex flex-col justify-between gap-2 ${
-                      drawerMode === 'DISPLAY' && drawerPrimarySourceId !== 'D:display-1'
-                        ? 'bg-emerald-500/15 border-emerald-400 text-[var(--text-primary)] ring-1 ring-emerald-400/50'
-                        : 'border-dashed border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10 text-[var(--text-muted)]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Laptop className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="font-bold text-xs text-emerald-300">Projector / Extended Screen</span>
-                    </div>
-                    <p className="text-[11px] leading-relaxed">
-                      Streams the projector or secondary extended display directly to this receiver.
-                    </p>
-                  </div>
                 </div>
               </div>
-
-              {/* If SPLIT mode selected: Choose Split Ratio */}
-              {drawerMode === 'SPLIT' && (
-                <div className="space-y-2 p-3 rounded-xl bg-[var(--bg-subcard)] border border-purple-500/30">
-                  <label className="block text-xs font-mono font-bold text-purple-300">
-                    Split Layout Arrangement
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {[
-                      { id: 'SIDE_70_30', label: '70% / 30% Side' },
-                      { id: 'SIDE_50_50', label: '50% / 50% Equal' },
-                      { id: 'TOP_BOTTOM', label: 'Top / Bottom' },
-                      { id: 'PIP_CORNER', label: 'PIP Corner' },
-                    ].map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => setDrawerSplitLayout(opt.id as any)}
-                        className={`p-2 rounded-lg text-xs font-mono transition cursor-pointer min-h-[38px] ${
-                          drawerSplitLayout === opt.id
-                            ? 'bg-purple-500 text-white font-bold'
-                            : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)]'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Section 3: Performance & Framerate Tuning */}
               <div className="space-y-3 pt-2 border-t border-[var(--border-color)]">
@@ -1441,28 +1353,28 @@ export const StageDisplaysView: React.FC = () => {
             </div>
 
             {/* Drawer Footer Actions */}
-            <div className="p-4 sm:p-5 border-t border-[var(--border-color)] bg-[var(--bg-subcard)] flex flex-wrap items-center justify-between gap-3 sticky bottom-0">
+            <div className="p-4 sm:p-5 border-t border-[var(--border-color)] bg-[var(--bg-subcard)] flex flex-wrap items-center justify-between gap-3 sticky bottom-0 shrink-0">
               <button
                 type="button"
                 onClick={handleDeleteFromDrawer}
-                className="px-3.5 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[42px]"
+                className="px-3.5 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[42px] shrink-0"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Delete & Disconnect Device</span>
               </button>
 
-              <div className="flex items-center gap-2 ml-auto">
+              <div className="flex items-center gap-2 ml-auto shrink-0">
                 <button
                   type="button"
                   onClick={() => setEditingSlotForDrawer(null)}
-                  className="px-4 py-2 rounded-xl bg-[var(--bg-card)] hover:bg-[var(--bg-primary)] border border-[var(--border-color)] text-xs font-mono transition cursor-pointer min-h-[42px]"
+                  className="px-4 py-2 rounded-xl bg-[var(--bg-card)] hover:bg-[var(--bg-primary)] border border-[var(--border-color)] text-xs font-mono transition cursor-pointer min-h-[42px] shrink-0"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveDrawer}
-                  className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono transition flex items-center gap-1.5 shadow-md cursor-pointer min-h-[42px]"
+                  className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono transition flex items-center gap-1.5 shadow-md cursor-pointer min-h-[42px] shrink-0"
                 >
                   <Check className="w-4 h-4" />
                   <span>Save & Apply Changes</span>

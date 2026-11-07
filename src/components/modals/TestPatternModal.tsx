@@ -31,29 +31,29 @@ export const TestPatternModal: React.FC = () => {
   const targetDisplay = liveDisplays.find((d) => d.id === activeTestDisplayId);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm select-none animate-fade-in text-[var(--text-primary)]">
-      <div className="w-full max-w-2xl rounded-2xl bg-[var(--bg-card)] border-2 border-[var(--border-color)] shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm select-none animate-fade-in text-[var(--text-primary)]">
+      <div className="w-full max-w-2xl max-h-[90dvh] rounded-2xl bg-[var(--bg-card)] border-2 border-[var(--border-color)] shadow-2xl overflow-hidden flex flex-col">
         {/* Modal Header */}
-        <div className="p-4 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Sliders className="w-5 h-5 text-cyan-400" />
-            <div>
-              <h2 className="font-mono text-sm font-bold text-[var(--text-primary)]">CALIBRATION TEST PATTERN GENERATOR</h2>
-              <div className="text-[11px] font-mono text-[var(--text-muted)]">
+        <div className="p-4 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <Sliders className="w-5 h-5 text-cyan-400 shrink-0" />
+            <div className="min-w-0">
+              <h2 className="font-mono text-sm font-bold text-[var(--text-primary)] truncate">CALIBRATION TEST PATTERN GENERATOR</h2>
+              <div className="text-[11px] font-mono text-[var(--text-muted)] truncate">
                 Target: {targetDisplay ? `${targetDisplay.customAlias} (Screen ${targetDisplay.osIndex})` : 'External Display'}
               </div>
             </div>
           </div>
           <button
             onClick={() => setTestPatternModalOpen(false)}
-            className="w-8 h-8 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] flex items-center justify-center transition cursor-pointer"
+            className="w-8 h-8 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] flex items-center justify-center transition shrink-0 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 space-y-4">
+        <div className="p-4 sm:p-5 space-y-4 min-h-0 flex-1 overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {testPatterns.map((pat) => (
               <div
@@ -138,26 +138,26 @@ export const TestPatternModal: React.FC = () => {
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-[var(--bg-header)] border-t border-[var(--border-color)] flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="p-4 bg-[var(--bg-header)] border-t border-[var(--border-color)] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={() => {
                 setTestPatternModalOpen(false);
                 setSmartTvGuideModalOpen(true);
               }}
-              className="text-xs font-mono text-cyan-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
+              className="text-xs font-mono text-cyan-400 hover:underline flex items-center gap-1 font-bold cursor-pointer truncate"
             >
               <span>📖 Smart TV Pre-Flight Setup Guide</span>
             </button>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end shrink-0">
             {activeTestPattern && (
               <button
                 onClick={() => {
                   setTestPattern(null, null);
                   setTestPatternModalOpen(false);
                 }}
-                className="px-3.5 py-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Stop Pattern</span>
@@ -170,7 +170,7 @@ export const TestPatternModal: React.FC = () => {
                 }
                 setTestPatternModalOpen(false);
               }}
-              className="px-5 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-slate-950 font-bold text-xs font-mono transition flex items-center gap-2 shadow-lg cursor-pointer"
+              className="flex-1 sm:flex-none px-5 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-slate-950 font-bold text-xs font-mono transition flex items-center justify-center gap-2 shadow-lg cursor-pointer shrink-0"
             >
               <Check className="w-3.5 h-3.5" />
               <span>Project Pattern</span>

@@ -43,7 +43,7 @@ export const SettingsModal: React.FC = () => {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] text-[var(--text-primary)]"
+        className="w-full max-w-2xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] text-[var(--text-primary)]"
       >
         {/* Modal Header */}
         <div className="p-4 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between gap-2 shrink-0">
@@ -566,7 +566,7 @@ export const SettingsModal: React.FC = () => {
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-[var(--bg-header)] border-t border-[var(--border-color)] flex items-center justify-between shrink-0 font-mono text-xs">
+        <div className="p-4 bg-[var(--bg-header)] border-t border-[var(--border-color)] flex items-center justify-between gap-3 shrink-0 font-mono text-xs">
           <button
             onClick={() => {
               if (window.confirm('Reset all preferences to default values?')) {
@@ -586,7 +586,7 @@ export const SettingsModal: React.FC = () => {
                 configureCompanionSecurity(true);
               }
             }}
-            className="text-[var(--text-muted)] hover:text-[var(--accent-rose)] flex items-center gap-1.5 transition cursor-pointer"
+            className="text-[var(--text-muted)] hover:text-[var(--accent-rose)] flex items-center gap-1.5 transition cursor-pointer shrink-0"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reset Defaults</span>
@@ -594,7 +594,7 @@ export const SettingsModal: React.FC = () => {
 
           <button
             onClick={() => setSettingsModalOpen(false)}
-            className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition flex items-center gap-1.5 shadow-lg cursor-pointer"
+            className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition flex items-center gap-1.5 shadow-lg cursor-pointer shrink-0"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>Close & Apply</span>

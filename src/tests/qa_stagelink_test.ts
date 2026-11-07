@@ -254,23 +254,19 @@ async function runStageLinkTests() {
   await store.clearStageLinkWhisper('stage-kairon');
   assertEqual(useRigStore.getState().stageLinkSlots[0].active_whisper, null, 'Stage whisper cleared');
 
-  // Create 2nd Slot (SPLIT Mode: Presentation App 70% + Timer 30%)
+  // Create 2nd Slot (DISPLAY Mode: Fullscreen Physical Display)
   const slot2 = await store.upsertStageLinkSlot({
-    id: 'stage-split-pulpit',
-    name: 'Pulpit Split Confidence',
+    id: 'stage-display-pulpit',
+    name: 'Pulpit Confidence Screen',
     stage_zone: 'Pulpit Altar',
-    source_mode: 'SPLIT',
-    primary_source_id: 'W:10930',
-    primary_source_label: 'Presentation App - Lyrics & Notes',
-    secondary_source_id: 'W:10928',
-    secondary_source_label: 'Kairon Timer',
-    split_layout: 'SIDE_70_30',
+    source_mode: 'DISPLAY',
+    primary_source_id: 'D:disp-2',
+    primary_source_label: 'Screen 2: Projector & Overflow',
     target_fps: 20,
     max_width: 1920,
   });
 
-  assertEqual(slot2?.source_mode, 'SPLIT', '2nd slot has SPLIT source mode');
-  assertEqual(slot2?.split_layout, 'SIDE_70_30', '2nd slot has SIDE_70_30 split layout');
+  assertEqual(slot2?.source_mode, 'DISPLAY', '2nd slot has DISPLAY source mode');
   assertEqual(useRigStore.getState().stageLinkSlots.length, 2, 'Store contains 2 StageLink slots');
 
   // --- TEST GROUP 4: OS WINDOW DIRECTOR ---
@@ -447,18 +443,15 @@ async function runStageLinkTests() {
     id: 'stage-kairon',
     name: 'Pulpit Confidence Screen Pro',
     stage_zone: 'Pulpit Altar Main',
-    source_mode: 'SPLIT',
-    primary_source_id: 'W:10930',
-    primary_source_label: 'ProPresenter Lyrics & Scripture',
-    secondary_source_id: 'W:10928',
-    secondary_source_label: 'Kairon Timer',
-    split_layout: 'SIDE_70_30',
+    source_mode: 'DISPLAY',
+    primary_source_id: 'D:disp-2',
+    primary_source_label: 'Main Stage Confidence Screen',
     target_fps: 30,
     max_width: 1920,
   });
   assertEqual(editedSlot?.name, 'Pulpit Confidence Screen Pro', 'Device Drawer edited name successfully');
   assertEqual(editedSlot?.stage_zone, 'Pulpit Altar Main', 'Device Drawer edited stage zone successfully');
-  assertEqual(editedSlot?.source_mode, 'SPLIT', 'Device Drawer switched mode to SPLIT successfully');
+  assertEqual(editedSlot?.source_mode, 'DISPLAY', 'Device Drawer switched mode to DISPLAY successfully');
   assertEqual(editedSlot?.target_fps, 30, 'Device Drawer updated framerate to 30 FPS');
   assertEqual(editedSlot?.max_width, 1920, 'Device Drawer updated max resolution to 1080p (1920px)');
 

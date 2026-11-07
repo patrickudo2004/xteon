@@ -164,7 +164,7 @@ export const StageReceiverPairModal: React.FC = () => {
           </div>
           <button
             onClick={() => closeStagePairModal()}
-            className="p-1.5 rounded-lg hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition cursor-pointer"
+            className="p-1.5 rounded-lg hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -329,7 +329,7 @@ export const StageReceiverPairModal: React.FC = () => {
           </div>
           <button
             onClick={() => closeStagePairModal()}
-            className="px-4 py-1.5 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono font-semibold transition cursor-pointer"
+            className="px-4 py-1.5 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono font-semibold transition cursor-pointer shrink-0"
           >
             Done
           </button>
