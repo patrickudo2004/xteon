@@ -11,6 +11,7 @@ import { FullscreenOverlayView } from './components/overlays/FullscreenOverlayVi
 import { TestPatternModal } from './components/modals/TestPatternModal';
 import { ReconciliationModal } from './components/modals/ReconciliationModal';
 import { MobileCompanionModal } from './components/modals/MobileCompanionModal';
+import { StageReceiverPairModal } from './components/modals/StageReceiverPairModal';
 import { StageLinkModal } from './components/modals/StageLinkModal';
 import { AudioConsentModal } from './components/modals/AudioConsentModal';
 import { SettingsModal } from './components/modals/SettingsModal';
@@ -329,6 +330,7 @@ export const App: React.FC = () => {
       <TestPatternModal />
       <ReconciliationModal />
       <MobileCompanionModal />
+      <StageReceiverPairModal />
       <StageLinkModal />
       <AudioConsentModal />
       <SettingsModal />

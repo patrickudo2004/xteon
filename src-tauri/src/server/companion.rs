@@ -27,14 +27,20 @@ use super::stagelink::{
     set_slot_freeze, trigger_slot_flash, upsert_stage_slot, verify_access_key_or_pin,
     CreateOrUpdateSlotInput, SlotRuntime, StageBroadcastPacket,
 };
-use super::web_views::{render_companion_director_html, render_stage_receiver_html};
+use super::web_views::{render_companion_director_html, render_screen_tester_html, render_stage_receiver_html};
 
 static SERVER_BOUND_OK: AtomicBool = AtomicBool::new(false);
+
+fn default_companion_port() -> u16 {
+    8766
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompanionServerStatus {
     pub is_running: bool,
     pub port: u16,
+    #[serde(default = "default_companion_port")]
+    pub companion_port: u16,
     pub host: String,
     pub interfaces: Vec<NetworkAdapterInfo>,
     pub active_pin: String,
@@ -121,6 +127,7 @@ pub fn get_companion_status() -> CompanionServerStatus {
     CompanionServerStatus {
         is_running: SERVER_BOUND_OK.load(Ordering::Relaxed),
         port: 8765,
+        companion_port: 8766,
         host,
         interfaces,
         active_pin: sec.active_pin,
@@ -170,20 +177,95 @@ pub fn build_companion_router(state: AppState) -> Router {
         .with_state(state)
 }
 
+pub fn build_screen_tester_router(state: AppState) -> Router {
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
+    Router::new()
+        .route("/", get(serve_screen_tester_ui))
+        .route("/api/status", get(api_tester_status))
+        .route("/api/displays", get(api_displays_tester))
+        .route("/api/flash/:id", post(api_flash_tester))
+        .layer(cors)
+        .with_state(state)
+}
+
+async fn serve_screen_tester_ui() -> Html<&'static str> {
+    Html(render_screen_tester_html())
+}
+
+async fn api_tester_status() -> impl IntoResponse {
+    Json(serde_json::json!({
+        "status": "online",
+        "service": "Xteon Mobile Companion (Screen Tester)",
+        "port": 8766
+    }))
+}
+
+async fn api_displays_tester() -> impl IntoResponse {
+    let displays = crate::display::windows_capture::enumerate_real_windows_displays();
+    Json(displays)
+}
+
+async fn api_flash_tester(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    println!("⚡ [Mobile Screen Tester 8766] Flashing display: {}", id);
+    if let Some(ref app_handle) = state.app_handle {
+        let displays = crate::display::windows_capture::enumerate_real_windows_displays();
+        if let Some(target) = displays.iter().find(|d| d.id == id || d.os_index.to_string() == id) {
+            if let Some(ref bounds) = target.bounds {
+                let display_title = format!("{} ({}x{})", target.custom_alias, target.width, target.height);
+                let _ = crate::trigger_flash_native(
+                    app_handle.clone(),
+                    display_title,
+                    bounds.x,
+                    bounds.y,
+                    bounds.width,
+                    bounds.height,
+                );
+            }
+        }
+    }
+    (StatusCode::OK, format!("Flashed {}", id))
+}
+
 pub async fn start_companion_server_with_handle(app_handle: tauri::AppHandle) {
-    let port = 8765;
+    let stage_port = 8765;
+    let tester_port = 8766;
     let state = AppState {
         app_handle: Some(app_handle),
     };
-    let app = build_companion_router(state);
 
-    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
+    // 1. Spawn Dedicated Screen Tester on Port 8766 (No PIN, pure display testing)
+    let tester_state = state.clone();
+    tokio::spawn(async move {
+        let tester_app = build_screen_tester_router(tester_state);
+        let tester_addr = std::net::SocketAddr::from(([0, 0, 0, 0], tester_port));
+        if let Ok(listener) = tokio::net::TcpListener::bind(tester_addr).await {
+            println!(
+                "⚡ [Xteon Screen Tester] Listening on http://{}:{} (Dedicated Walk-the-Room Screen Tester)",
+                get_preferred_lan_ip(),
+                tester_port
+            );
+            let _ = axum::serve(listener, tester_app).await;
+        } else {
+            eprintln!("⚠️ [Xteon Screen Tester] Could not bind port {}", tester_port);
+        }
+    });
+
+    // 2. StageLink Live Streaming Server on Port 8765
+    let app = build_companion_router(state);
+    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], stage_port));
     if let Ok(listener) = tokio::net::TcpListener::bind(addr).await {
         SERVER_BOUND_OK.store(true, Ordering::SeqCst);
         println!(
-            "🚀 [Xteon Companion & StageLink] Live Server listening on http://{}:{}",
+            "🚀 [Xteon StageLink] Live Server listening on http://{}:{}",
             get_preferred_lan_ip(),
-            port
+            stage_port
         );
         let _ = axum::serve(listener, app).await;
         SERVER_BOUND_OK.store(false, Ordering::SeqCst);
