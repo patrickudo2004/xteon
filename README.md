@@ -2,9 +2,10 @@
 > **The Real-Time Display Topology, Pre-Production Rig Planner & Live Hardware Intelligence Workspace for Pro AV & Media Production**
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue.svg)](#)
+[![Version](https://img.shields.io/badge/Version-v1.4.0-cyan.svg)](#)
 [![Tech Stack](https://img.shields.io/badge/Core-Rust%20%2B%20Tauri%20v2-orange.svg)](#)
 [![UI](https://img.shields.io/badge/UI-React%20%2B%20React%20Flow%20%2B%20Tailwind-61dafb.svg)](#)
-[![QA](https://img.shields.io/badge/QA%20Tests-759%20Passed%20(100%25)-brightgreen.svg)](#)
+[![QA](https://img.shields.io/badge/QA%20Tests-100%20Passed%20(100%25)-brightgreen.svg)](#)
 [![Integrations](https://img.shields.io/badge/Integrations-StreamDeck%20%7C%20Bitfocus%20Companion%20%7C%20OSC-purple.svg)](#)
 [![License](https://img.shields.io/badge/License-Commercial%20%2F%20Proprietary-red.svg)](#)
 
@@ -16,7 +17,7 @@
 
 In high-stakes productions, video distribution and stage camera routing is complex: media servers and presentation workstations connect to external splitters, HDBaseT extenders, SDI converters, LED wall processors, matrix routers, stage confidence monitors, and wireless roving cameras.
 
-**Xteon unifies the entire production lifecycle across three synchronized modes:**
+**Xteon unifies the entire production lifecycle across four synchronized modes:**
 
 1. 🎨 **Planner Studio ("CAD for Pro AV"):** Design, route, and calculate complex multi-screen video and camera rigs weeks in advance with zero connected hardware.
    * Drag-and-drop component library (Laptops, Cameras, Splitters, Matrix Switchers, Extenders, Converters, LED Walls, Projectors, Stage TVs).
@@ -29,13 +30,20 @@ In high-stakes productions, video distribution and stage camera routing is compl
    * Single unified Host Workstation node connected to live physical screens and unhidden camera feeds.
    * **Virtual Distribution Branching (Splitters & DAs):** Solve HDMI point-to-point hardware isolation. Branch any GPU output into a 1x2, 1x4 (e.g. Antiference), or 1x8 DA, or CAT6 HDBaseT PoC chain, naming each TV (`Dining Hall TV`, `Main Stage`), designating zones, and tracking cable lengths with mirrored video feeds.
    * Real-time cable signal bandwidth status (Valid, Warning, Exceeded) and length degradation tracking.
-   * High-contrast Pro AV themes (FOH Dark & High-Noon Daylight) with interactive Inspector and Palette dock/float controls.
+   * High-contrast Pro AV themes (FOH Dark, Broadcast Console & High-Noon Daylight).
 
-3. 🔴 **Live Monitor & Diagnostics:** Comprehensive show-day mission control.
+3. 📺 **StageLink™ Wireless Confidence Monitors & App Caster:**
+   * **Zero-Cable Confidence Monitoring:** Turn any iPad, Android tablet, phone, or smart TV into a stage confidence monitor over local Wi-Fi without proprietary apps or driver installs.
+   * **Brand-Agnostic Application & Window Caster:** Stream any active presenter window (slide decks, media playback, countdown timers, hymn lyrics) or full desktop directly to stage receivers in 100% full-screen resolution.
+   * **Triple-Tier Mobile Keep-Awake Engine:** Mandatory touch-gesture splash screen engages true OS fullscreen, W3C Screen WakeLock, looping background video, WebAudio oscillator, and a 1-second canvas pixel heartbeat to prevent mobile screen dimming.
+   * **Silent Stage Whisper Heads-Up Messenger:** Send private visual cues (`Wrap up in 2 mins`, `Mic 2 muted`) directly to the speaker's confidence tablet without interrupting audio.
+   * **Operator Broadcast Strip:** Instant Freeze Frame, Panic Blackout (`Ctrl+Shift+B`), and Flash Attention beacons.
+
+4. 🔴 **Live Monitor & Diagnostics:** Comprehensive show-day mission control.
    * **GPU-Accelerated Screen Previews:** Live low-latency thumbnails with cursor toggle and audio VU metering.
    * **Momentary Screen Flash Identifier:** 1-click borderless flash cards to instantly spot physical display positions across large venues.
    * **SMPTE Bars, Overscan & PLUGE Black Level Calibration:** Integrated test pattern generator with 100% boundary lines, 95% Action Safe, 90% Title Safe, and -4%/0%/+4% super-black calibration bars.
-   * **Emergency Master Blackout (`Ctrl+Shift+B`):** Global instantaneous panic blackout shield protecting presentation hosts.
+   * **Acoustic Audio-to-Video Delay Calculator:** Speed-of-sound latency compensation ($v = 331.3 + 0.606 \times T^\circ\text{C}\text{ m/s}$) to guarantee perfect lip synchronization on arena IMAG screens.
    * **"Fork Live Rig into Planner":** 1-click reverse-synthesis engine converting live hardware topologies into an editable Planner CAD canvas.
 
 ---
@@ -100,16 +108,20 @@ Walk the sanctuary, auditorium, or arena floor while controlling stage screens f
 
 ---
 
-## 6. Multi-Platform Downloads & Installation Matrix (v1.3.0)
+## 6. Multi-Platform Downloads & Installation Matrix (v1.4.0)
 
 | Operating System | Architecture | Package Format | Direct Download Link | Instructions |
 | :--- | :--- | :--- | :--- | :--- |
-| **🪟 Windows 10 / 11** | 64-bit (`x64`) | **NSIS Installer (`.exe`)** | [⬇️ Download `Xteon_1.3.0_x64-setup.exe`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon_1.3.0_x64-setup.exe) | Standard installer with Start Menu & desktop shortcuts |
-| **🪟 Windows 10 / 11** | 64-bit (`x64`) | **Windows Installer (`.msi`)** | [⬇️ Download `Xteon_1.3.0_x64_en-US.msi`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon_1.3.0_x64_en-US.msi) | Enterprise / silent deployment package for AV IT managers |
-| **🍏 macOS** | Universal (`Apple Silicon M1-M4 & Intel x86_64`) | **Apple Disk Image (`.dmg`)** | [⬇️ Download `Xteon_1.3.0_universal.dmg`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon_1.3.0_universal.dmg) | Mount DMG and drag `Xteon.app` to `/Applications` |
+| **🪟 Windows 10 / 11** | 64-bit (`x64`) | **NSIS Installer (`.exe`)** | [⬇️ Download `Xteon_1.4.0_x64-setup.exe`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon_1.4.0_x64-setup.exe) | Standard installer with Start Menu & desktop shortcuts |
+| **🪟 Windows 10 / 11** | 64-bit (`x64`) | **Windows Installer (`.msi`)** | [⬇️ Download `Xteon_1.4.0_x64_en-US.msi`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon_1.4.0_x64_en-US.msi) | Enterprise / silent deployment package for AV IT managers |
+| **🍏 macOS** | Universal (`Apple Silicon M1-M4 & Intel x86_64`) | **Apple Disk Image (`.dmg`)** | [⬇️ Download `Xteon_1.4.0_universal.dmg`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon_1.4.0_universal.dmg) | Mount DMG and drag `Xteon.app` to `/Applications` |
 | **🍏 macOS** | Universal (`Apple Silicon & Intel`) | **Application Bundle (`.tar.gz`)** | [⬇️ Download `Xteon.app.tar.gz`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon.app.tar.gz) | Standalone app bundle for automated deployment / MDM |
-| **🐧 Linux (All Distros)** | 64-bit (`x86_64`) | **Universal Linux (`.AppImage`)** | [⬇️ Download `Xteon_1.3.0_amd64.AppImage`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon_1.3.0_amd64.AppImage) | Run `chmod +x Xteon_1.3.0_amd64.AppImage && ./Xteon_1.3.0_amd64.AppImage` |
-| **🐧 Linux (Debian / Ubuntu)** | 64-bit (`amd64`) | **Debian Package (`.deb`)** | [⬇️ Download `xteon_1.3.0_amd64.deb`](https://github.com/patrickudo2004/xteon/releases/latest/download/xteon_1.3.0_amd64.deb) | Install via `sudo dpkg -i xteon_1.3.0_amd64.deb` |
+| **🐧 Linux (All Distros)** | 64-bit (`x86_64`) | **Universal Linux (`.AppImage`)** | [⬇️ Download `Xteon_1.4.0_amd64.AppImage`](https://github.com/patrickudo2004/xteon/releases/latest/download/Xteon_1.4.0_amd64.AppImage) | Run `chmod +x Xteon_1.4.0_amd64.AppImage && ./Xteon_1.4.0_amd64.AppImage` |
+| **🐧 Linux (Debian / Ubuntu)** | 64-bit (`amd64`) | **Debian Package (`.deb`)** | [⬇️ Download `xteon_1.4.0_amd64.deb`](https://github.com/patrickudo2004/xteon/releases/latest/download/xteon_1.4.0_amd64.deb) | Install via `sudo dpkg -i xteon_1.4.0_amd64.deb` |
+
+> [!TIP]
+> **Experience Xteon in your browser before downloading:**  
+> Check out the interactive web demo with live mock simulations of the CAD planner, StageLink wireless caster, tablet receiver, and audio delay calculator at [xteon.app/demo](https://xteon.app/demo).
 
 > [!NOTE]
 > All releases, release notes, and cryptographic signing manifests (`latest.json`) are published on [GitHub Releases](https://github.com/patrickudo2004/xteon/releases).

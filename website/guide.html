@@ -37,6 +37,7 @@
 
       <div class="flex items-center gap-4 text-xs mono">
         <a href="/" class="hover:text-cyan-400 transition">← Back to Home</a>
+        <a href="/demo" class="hover:text-cyan-400 transition text-cyan-300 font-bold">✨ Interactive Demo</a>
         <a href="/cheat-sheets" class="hover:text-cyan-400 transition text-amber-400">Calibration Cheat Sheets</a>
         <a href="/eula" class="hover:text-cyan-400 transition">EULA</a>
         <a href="/#downloads" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 transition">
@@ -54,20 +55,23 @@
       <div class="sticky top-24 space-y-4 text-xs mono bg-slate-900/50 p-5 rounded-2xl border border-slate-800">
         <div class="text-white font-bold uppercase tracking-wider text-[11px] pb-2 border-b border-slate-800 flex items-center justify-between">
           <span>Field Manual Index</span>
-          <span class="text-cyan-400 text-[10px]" data-latest-version>v1.3.2</span>
+          <span class="text-cyan-400 text-[10px]" data-latest-version>v1.4.0</span>
         </div>
         <nav class="space-y-1.5 text-slate-400">
           <a href="#quick-start" class="block hover:text-cyan-400 py-1 transition">1. Quick Start & Shortcuts</a>
           <a href="#canvas-routing" class="block hover:text-cyan-400 py-1 transition">2. CAD Canvas & Routing</a>
           <a href="#virtual-splitters" class="block hover:text-cyan-400 py-1 transition">3. Splitters & DAs</a>
-          <a href="#display-convergence" class="block hover:text-cyan-400 py-1 transition">4. Display Convergence</a>
-          <a href="#camera-ingest" class="block hover:text-cyan-400 py-1 transition">5. Camera Ingest & NDI</a>
-          <a href="#label-exporter" class="block hover:text-cyan-400 py-1 transition">6. Industrial Cable Labels</a>
-          <a href="#vector-blueprint" class="block hover:text-cyan-400 py-1 transition">7. Vector FOH Blueprint</a>
-          <a href="#acoustic-delay" class="block hover:text-cyan-400 py-1 transition">8. Acoustic Delay Physics</a>
-          <a href="#show-shields" class="block hover:text-cyan-400 py-1 transition">9. Show Shields & Blackbox</a>
-          <a href="#protocols" class="block hover:text-cyan-400 py-1 transition">10. Companion, OSC & OBS</a>
-          <a href="#templates" class="block hover:text-cyan-400 py-1 transition">11. Saving & Templates</a>
+          <a href="#stagelink-confidence" class="block hover:text-cyan-400 py-1 transition text-cyan-300 font-bold">4. Wireless StageLink & App Caster</a>
+          <a href="#stage-whisper" class="block hover:text-cyan-400 py-1 transition text-amber-300">5. Stage Whisper (Silent Cues)</a>
+          <a href="#mobile-tester" class="block hover:text-cyan-400 py-1 transition">6. Mobile Companion Tester</a>
+          <a href="#display-convergence" class="block hover:text-cyan-400 py-1 transition">7. Display Convergence</a>
+          <a href="#camera-ingest" class="block hover:text-cyan-400 py-1 transition">8. Camera Ingest & NDI</a>
+          <a href="#label-exporter" class="block hover:text-cyan-400 py-1 transition">9. Industrial Cable Labels</a>
+          <a href="#vector-blueprint" class="block hover:text-cyan-400 py-1 transition">10. Vector FOH Blueprint</a>
+          <a href="#acoustic-delay" class="block hover:text-cyan-400 py-1 transition">11. Acoustic Delay Physics</a>
+          <a href="#show-shields" class="block hover:text-cyan-400 py-1 transition">12. Show Shields & Blackbox</a>
+          <a href="#protocols" class="block hover:text-cyan-400 py-1 transition">13. Companion, OSC & OBS</a>
+          <a href="#templates" class="block hover:text-cyan-400 py-1 transition">14. Saving & Templates</a>
         </nav>
       </div>
     </aside>
@@ -169,10 +173,135 @@
         </div>
       </section>
 
-      <!-- Section 4: Display Convergence -->
-      <section id="display-convergence" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+      <!-- Section 4: StageLink Wireless Confidence Monitors & App Caster -->
+      <section id="stagelink-confidence" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-cyan-500/30 space-y-5">
         <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
           <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">04</span>
+          <div>
+            <h2 class="text-xl font-bold text-white">StageLink™ Wireless Confidence Monitors & App Caster</h2>
+            <span class="text-[10px] text-cyan-400 font-mono uppercase tracking-wider font-bold">New in v1.4.0 • Zero-Driver Wi-Fi Video Streaming</span>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-300 leading-relaxed">
+          <strong>StageLink™</strong> transforms any tablet (iPad, Android), smartphone, or smart TV into a stage confidence monitor over local Wi-Fi. It requires <strong>zero app installation, zero driver downloads, and zero cloud accounts</strong>.
+        </p>
+
+        <div class="grid sm:grid-cols-2 gap-4 text-xs">
+          <div class="p-4 bg-slate-950/70 rounded-xl border border-slate-800 space-y-2">
+            <div class="text-cyan-400 font-bold mono flex items-center gap-1.5">
+              <span>📱</span> How to Connect Stage Devices (QR Code)
+            </div>
+            <ol class="list-decimal list-inside space-y-1.5 text-slate-400 pl-1">
+              <li>Open the <strong>Stage Displays</strong> tab in Xteon.</li>
+              <li>Click <strong>"Pair Stage Device (QR)"</strong> or the QR button on any receiver slot.</li>
+              <li>Point an iPad, tablet, or smartphone camera at the generated QR code.</li>
+              <li>The device will open the dedicated stage receiver URL directly in its browser.</li>
+              <li>Tap the high-contrast <strong>[ 📱 TAP TO ENTER FULLSCREEN & LOCK STAY-AWAKE ]</strong> button to engage the triple-tier keep-awake engine.</li>
+            </ol>
+          </div>
+
+          <div class="p-4 bg-slate-950/70 rounded-xl border border-slate-800 space-y-2">
+            <div class="text-cyan-400 font-bold mono flex items-center gap-1.5">
+              <span>🪟</span> Brand-Agnostic Application & Window Caster
+            </div>
+            <p class="text-slate-400 leading-relaxed">
+              Xteon captures and streams any running OS window or desktop surface with zero lag:
+            </p>
+            <ul class="list-disc list-inside space-y-1 text-slate-400 pl-1">
+              <li><strong>Application Window:</strong> Stream slide software (PowerPoint, Keynote), media players (VLC), countdown clocks, or lyrics.</li>
+              <li><strong>Entire Desktop Screen:</strong> Stream full desktop display surfaces.</li>
+              <li><strong>Background Capture:</strong> Streams smoothly even if other windows overlap the source window on the host laptop.</li>
+              <li><strong>100% Native Raster:</strong> Pristine full-screen presentation with no squishing or multi-split complexity.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Triple Tier Keep-Awake Callout -->
+        <div class="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 to-slate-950 border border-emerald-500/40 text-xs space-y-2">
+          <div class="text-emerald-400 font-bold mono flex items-center gap-2">
+            <span>🛡️</span> Triple-Tier Mobile Keep-Awake Engine
+          </div>
+          <p class="text-slate-300 leading-relaxed">
+            Consumer mobile browsers typically dim their screens after 30 seconds over local HTTP. Xteon's StageLink engine enforces a bulletproof 5-layer stay-awake safeguard activated upon the user's initial touch gesture:
+          </p>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
+            <div class="p-2 rounded bg-slate-900/80 border border-emerald-500/20 text-center">
+              <span class="text-emerald-400 font-bold block">W3C WakeLock</span>
+              <span class="text-slate-500 text-[10px]">API Screen Lock</span>
+            </div>
+            <div class="p-2 rounded bg-slate-900/80 border border-emerald-500/20 text-center">
+              <span class="text-emerald-400 font-bold block">Silent Video</span>
+              <span class="text-slate-500 text-[10px]">Looping Media</span>
+            </div>
+            <div class="p-2 rounded bg-slate-900/80 border border-emerald-500/20 text-center">
+              <span class="text-emerald-400 font-bold block">WebAudio Beat</span>
+              <span class="text-slate-500 text-[10px]">Oscillator Loop</span>
+            </div>
+            <div class="p-2 rounded bg-slate-900/80 border border-emerald-500/20 text-center">
+              <span class="text-emerald-400 font-bold block">Canvas Heartbeat</span>
+              <span class="text-slate-500 text-[10px]">1s GPU Surface Tick</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 5: Stage Whisper -->
+      <section id="stage-whisper" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-amber-500/30 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 font-mono font-bold flex items-center justify-center text-sm border border-amber-500/30">05</span>
+          <div>
+            <h2 class="text-xl font-bold text-white">Stage Whisper (Silent Heads-Up Messenger)</h2>
+            <span class="text-[10px] text-amber-400 font-mono uppercase tracking-wider font-bold">Real-Time Private Cues to Pulpit Monitors</span>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Communicate critical show-day updates directly to presenters on stage without interrupting audio or requiring walkie-talkies.
+        </p>
+
+        <div class="space-y-3 text-xs text-slate-300">
+          <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 space-y-2">
+            <strong class="text-white block">How to Send a Stage Whisper:</strong>
+            <ol class="list-decimal list-inside space-y-1.5 text-slate-400 pl-1">
+              <li>Navigate to the <strong>Stage Displays</strong> view in Xteon.</li>
+              <li>Locate the <strong>Stage Whisper</strong> messenger toolbar at the bottom of the screen.</li>
+              <li>Select your recipient: choose <strong>All Screens (Broadcast)</strong> or pick a specific screen (e.g., <em>Pulpit iPad</em> or <em>Choir Wedge</em>).</li>
+              <li>Type your message (e.g., <em>"Pastor: 2 minutes left"</em>, <em>"Wrap up for prayer"</em>, <em>"Guest speaker is ready"</em>) or click a quick preset chip.</li>
+              <li>Select the alert tone: <strong>Info (Cyan)</strong>, <strong>Warning (Amber)</strong>, or <strong>Critical (Red)</strong>.</li>
+              <li>Click <strong>Send</strong>. The banner instantly flashes across the top of the selected stage confidence screen with a high-visibility countdown timer.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 6: Mobile Companion Screen Tester -->
+      <section id="mobile-tester" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">06</span>
+          <div>
+            <h2 class="text-xl font-bold text-white">Mobile Companion (Walk-the-Room Screen Tester)</h2>
+            <span class="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Dedicated Field Port 8766</span>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Test and verify every physical TV, projector, and video wall while walking around your auditorium or arena floor:
+        </p>
+
+        <div class="space-y-3 text-xs text-slate-300">
+          <ul class="list-disc list-inside space-y-1.5 text-slate-400 pl-1">
+            <li><strong>Dedicated Port 8766:</strong> Operates on a dedicated port separate from StageLink confidence streaming (`8765`), avoiding network contention.</li>
+            <li><strong>Walk-the-Room Test Flash:</strong> Tap <strong>"⚡ Test Flash"</strong> next to any detected screen on your phone to pop an unmistakable high-contrast identification card on that physical monitor.</li>
+            <li><strong>Hardware Telemetry at a Glance:</strong> View native resolution, refresh rate, and port type (HDMI, DisplayPort, USB-C) for every connected display directly on your mobile device.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Section 7: Display Convergence -->
+      <section id="display-convergence" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">07</span>
           <h2 class="text-xl font-bold text-white">Physical Display Discovery & Live Convergence</h2>
         </div>
         <div class="space-y-3 text-xs text-slate-300">
@@ -187,10 +316,10 @@
         </div>
       </section>
 
-      <!-- Section 5: Camera Ingest -->
+      <!-- Section 8: Camera Ingest -->
       <section id="camera-ingest" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
         <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
-          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">05</span>
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">08</span>
           <h2 class="text-xl font-bold text-white">Live Camera Ingest & Multi-View Monitoring</h2>
         </div>
         <div class="space-y-3 text-xs text-slate-300">
@@ -205,10 +334,10 @@
         </div>
       </section>
 
-      <!-- Section 6: Label Exporter -->
+      <!-- Section 9: Label Exporter -->
       <section id="label-exporter" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
         <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
-          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">06</span>
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">09</span>
           <h2 class="text-xl font-bold text-white">Industrial Cable Label Printer Exporter (Brother & Brady)</h2>
         </div>
         <div class="space-y-3 text-xs text-slate-300">
@@ -229,10 +358,10 @@
         </div>
       </section>
 
-      <!-- Section 7: Vector Blueprint -->
+      <!-- Section 10: Vector Blueprint -->
       <section id="vector-blueprint" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
         <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
-          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">07</span>
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">10</span>
           <h2 class="text-xl font-bold text-white">Printable 11x17 Tabloid & A3 Vector Blueprint Schematic</h2>
         </div>
         <div class="space-y-3 text-xs text-slate-300">
@@ -254,10 +383,10 @@
         </div>
       </section>
 
-      <!-- Section 8: Acoustic Delay Physics -->
+      <!-- Section 11: Acoustic Delay Physics -->
       <section id="acoustic-delay" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
         <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
-          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">08</span>
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">11</span>
           <h2 class="text-xl font-bold text-white">Acoustic Audio-to-Video Delay Calculator</h2>
         </div>
         <div class="space-y-3 text-xs text-slate-300">
@@ -278,10 +407,10 @@
         </div>
       </section>
 
-      <!-- Section 9: Show Shields -->
+      <!-- Section 12: Show Shields -->
       <section id="show-shields" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
         <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
-          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">09</span>
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">12</span>
           <h2 class="text-xl font-bold text-white">Show Shields, Anti-Dimming & Flight Recorder</h2>
         </div>
         <div class="space-y-3 text-xs text-slate-300">
@@ -309,10 +438,10 @@
         </div>
       </section>
 
-      <!-- Section 10: Protocols -->
+      <!-- Section 13: Protocols -->
       <section id="protocols" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
         <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
-          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">10</span>
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">13</span>
           <h2 class="text-xl font-bold text-white">Hardware Protocols: Companion, OSC, ProPresenter & OBS</h2>
         </div>
         <div class="space-y-3 text-xs text-slate-300">
@@ -328,10 +457,10 @@
         </div>
       </section>
 
-      <!-- Section 11: Templates -->
+      <!-- Section 14: Templates -->
       <section id="templates" class="bg-slate-900/40 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-4">
         <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
-          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">11</span>
+          <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm border border-cyan-500/30">14</span>
           <h2 class="text-xl font-bold text-white">Project File Management & Industry Starter Templates</h2>
         </div>
         <div class="space-y-3 text-xs text-slate-300">

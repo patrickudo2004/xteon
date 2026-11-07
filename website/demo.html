@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Online Demo & Live Rig Simulation | Xteon Pro AV</title>
+  <meta name="description" content="Experience Xteon Pro AV directly in your browser. Test visual signal routing, StageLink wireless confidence casting, silent stage whispers, and acoustic delay calculations with live interactive simulations." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #080c14; color: #cbd5e1; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    
+    /* Marching ants animation for active signal cables */
+    @keyframes marchingAnts {
+      from { stroke-dashoffset: 24; }
+      to { stroke-dashoffset: 0; }
+    }
+    .signal-active {
+      stroke-dasharray: 6, 6;
+      animation: marchingAnts 1s linear infinite;
+    }
+    
+    /* Screen beacon flash */
+    @keyframes beaconPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+      50% { box-shadow: 0 0 30px 8px rgba(251, 191, 36, 0.85); border-color: #fbbf24; }
+    }
+    .flashing-beacon {
+      animation: beaconPulse 0.4s ease-in-out 3;
+    }
+    
+    /* Theme definitions */
+    .theme-dark {
+      --bg-base: #080c14;
+      --bg-card: #0f172a;
+      --bg-subcard: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-dim: #94a3b8;
+    }
+    .theme-broadcast {
+      --bg-base: #141416;
+      --bg-card: #1f1f23;
+      --bg-subcard: #28282e;
+      --border-color: #3c3c44;
+      --text-main: #e2e8f0;
+      --text-dim: #8b8f9e;
+    }
+    .theme-daylight {
+      --bg-base: #f1f5f9;
+      --bg-card: #ffffff;
+      --bg-subcard: #e2e8f0;
+      --border-color: #cbd5e1;
+      --text-main: #0f172a;
+      --text-dim: #475569;
+    }
+    
+    /* Canvas grid dots */
+    .canvas-dots {
+      background-image: radial-gradient(#334155 1.2px, transparent 1.2px);
+      background-size: 20px 20px;
+    }
+  </style>
+</head>
+<body class="theme-dark bg-[var(--bg-base)] text-[var(--text-main)] min-h-screen flex flex-col select-none antialiased">
+
+  <!-- TOP DESKTOP APPLICATION NAVBAR -->
+  <header class="border-b border-[var(--border-color)] bg-[var(--bg-card)] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-50 shadow-md">
+    <!-- Left: Brand & App Title -->
+    <div class="flex items-center gap-3">
+      <a href="/" class="flex items-center gap-2 group">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center font-mono font-black text-slate-950 text-xs shadow-md border border-cyan-400/40 group-hover:scale-105 transition-transform">
+          XT
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-mono text-sm font-black tracking-wider text-white">XTEON</span>
+            <span class="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[9px] font-mono font-bold">
+              DEMO SIMULATION v1.4.0
+            </span>
+          </div>
+          <div class="text-[10px] text-[var(--text-dim)] font-mono">
+            Interactive In-Browser Workspace
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Center: Main Workspace Tabs Switcher -->
+    <div class="flex items-center p-1 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono">
+      <button
+        onclick="switchTab('planner')"
+        id="tab-btn-planner"
+        class="px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-2 bg-cyan-500 text-slate-950 shadow-sm"
+      >
+        <span>🎨</span>
+        <span>Visual Rig Planner</span>
+      </button>
+
+      <button
+        onclick="switchTab('stage')"
+        id="tab-btn-stage"
+        class="px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-2 text-[var(--text-dim)] hover:text-white"
+      >
+        <span>📺</span>
+        <span>Stage Displays (StageLink™)</span>
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      </button>
+
+      <button
+        onclick="switchTab('mobile')"
+        id="tab-btn-mobile"
+        class="px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-2 text-[var(--text-dim)] hover:text-white"
+      >
+        <span>📱</span>
+        <span>Mobile Screen Tester</span>
+      </button>
+
+      <button
+        onclick="switchTab('delay')"
+        id="tab-btn-delay"
+        class="px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-2 text-[var(--text-dim)] hover:text-white"
+      >
+        <span>⏱️</span>
+        <span>Acoustic Delay Calculator</span>
+      </button>
+    </div>
+
+    <!-- Right: Theme Switcher & Panic Blackout & Download CTA -->
+    <div class="flex items-center gap-2">
+      <!-- Theme Switcher -->
+      <div class="flex items-center p-0.5 rounded-lg bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs">
+        <button onclick="setTheme('dark')" id="theme-btn-dark" class="px-2 py-1 rounded font-mono text-[10px] bg-cyan-500/20 text-cyan-300 font-bold" title="Dark FOH Theme">Dark</button>
+        <button onclick="setTheme('broadcast')" id="theme-btn-broadcast" class="px-2 py-1 rounded font-mono text-[10px] text-[var(--text-dim)] hover:text-white" title="Broadcast Console Theme">Console</button>
+        <button onclick="setTheme('daylight')" id="theme-btn-daylight" class="px-2 py-1 rounded font-mono text-[10px] text-[var(--text-dim)] hover:text-white" title="High-Noon Outdoor Daylight Theme">Daylight</button>
+      </div>
+
+      <!-- Blackout Panic Button -->
+      <button
+        onclick="toggleGlobalBlackout()"
+        id="btn-global-blackout"
+        class="px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer"
+        title="Simulate Master Blackout Panic Shield (Ctrl+Shift+B)"
+      >
+        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+        <span id="blackout-label">Blackout</span>
+      </button>
+
+      <a
+        href="/#downloads"
+        class="px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold font-mono text-xs transition shadow-sm flex items-center gap-1.5"
+      >
+        <span>⬇️ Download Desktop App</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- WORKSPACE VIEWPORT CONTAINER -->
+  <main class="flex-1 flex flex-col relative overflow-hidden" id="workspace-container">
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: VISUAL RIG PLANNER (CAD CANVAS SIMULATION)                       -->
+    <!-- ========================================================================= -->
+    <div id="view-planner" class="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
+      <!-- Left Node Palette Bar -->
+      <div class="w-full lg:w-64 bg-[var(--bg-card)] border-r border-[var(--border-color)] p-4 flex flex-col justify-between shrink-0">
+        <div class="space-y-4">
+          <div class="text-xs font-mono font-bold uppercase tracking-wider text-[var(--text-dim)] flex items-center justify-between">
+            <span>Rig Palette</span>
+            <span class="text-[10px] text-cyan-400">Click to Inspect</span>
+          </div>
+
+          <div class="space-y-2">
+            <div onclick="selectNode('server-1')" class="p-2.5 rounded-xl bg-[var(--bg-subcard)] hover:bg-cyan-500/10 border border-[var(--border-color)] hover:border-cyan-400/50 cursor-pointer transition flex items-center gap-2.5">
+              <span class="text-lg">💻</span>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-bold truncate">Media Server / Playback</div>
+                <div class="text-[10px] text-[var(--text-dim)] font-mono">Source • 4K HDMI 2.0</div>
+              </div>
+            </div>
+
+            <div onclick="selectNode('splitter-1')" class="p-2.5 rounded-xl bg-[var(--bg-subcard)] hover:bg-cyan-500/10 border border-[var(--border-color)] hover:border-cyan-400/50 cursor-pointer transition flex items-center gap-2.5">
+              <span class="text-lg">🔀</span>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-bold truncate">1x4 Distribution Amp</div>
+                <div class="text-[10px] text-[var(--text-dim)] font-mono">Antiference 4K CAT6 PoC</div>
+              </div>
+            </div>
+
+            <div onclick="selectNode('led-1')" class="p-2.5 rounded-xl bg-[var(--bg-subcard)] hover:bg-cyan-500/10 border border-[var(--border-color)] hover:border-cyan-400/50 cursor-pointer transition flex items-center gap-2.5">
+              <span class="text-lg">🧱</span>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-bold truncate">Stage Left LED Wall</div>
+                <div class="text-[10px] text-[var(--text-dim)] font-mono">Sink • 3840×2160 @ 60Hz</div>
+              </div>
+            </div>
+
+            <div onclick="selectNode('stagelink-1')" class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:border-amber-400 cursor-pointer transition flex items-center gap-2.5">
+              <span class="text-lg">📱</span>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-bold text-amber-300 truncate">Pulpit Confidence iPad</div>
+                <div class="text-[10px] text-amber-400 font-mono">StageLink™ Wi-Fi Sink</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Starter Rig Preset Buttons -->
+          <div class="pt-3 border-t border-[var(--border-color)] space-y-2">
+            <span class="text-[10px] font-mono uppercase text-[var(--text-dim)] block">Industry Starter Rig:</span>
+            <div class="flex gap-1.5">
+              <button onclick="loadTemplate('corporate')" class="flex-1 py-1 px-2 rounded bg-[var(--bg-subcard)] hover:bg-cyan-500/20 text-[10px] font-mono font-bold transition">Corporate</button>
+              <button onclick="loadTemplate('church')" class="flex-1 py-1 px-2 rounded bg-[var(--bg-subcard)] hover:bg-cyan-500/20 text-[10px] font-mono font-bold transition">Sanctuary</button>
+              <button onclick="loadTemplate('arena')" class="flex-1 py-1 px-2 rounded bg-[var(--bg-subcard)] hover:bg-cyan-500/20 text-[10px] font-mono font-bold transition">Concert</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telemetry Summary -->
+        <div class="p-3 rounded-xl bg-slate-950/80 border border-[var(--border-color)] text-xs font-mono space-y-1 mt-4">
+          <div class="flex justify-between text-[11px]">
+            <span class="text-[var(--text-dim)]">Total Nodes:</span>
+            <span class="text-cyan-400 font-bold" id="telemetry-nodes">4 Nodes</span>
+          </div>
+          <div class="flex justify-between text-[11px]">
+            <span class="text-[var(--text-dim)]">Signal Cables:</span>
+            <span class="text-emerald-400 font-bold" id="telemetry-edges">3 Runs</span>
+          </div>
+          <div class="flex justify-between text-[11px]">
+            <span class="text-[var(--text-dim)]">Total Bandwidth:</span>
+            <span class="text-amber-400 font-bold">18.0 Gbps (OK)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Interactive SVG Canvas -->
+      <div class="flex-1 bg-[var(--bg-base)] canvas-dots relative overflow-hidden flex items-center justify-center p-6">
+        <!-- SVG Interactive Diagram -->
+        <svg id="planner-canvas" class="w-full h-full max-h-[580px] select-none" viewBox="0 0 850 480">
+          <defs>
+            <linearGradient id="cableGradCyan" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#06b6d4" />
+              <stop offset="100%" stop-color="#3b82f6" />
+            </linearGradient>
+            <linearGradient id="cableGradAmber" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#f59e0b" />
+              <stop offset="100%" stop-color="#ef4444" />
+            </linearGradient>
+          </defs>
+
+          <!-- Connecting Signal Cables (Bezier Curves) -->
+          <!-- Cable 1: Server -> Splitter -->
+          <path id="cable-1" d="M 230 140 C 310 140, 310 240, 390 240" fill="none" stroke="url(#cableGradCyan)" stroke-width="3" class="signal-active" />
+          <text x="310" y="180" fill="#94a3b8" font-size="10" font-family="JetBrains Mono" text-anchor="middle">HDMI 2.0 (18 Gbps)</text>
+
+          <!-- Cable 2: Splitter -> LED Wall -->
+          <path id="cable-2" d="M 570 220 C 630 220, 630 120, 690 120" fill="none" stroke="url(#cableGradCyan)" stroke-width="3" class="signal-active" />
+          <text x="630" y="160" fill="#94a3b8" font-size="10" font-family="JetBrains Mono" text-anchor="middle">CAT6 HDBaseT (35m)</text>
+
+          <!-- Cable 3: Splitter -> StageLink iPad (Wireless) -->
+          <path id="cable-3" d="M 570 260 C 630 260, 630 360, 690 360" fill="none" stroke="url(#cableGradAmber)" stroke-width="2.5" stroke-dasharray="4,4" />
+          <text x="630" y="325" fill="#f59e0b" font-size="10" font-family="JetBrains Mono" text-anchor="middle">StageLink™ Wi-Fi 5GHz</text>
+
+          <!-- Node 1: Media Server (Playback) -->
+          <g id="node-server-1" onclick="selectNode('server-1')" class="cursor-pointer">
+            <rect x="50" y="90" width="180" height="100" rx="14" fill="#0f172a" stroke="#06b6d4" stroke-width="2" class="hover:stroke-cyan-300 transition" />
+            <rect x="50" y="90" width="180" height="28" rx="14" fill="#083344" />
+            <text x="65" y="108" fill="#22d3ee" font-size="11" font-weight="bold" font-family="JetBrains Mono">SOURCE: FOH SERVER</text>
+            <text x="65" y="138" fill="#ffffff" font-size="12" font-weight="bold" font-family="Inter">Main Media Server</text>
+            <text x="65" y="155" fill="#94a3b8" font-size="10" font-family="JetBrains Mono">FOH Control Booth</text>
+            <!-- Port -->
+            <circle cx="230" cy="140" r="6" fill="#06b6d4" />
+            <text x="215" y="165" fill="#06b6d4" font-size="9" font-family="JetBrains Mono" text-anchor="end">HDMI Out</text>
+          </g>
+
+          <!-- Node 2: 1x4 Distribution Amp -->
+          <g id="node-splitter-1" onclick="selectNode('splitter-1')" class="cursor-pointer">
+            <rect x="390" y="190" width="180" height="100" rx="14" fill="#0f172a" stroke="#3b82f6" stroke-width="2" class="hover:stroke-blue-300 transition" />
+            <rect x="390" y="190" width="180" height="28" rx="14" fill="#1e1b4b" />
+            <text x="405" y="208" fill="#818cf8" font-size="11" font-weight="bold" font-family="JetBrains Mono">DISTRIBUTION AMP</text>
+            <text x="405" y="238" fill="#ffffff" font-size="12" font-weight="bold" font-family="Inter">1x4 4K Splitter</text>
+            <text x="405" y="255" fill="#94a3b8" font-size="10" font-family="JetBrains Mono">Stage Left AV Rack</text>
+            <!-- Input Port -->
+            <circle cx="390" cy="240" r="6" fill="#3b82f6" />
+            <!-- Output Ports -->
+            <circle cx="570" cy="220" r="6" fill="#06b6d4" />
+            <circle cx="570" cy="260" r="6" fill="#f59e0b" />
+          </g>
+
+          <!-- Node 3: Stage Left LED Wall -->
+          <g id="node-led-1" onclick="selectNode('led-1')" class="cursor-pointer">
+            <rect x="690" y="70" width="180" height="100" rx="14" fill="#0f172a" stroke="#10b981" stroke-width="2" class="hover:stroke-emerald-300 transition" />
+            <rect x="690" y="70" width="180" height="28" rx="14" fill="#064e3b" />
+            <text x="705" y="88" fill="#34d399" font-size="11" font-weight="bold" font-family="JetBrains Mono">SINK: LED PROCESSOR</text>
+            <text x="705" y="118" fill="#ffffff" font-size="12" font-weight="bold" font-family="Inter">Stage Left LED Wall</text>
+            <text x="705" y="135" fill="#94a3b8" font-size="10" font-family="JetBrains Mono">3840×2160 @ 60Hz</text>
+            <circle cx="690" cy="120" r="6" fill="#10b981" />
+          </g>
+
+          <!-- Node 4: Pulpit Confidence Monitor (StageLink) -->
+          <g id="node-stagelink-1" onclick="selectNode('stagelink-1')" class="cursor-pointer">
+            <rect x="690" y="310" width="180" height="100" rx="14" fill="#0f172a" stroke="#f59e0b" stroke-width="2" class="hover:stroke-amber-300 transition" />
+            <rect x="690" y="310" width="180" height="28" rx="14" fill="#451a03" />
+            <text x="705" y="328" fill="#fbbf24" font-size="11" font-weight="bold" font-family="JetBrains Mono">SINK: WIRELESS STAGELINK</text>
+            <text x="705" y="358" fill="#ffffff" font-size="12" font-weight="bold" font-family="Inter">Pulpit Altar iPad</text>
+            <text x="705" y="375" fill="#f59e0b" font-size="10" font-family="JetBrains Mono">🟢 AWAKE LOCKED • 60 FPS</text>
+            <circle cx="690" cy="360" r="6" fill="#f59e0b" />
+          </g>
+        </svg>
+
+        <!-- Canvas Floating Quick Guide -->
+        <div class="absolute bottom-4 left-4 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] font-mono text-slate-400">
+          💡 Click any node to inspect port mapping, or switch to <strong class="text-cyan-300">Stage Displays</strong> above to test wireless confidence casting.
+        </div>
+      </div>
+
+      <!-- Right Node Inspector Drawer -->
+      <div id="inspector-panel" class="w-full lg:w-72 bg-[var(--bg-card)] border-l border-[var(--border-color)] p-4 flex flex-col justify-between shrink-0">
+        <div class="space-y-4">
+          <div class="text-xs font-mono font-bold uppercase tracking-wider text-[var(--text-dim)] flex items-center justify-between pb-2 border-b border-[var(--border-color)]">
+            <span>Node Inspector</span>
+            <span class="text-emerald-400 text-[10px]">Active</span>
+          </div>
+
+          <div id="inspector-content" class="space-y-3">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-[var(--text-dim)] font-mono">Selected Device:</span>
+              <div class="font-bold text-sm text-[var(--text-main)]" id="insp-name">FOH Media Server (Main Playback)</div>
+              <div class="text-xs text-cyan-400 font-mono" id="insp-zone">📍 FOH Control Booth</div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] space-y-2 text-xs font-mono">
+              <div class="flex justify-between">
+                <span class="text-[var(--text-dim)]">Device Type:</span>
+                <span class="text-[var(--text-main)] font-bold" id="insp-type">MEDIA_SERVER</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-[var(--text-dim)]">Primary Out:</span>
+                <span class="text-cyan-400 font-bold" id="insp-port">HDMI 2.0 (18 Gbps)</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-[var(--text-dim)]">EDID Sync:</span>
+                <span class="text-emerald-400 font-bold">100% Locked</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-[var(--text-dim)]">HDCP Mode:</span>
+                <span class="text-amber-400 font-bold">HDCP 2.2 Compliant</span>
+              </div>
+            </div>
+
+            <!-- Cable Labels Export Action -->
+            <button
+              onclick="simulateLabelExport()"
+              class="w-full py-2 px-3 rounded-lg bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] border border-[var(--border-color)] text-xs font-mono font-bold transition flex items-center justify-center gap-2"
+            >
+              <span>🏷️ Export Cable Run Label (CSV)</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-[var(--border-color)] text-[11px] font-mono text-[var(--text-dim)] text-center">
+          Pure Client-Side CAD Engine • Zero Cloud Required
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: STAGE DISPLAYS & STAGELINK™ CONFIDENCE CASTER                    -->
+    <!-- ========================================================================= -->
+    <div id="view-stage" class="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 space-y-6 overflow-y-auto hidden">
+      <!-- Section Header -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-color)]">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">📺</span>
+            <h2 class="text-xl sm:text-2xl font-black font-mono tracking-tight">StageLink™ Wireless Confidence Hub</h2>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono font-bold">
+              60 FPS ACTIVE
+            </span>
+          </div>
+          <p class="text-xs text-[var(--text-dim)] mt-0.5">
+            Real-time zero-install streaming to stage confidence tablets, iPads, and pulpit monitors.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div class="px-3 py-1.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-mono">
+            <span class="text-[var(--text-dim)]">LAN Stream:</span>
+            <span class="text-cyan-400 font-bold">http://192.168.1.100:8765/stage</span>
+          </div>
+          <button
+            onclick="simulatePairModal()"
+            class="px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold font-mono text-xs transition flex items-center gap-1.5 shadow-sm"
+          >
+            <span>📱 Pair Device (QR)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ACTIVE BROADCAST SOURCE CASTER -->
+      <div class="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-lg">
+              🪟
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="font-bold font-mono text-base text-[var(--text-main)]">Active Broadcast Source Caster</h3>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  100% FULL-SCREEN RASTER
+                </span>
+              </div>
+              <div class="text-xs text-[var(--text-dim)]">
+                Direct zero-move capture of any presenter application window or full display surface
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Source Selector -->
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono text-[var(--text-dim)]">Source:</span>
+            <select
+              id="caster-source-select"
+              onchange="changeCasterSource(this.value)"
+              class="px-3 py-1.5 rounded-lg bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono font-bold text-[var(--text-main)] focus:outline-none focus:border-cyan-400"
+            >
+              <option value="slides">Keynote / Slide Deck Presentation (1080p)</option>
+              <option value="media">VLC Media Player - 4K Video Loop</option>
+              <option value="timer">Chiron Stage Service Countdown Timer</option>
+              <option value="desktop">Entire Desktop Screen 1 (1920×1080)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Live Simulated Video Frame & Operator Controls Strip -->
+        <div class="grid lg:grid-cols-3 gap-5">
+          <!-- Animated Simulated Video Display Screen -->
+          <div class="lg:col-span-2 relative h-64 sm:h-72 rounded-xl overflow-hidden bg-slate-950 border-2 border-[var(--border-color)] flex items-center justify-center shadow-inner" id="caster-screen-container">
+            <!-- Simulated Content Canvas -->
+            <canvas id="caster-canvas" width="640" height="360" class="w-full h-full object-contain"></canvas>
+
+            <!-- Screen HUD Overlays -->
+            <div class="absolute top-2.5 left-3 px-2 py-1 rounded bg-black/75 backdrop-blur-sm border border-slate-700/60 font-mono text-[10px] text-cyan-300 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span id="caster-hud-label">LIVE: Presentation Slides</span>
+              <span>•</span>
+              <span id="caster-hud-fps">60.0 FPS</span>
+            </div>
+
+            <!-- Frozen / Blackout Overlay -->
+            <div id="caster-freeze-overlay" class="absolute inset-0 bg-blue-950/80 backdrop-blur-xs flex flex-col items-center justify-center gap-2 hidden">
+              <span class="text-3xl">❄️</span>
+              <span class="font-mono text-sm font-bold text-blue-200">FROZEN FRAME ACTIVE</span>
+              <span class="text-xs text-blue-400 font-mono">Output held steady for confidence monitors</span>
+            </div>
+
+            <div id="caster-blackout-overlay" class="absolute inset-0 bg-black flex flex-col items-center justify-center gap-2 hidden">
+              <span class="text-3xl">⬛</span>
+              <span class="font-mono text-sm font-bold text-red-400">MASTER BLACKOUT ACTIVE</span>
+              <span class="text-xs text-slate-500 font-mono">Panic shield engaged (Ctrl+Shift+B)</span>
+            </div>
+          </div>
+
+          <!-- Operator Control Strip Panel -->
+          <div class="p-4 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] flex flex-col justify-between space-y-3">
+            <div class="space-y-3">
+              <span class="text-xs font-mono font-bold uppercase tracking-wider text-[var(--text-dim)] block">
+                Broadcast Controls
+              </span>
+
+              <button
+                onclick="triggerFlashBeacon()"
+                class="w-full py-2.5 px-3 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>⚡ Flash Attention Beacon</span>
+              </button>
+
+              <button
+                onclick="toggleFreezeFrame()"
+                id="btn-freeze"
+                class="w-full py-2.5 px-3 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 text-xs font-mono font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>❄️ Freeze Active Frame</span>
+              </button>
+
+              <button
+                onclick="toggleGlobalBlackout()"
+                class="w-full py-2.5 px-3 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-mono font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>⬛ Panic Blackout</span>
+              </button>
+            </div>
+
+            <div class="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-mono space-y-1">
+              <div class="flex justify-between">
+                <span class="text-[var(--text-dim)]">Target Max Width:</span>
+                <span class="text-white font-bold">1920px (1080p FHD)</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-[var(--text-dim)]">Connected Receivers:</span>
+                <span class="text-emerald-400 font-bold">2 Online Tablets</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONNECTED STAGE RECEIVERS (SIMULATED TABLET SCREENS) -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">📱</span>
+            <h3 class="font-bold font-mono text-base text-[var(--text-main)]">Connected Stage Receivers (2 Active Devices)</h3>
+          </div>
+          <span class="text-xs text-[var(--text-dim)] font-mono">Triple-Tier Keep-Awake Engine Active</span>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-4">
+          <!-- Receiver 1: Pulpit iPad -->
+          <div id="sim-tablet-1" class="p-4 rounded-xl bg-[var(--bg-card)] border-2 border-emerald-500/40 shadow-sm space-y-3 relative overflow-hidden transition-all">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">📲</span>
+                <div>
+                  <div class="font-bold text-xs text-[var(--text-main)]">Pulpit Altar iPad (Screen 2)</div>
+                  <div class="text-[10px] text-[var(--text-dim)] font-mono">Location: 📍 Pulpit Shelf • IP: 192.168.1.142</div>
+                </div>
+              </div>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-bold flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>🟢 AWAKE LOCKED</span>
+              </span>
+            </div>
+
+            <!-- Simulated iPad Bezel Screen -->
+            <div class="relative h-44 rounded-lg overflow-hidden bg-slate-950 border border-slate-700 flex items-center justify-center">
+              <canvas id="tablet-canvas-1" width="400" height="225" class="w-full h-full object-contain"></canvas>
+              
+              <!-- Live Whisper Banner Overlay -->
+              <div id="tablet-whisper-banner" class="absolute top-2 left-2 right-2 p-2 rounded-lg bg-amber-500/90 text-slate-950 font-bold font-sans text-xs flex items-center justify-between shadow-lg hidden">
+                <span id="tablet-whisper-text">"Pastor: 2 minutes left"</span>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-950 text-amber-300 font-mono">WARNING</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] font-mono text-[var(--text-dim)] pt-1">
+              <span>Resolution: 1080p FHD</span>
+              <span class="text-emerald-400">60 FPS • Latency: 18ms</span>
+            </div>
+          </div>
+
+          <!-- Receiver 2: Choir Wall Screen -->
+          <div id="sim-tablet-2" class="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm space-y-3 relative overflow-hidden transition-all">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">📺</span>
+                <div>
+                  <div class="font-bold text-xs text-[var(--text-main)]">Choir Loft Monitor (Screen 3)</div>
+                  <div class="text-[10px] text-[var(--text-dim)] font-mono">Location: 📍 Choir Loft Wall • IP: 192.168.1.155</div>
+                </div>
+              </div>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-bold flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>🟢 AWAKE LOCKED</span>
+              </span>
+            </div>
+
+            <!-- Simulated Bezel Screen -->
+            <div class="relative h-44 rounded-lg overflow-hidden bg-slate-950 border border-slate-700 flex items-center justify-center">
+              <canvas id="tablet-canvas-2" width="400" height="225" class="w-full h-full object-contain"></canvas>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] font-mono text-[var(--text-dim)] pt-1">
+              <span>Resolution: 1080p FHD</span>
+              <span class="text-emerald-400">60 FPS • Latency: 22ms</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE WHISPER MESSENGER TOOLBAR -->
+      <div class="p-5 rounded-2xl bg-[var(--bg-card)] border border-amber-500/30 shadow-sm space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-amber-400 text-lg">💬</span>
+            <div>
+              <h3 class="font-bold font-mono text-sm sm:text-base text-[var(--text-main)]">
+                Stage Whisper (Silent Heads-Up Messenger)
+              </h3>
+              <p class="text-[11px] text-[var(--text-dim)]">
+                Send real-time visual messages to the speaker's tablet without interrupting audio
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <select
+            id="whisper-recipient"
+            class="p-2 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono font-bold text-[var(--text-main)] focus:outline-none min-h-[38px]"
+          >
+            <option value="pulpit">📱 Pulpit Altar iPad (Screen 2)</option>
+            <option value="all">📢 All Stage Receivers (Broadcast)</option>
+          </select>
+
+          <input
+            type="text"
+            id="whisper-input"
+            placeholder="Type cue (e.g., 'Pastor: 2 minutes left', 'Wrap up for prayer')..."
+            value="Pastor: 2 minutes left"
+            class="flex-1 p-2 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs text-[var(--text-main)] focus:outline-none focus:border-amber-400 min-h-[38px]"
+          />
+
+          <select
+            id="whisper-tone"
+            class="p-2 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] text-xs font-mono font-bold text-[var(--text-main)] focus:outline-none min-h-[38px]"
+          >
+            <option value="WARN">Warning (Amber)</option>
+            <option value="INFO">Info (Cyan)</option>
+            <option value="CRITICAL">Alert (Red)</option>
+          </select>
+
+          <button
+            onclick="sendSimulatedWhisper()"
+            class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold font-mono text-xs transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer shrink-0 min-h-[38px]"
+          >
+            <span>Send Whisper</span>
+            <span>⚡</span>
+          </button>
+        </div>
+
+        <!-- Quick preset buttons -->
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+          <span class="text-[10px] text-[var(--text-dim)] font-mono">Quick Cues:</span>
+          <button onclick="setWhisperPrompt('Pastor: 2 minutes left')" class="px-2 py-0.5 rounded bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] text-[10px] font-mono text-[var(--text-dim)] hover:text-white transition">Wrap Up 2m</button>
+          <button onclick="setWhisperPrompt('Wrap up for closing prayer')" class="px-2 py-0.5 rounded bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] text-[10px] font-mono text-[var(--text-dim)] hover:text-white transition">Closing Prayer</button>
+          <button onclick="setWhisperPrompt('Mic 2 volume low - speak closer')" class="px-2 py-0.5 rounded bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] text-[10px] font-mono text-[var(--text-dim)] hover:text-white transition">Mic 2 Low</button>
+          <button onclick="setWhisperPrompt('Guest speaker has arrived')" class="px-2 py-0.5 rounded bg-[var(--bg-subcard)] hover:bg-[var(--border-color)] text-[10px] font-mono text-[var(--text-dim)] hover:text-white transition">Guest Arrived</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 3: MOBILE COMPANION SCREEN TESTER (PORT 8766)                       -->
+    <!-- ========================================================================= -->
+    <div id="view-mobile" class="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 space-y-6 overflow-y-auto hidden">
+      <div class="w-full max-w-md bg-[var(--bg-card)] border-2 border-[var(--border-color)] rounded-3xl p-6 shadow-2xl space-y-5">
+        <div class="flex items-center justify-between pb-3 border-b border-[var(--border-color)]">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">📱</span>
+            <div>
+              <div class="font-bold font-mono text-sm">Xteon Mobile Companion</div>
+              <div class="text-[10px] text-[var(--text-dim)] font-mono">Port 8766 • Walk-the-Room Tester</div>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-mono font-bold">
+            Wi-Fi Connected
+          </span>
+        </div>
+
+        <p class="text-xs text-[var(--text-dim)] leading-relaxed">
+          Walk around your venue with your smartphone and trigger physical screen identifier flashes with zero latency:
+        </p>
+
+        <!-- Simulated Mobile Display Cards -->
+        <div class="space-y-3">
+          <div class="p-3.5 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] flex items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold">SCREEN 1</span>
+                <span class="font-bold text-xs">FOH Workstation</span>
+              </div>
+              <div class="text-[11px] text-[var(--text-dim)] font-mono mt-0.5">1920×1080 @ 60Hz • Primary</div>
+            </div>
+            <button
+              onclick="flashTargetDisplay('Screen 1 (FOH Workstation)')"
+              class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold font-mono text-xs transition cursor-pointer shadow-sm"
+            >
+              ⚡ Flash
+            </button>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] flex items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono text-[10px] font-bold">SCREEN 2</span>
+                <span class="font-bold text-xs">Pulpit Altar iPad</span>
+              </div>
+              <div class="text-[11px] text-[var(--text-dim)] font-mono mt-0.5">StageLink™ Wi-Fi • 60 FPS</div>
+            </div>
+            <button
+              onclick="flashTargetDisplay('Screen 2 (Pulpit Altar iPad)')"
+              class="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold font-mono text-xs transition cursor-pointer shadow-sm"
+            >
+              ⚡ Flash
+            </button>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] flex items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono text-[10px] font-bold">SCREEN 3</span>
+                <span class="font-bold text-xs">Main Sanctuary IMAG</span>
+              </div>
+              <div class="text-[11px] text-[var(--text-dim)] font-mono mt-0.5">3840×2160 @ 60Hz • HDMI Out</div>
+            </div>
+            <button
+              onclick="flashTargetDisplay('Screen 3 (Main Sanctuary IMAG)')"
+              class="px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-400 text-slate-950 font-bold font-mono text-xs transition cursor-pointer shadow-sm"
+            >
+              ⚡ Flash
+            </button>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] font-mono text-slate-400 flex items-center justify-between">
+          <span>Walk-the-Room Test URL:</span>
+          <span class="text-cyan-400 font-bold">http://192.168.1.100:8766</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 4: ACOUSTIC AUDIO-TO-VIDEO DELAY CALCULATOR                        -->
+    <!-- ========================================================================= -->
+    <div id="view-delay" class="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 space-y-6 overflow-y-auto hidden">
+      <div class="w-full max-w-xl bg-[var(--bg-card)] border-2 border-[var(--border-color)] rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+        <div class="flex items-center justify-between pb-4 border-b border-[var(--border-color)]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 font-bold text-xl">
+              ⏱️
+            </div>
+            <div>
+              <h3 class="text-lg font-bold font-mono">Acoustic Audio-to-Video Delay Calculator</h3>
+              <p class="text-xs text-[var(--text-dim)]">Speed-of-sound physics latency compensation for arena IMAG</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delay Hero Metric Display -->
+        <div class="p-6 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-cyan-950/30 to-slate-900 border border-indigo-500/40 grid grid-cols-2 gap-4 text-center">
+          <div class="border-r border-indigo-500/20 pr-4">
+            <span class="text-[10px] text-indigo-400 font-mono font-bold uppercase tracking-wider block mb-1">
+              Audio Console Delay
+            </span>
+            <div class="text-4xl sm:text-5xl font-black text-white font-mono tracking-tight" id="delay-ms-val">
+              87.4 <span class="text-lg text-indigo-400 font-normal">ms</span>
+            </div>
+            <div class="text-[10px] text-[var(--text-dim)] font-mono mt-1">Set on soundboard matrix output</div>
+          </div>
+
+          <div class="pl-2">
+            <span class="text-[10px] text-cyan-400 font-mono font-bold uppercase tracking-wider block mb-1">
+              Video Frame Offset
+            </span>
+            <div class="text-4xl sm:text-5xl font-black text-cyan-300 font-mono tracking-tight" id="delay-frame-val">
+              5.24 <span class="text-lg text-cyan-400 font-normal">frames</span>
+            </div>
+            <div class="text-[10px] text-[var(--text-dim)] font-mono mt-1" id="delay-fps-note">At 60.00 fps projection</div>
+          </div>
+        </div>
+
+        <!-- Interactive Sliders -->
+        <div class="space-y-4">
+          <!-- Distance Slider -->
+          <div class="p-3.5 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] space-y-2">
+            <div class="flex justify-between items-center text-xs font-mono font-bold">
+              <span class="text-[var(--text-dim)]">Audience Distance from Main PA:</span>
+              <span class="text-cyan-400 text-sm" id="slider-dist-label">30 meters (98 ft)</span>
+            </div>
+            <input
+              type="range"
+              min="5"
+              max="120"
+              value="30"
+              id="slider-distance"
+              oninput="calculateDelay()"
+              class="w-full accent-cyan-400 cursor-pointer"
+            />
+          </div>
+
+          <!-- Ambient Temperature Slider -->
+          <div class="p-3.5 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] space-y-2">
+            <div class="flex justify-between items-center text-xs font-mono font-bold">
+              <span class="text-[var(--text-dim)]">Venue Ambient Temperature:</span>
+              <span class="text-amber-400 text-sm" id="slider-temp-label">20°C (68°F)</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="40"
+              value="20"
+              id="slider-temp"
+              oninput="calculateDelay()"
+              class="w-full accent-amber-400 cursor-pointer"
+            />
+          </div>
+
+          <!-- Video Frame Rate Selection -->
+          <div class="p-3.5 rounded-xl bg-[var(--bg-subcard)] border border-[var(--border-color)] flex items-center justify-between text-xs font-mono">
+            <span class="text-[var(--text-dim)] font-bold">Video Frame Rate:</span>
+            <select
+              id="delay-fps-select"
+              onchange="calculateDelay()"
+              class="px-3 py-1.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-mono font-bold text-white focus:outline-none"
+            >
+              <option value="60">60.00 fps (Pro AV UHD)</option>
+              <option value="59.94">59.94 fps (NTSC Pro)</option>
+              <option value="50">50.00 fps (PAL Broadcast)</option>
+              <option value="30">30.00 fps (Web Streaming)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Venue Preset Chips -->
+        <div class="flex items-center gap-2 pt-1 font-mono text-xs">
+          <span class="text-[10px] text-[var(--text-dim)]">Venue Presets:</span>
+          <button onclick="setVenuePreset(15)" class="px-2 py-1 rounded bg-[var(--bg-subcard)] hover:bg-cyan-500/20 text-[10px] transition font-bold">Club (15m)</button>
+          <button onclick="setVenuePreset(30)" class="px-2 py-1 rounded bg-[var(--bg-subcard)] hover:bg-cyan-500/20 text-[10px] transition font-bold">Sanctuary (30m)</button>
+          <button onclick="setVenuePreset(60)" class="px-2 py-1 rounded bg-[var(--bg-subcard)] hover:bg-cyan-500/20 text-[10px] transition font-bold">Arena (60m)</button>
+          <button onclick="setVenuePreset(100)" class="px-2 py-1 rounded bg-[var(--bg-subcard)] hover:bg-cyan-500/20 text-[10px] transition font-bold">Festival (100m)</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MOMENTARY SCREEN FLASH OVERLAY (MODAL SIMULATOR) -->
+  <div id="sim-flash-overlay" class="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-6 hidden cursor-pointer" onclick="dismissFlashOverlay()">
+    <div class="w-full max-w-2xl p-8 rounded-2xl bg-[#0a0b0e] border-8 border-amber-400 shadow-[0_0_80px_rgba(251,191,36,0.8)] text-center space-y-4 animate-bounce-short">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400 text-slate-950 font-mono font-black text-sm uppercase">
+        <span>⚡ DISPLAY IDENTIFIER ACTIVE</span>
+      </div>
+      <div class="text-6xl font-mono font-black text-white tracking-tight" id="flash-title">
+        SCREEN 2
+      </div>
+      <div class="text-2xl font-bold text-cyan-300 font-mono" id="flash-alias">
+        Pulpit Altar iPad (Confidence Monitor)
+      </div>
+      <div class="text-xs font-mono text-slate-400 pt-2">
+        (Click anywhere or waits 2s to auto-dismiss)
+      </div>
+    </div>
+  </div>
+
+  <!-- INTERACTIVE DEMO ENGINE SCRIPT -->
+  <script>
+    // Tab switching
+    function switchTab(tabId) {
+      const views = ['planner', 'stage', 'mobile', 'delay'];
+      views.forEach(v => {
+        document.getElementById('view-' + v).classList.add('hidden');
+        const btn = document.getElementById('tab-btn-' + v);
+        btn.classList.remove('bg-cyan-500', 'text-slate-950');
+        btn.classList.add('text-[var(--text-dim)]');
+      });
+
+      document.getElementById('view-' + tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById('tab-btn-' + tabId);
+      activeBtn.classList.remove('text-[var(--text-dim)]');
+      activeBtn.classList.add('bg-cyan-500', 'text-slate-950');
+    }
+
+    // Theme switching
+    function setTheme(theme) {
+      document.body.className = `theme-${theme} bg-[var(--bg-base)] text-[var(--text-main)] min-h-screen flex flex-col select-none antialiased`;
+      ['dark', 'broadcast', 'daylight'].forEach(t => {
+        const btn = document.getElementById(`theme-btn-${t}`);
+        if (t === theme) {
+          btn.className = 'px-2 py-1 rounded font-mono text-[10px] bg-cyan-500/20 text-cyan-300 font-bold';
+        } else {
+          btn.className = 'px-2 py-1 rounded font-mono text-[10px] text-[var(--text-dim)] hover:text-white';
+        }
+      });
+    }
+
+    // Node inspection data
+    const NODES_DATA = {
+      'server-1': {
+        name: 'FOH Media Server (Main Playback)',
+        zone: '📍 FOH Control Booth',
+        type: 'MEDIA_SERVER',
+        port: 'HDMI 2.0 (18 Gbps)'
+      },
+      'splitter-1': {
+        name: '1x4 Stage Distribution Amp',
+        zone: '📍 Stage Left AV Rack',
+        type: 'SPLITTER_1X4',
+        port: '4× CAT6 HDBaseT PoC'
+      },
+      'led-1': {
+        name: 'Stage Left LED Wall Processor',
+        zone: '📍 Stage Left Main Truss',
+        type: 'LED_WALL_PROCESSOR',
+        port: 'Novastar 4K UHD In'
+      },
+      'stagelink-1': {
+        name: 'Pulpit Altar iPad (StageLink™)',
+        zone: '📍 Lower Pulpit Shelf',
+        type: 'CONFIDENCE_MONITOR',
+        port: 'Wi-Fi 5GHz Stream'
+      }
+    };
+
+    function selectNode(id) {
+      const data = NODES_DATA[id];
+      if (!data) return;
+      document.getElementById('insp-name').textContent = data.name;
+      document.getElementById('insp-zone').textContent = data.zone;
+      document.getElementById('insp-type').textContent = data.type;
+      document.getElementById('insp-port').textContent = data.port;
+    }
+
+    function loadTemplate(template) {
+      if (template === 'corporate') {
+        selectNode('server-1');
+        alert('Loaded Corporate Dual IMAG & Breakout Rig template.');
+      } else if (template === 'church') {
+        selectNode('stagelink-1');
+        alert('Loaded Sanctuary Multi-Screen & StageLink Confidence Rig.');
+      } else {
+        selectNode('led-1');
+        alert('Loaded Arena Concert Video Rig with LED Wall Processors.');
+      }
+    }
+
+    function simulateLabelExport() {
+      alert('🏷️ CSV Cable Schedule exported! Compatible with Brother P-Touch Editor & Brady Workstation.');
+    }
+
+    // Live Animated Canvas Simulation
+    let isFrozen = false;
+    let isBlackout = false;
+    let activeSource = 'slides';
+    let slideCounter = 0;
+
+    const casterCanvas = document.getElementById('caster-canvas');
+    const tabletCanvas1 = document.getElementById('tablet-canvas-1');
+    const tabletCanvas2 = document.getElementById('tablet-canvas-2');
+
+    function drawCasterLoop() {
+      if (isBlackout) {
+        return requestAnimationFrame(drawCasterLoop);
+      }
+      if (!isFrozen) {
+        slideCounter += 0.03;
+      }
+
+      [casterCanvas, tabletCanvas1, tabletCanvas2].forEach((canvas, idx) => {
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+
+        ctx.fillStyle = '#080d1a';
+        ctx.fillRect(0, 0, w, h);
+
+        if (activeSource === 'slides') {
+          // Simulated Slide Deck
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(20, 20, w - 40, h - 40);
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 20px Inter, sans-serif';
+          ctx.fillText('GLOBAL KEYNOTE 2026', 40, 60);
+
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = 'bold 28px Inter, sans-serif';
+          ctx.fillText('Transforming Live Production', 40, 110);
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '14px Inter, sans-serif';
+          ctx.fillText('Zero-Install StageLink™ Wireless Confidence Architecture', 40, 145);
+
+          // Animated progress bar
+          const progress = (Math.sin(slideCounter) + 1) / 2;
+          ctx.fillStyle = '#0284c7';
+          ctx.fillRect(40, h - 55, (w - 80) * progress, 8);
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = '12px JetBrains Mono';
+          ctx.fillText(`Slide 14 of 42 • Live Feed`, 40, h - 30);
+        } else if (activeSource === 'timer') {
+          // Countdown Timer Simulation
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(0, 0, w, h);
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = 'bold 16px JetBrains Mono';
+          ctx.textAlign = 'center';
+          ctx.fillText('SERVICE COUNTDOWN TIMER', w / 2, 70);
+
+          const mins = Math.max(0, 14 - Math.floor((slideCounter * 2) % 15));
+          const secs = (60 - Math.floor((slideCounter * 50) % 60)).toString().padStart(2, '0');
+
+          ctx.fillStyle = mins < 2 ? '#ef4444' : '#ffffff';
+          ctx.font = 'black 64px JetBrains Mono';
+          ctx.fillText(`${mins}:${secs}`, w / 2, 170);
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '14px Inter';
+          ctx.fillText('Target Wrap Time: 11:45 AM', w / 2, 220);
+          ctx.textAlign = 'left';
+        } else if (activeSource === 'media') {
+          // Dynamic Visual Media Loop
+          ctx.fillStyle = '#090d16';
+          ctx.fillRect(0, 0, w, h);
+
+          for (let i = 0; i < 8; i++) {
+            const barH = 50 + Math.sin(slideCounter * 2 + i) * 40;
+            ctx.fillStyle = `hsl(${190 + i * 15}, 90%, 55%)`;
+            ctx.fillRect(60 + i * 65, h - 50 - barH, 45, barH);
+          }
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 22px Inter';
+          ctx.fillText('4K Pro Video Loop • Audio Synced', 40, 50);
+        } else {
+          // Desktop Screen Mirror
+          ctx.fillStyle = '#0c4a6e';
+          ctx.fillRect(0, 0, w, h);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 24px Inter';
+          ctx.fillText('DESKTOP SCREEN 1 (Primary Surface)', 50, 80);
+
+          ctx.fillStyle = '#7dd3fc';
+          ctx.font = '14px JetBrains Mono';
+          ctx.fillText('Native 1920×1080 @ 60Hz Mirrored via WebGL', 50, 120);
+        }
+      });
+
+      requestAnimationFrame(drawCasterLoop);
+    }
+    requestAnimationFrame(drawCasterLoop);
+
+    function changeCasterSource(val) {
+      activeSource = val;
+      const label = document.getElementById('caster-hud-label');
+      if (val === 'slides') label.textContent = 'LIVE: Presentation Slides';
+      else if (val === 'media') label.textContent = 'LIVE: 4K Video Loop';
+      else if (val === 'timer') label.textContent = 'LIVE: Countdown Timer';
+      else label.textContent = 'LIVE: Desktop Screen 1';
+    }
+
+    function toggleFreezeFrame() {
+      isFrozen = !isFrozen;
+      const overlay = document.getElementById('caster-freeze-overlay');
+      const btn = document.getElementById('btn-freeze');
+      if (isFrozen) {
+        overlay.classList.remove('hidden');
+        btn.classList.add('bg-blue-500', 'text-slate-950');
+      } else {
+        overlay.classList.add('hidden');
+        btn.classList.remove('bg-blue-500', 'text-slate-950');
+      }
+    }
+
+    function toggleGlobalBlackout() {
+      isBlackout = !isBlackout;
+      const overlay = document.getElementById('caster-blackout-overlay');
+      const label = document.getElementById('blackout-label');
+      if (isBlackout) {
+        overlay.classList.remove('hidden');
+        label.textContent = 'Blackout ON';
+      } else {
+        overlay.classList.add('hidden');
+        label.textContent = 'Blackout';
+      }
+    }
+
+    function triggerFlashBeacon() {
+      const container = document.getElementById('caster-screen-container');
+      container.classList.add('flashing-beacon');
+      setTimeout(() => container.classList.remove('flashing-beacon'), 1200);
+    }
+
+    // Stage Whisper Simulation
+    function setWhisperPrompt(text) {
+      document.getElementById('whisper-input').value = text;
+    }
+
+    function sendSimulatedWhisper() {
+      const text = document.getElementById('whisper-input').value.trim();
+      if (!text) return;
+
+      const banner = document.getElementById('tablet-whisper-banner');
+      const bannerText = document.getElementById('tablet-whisper-text');
+      bannerText.textContent = `"${text}"`;
+      banner.classList.remove('hidden');
+
+      // Highlight tablet
+      const tablet = document.getElementById('sim-tablet-1');
+      tablet.classList.add('flashing-beacon');
+
+      setTimeout(() => {
+        banner.classList.add('hidden');
+        tablet.classList.remove('flashing-beacon');
+      }, 5000);
+    }
+
+    function simulatePairModal() {
+      alert('📱 [QR Code Simulator] In the native app, a QR code appears here. Scan with an iPad or smartphone camera to open the zero-install stage receiver.');
+    }
+
+    function flashTargetDisplay(name) {
+      document.getElementById('flash-title').textContent = name.includes('Screen 1') ? 'SCREEN 1' : name.includes('Screen 2') ? 'SCREEN 2' : 'SCREEN 3';
+      document.getElementById('flash-alias').textContent = name;
+      document.getElementById('sim-flash-overlay').classList.remove('hidden');
+      setTimeout(() => {
+        dismissFlashOverlay();
+      }, 2500);
+    }
+
+    function dismissFlashOverlay() {
+      document.getElementById('sim-flash-overlay').classList.add('hidden');
+    }
+
+    // Acoustic Delay Calculations
+    function calculateDelay() {
+      const distM = parseFloat(document.getElementById('slider-distance').value);
+      const tempC = parseFloat(document.getElementById('slider-temp').value);
+      const fps = parseFloat(document.getElementById('delay-fps-select').value);
+
+      document.getElementById('slider-dist-label').textContent = `${distM} meters (${Math.round(distM * 3.28084)} ft)`;
+      document.getElementById('slider-temp-label').textContent = `${tempC}°C (${Math.round((tempC * 9)/5 + 32)}°F)`;
+
+      // Speed of sound: v = 331.3 + (0.606 * Temp)
+      const v = 331.3 + (0.606 * tempC);
+      const delayMs = (distM / v) * 1000;
+      const delayFrames = (delayMs / 1000) * fps;
+
+      document.getElementById('delay-ms-val').innerHTML = `${delayMs.toFixed(1)} <span class="text-lg text-indigo-400 font-normal">ms</span>`;
+      document.getElementById('delay-frame-val').innerHTML = `${delayFrames.toFixed(2)} <span class="text-lg text-cyan-400 font-normal">frames</span>`;
+      document.getElementById('delay-fps-note').textContent = `At ${fps.toFixed(2)} fps projection`;
+    }
+
+    function setVenuePreset(m) {
+      document.getElementById('slider-distance').value = m;
+      calculateDelay();
+    }
+
+    // Run initial calculation
+    calculateDelay();
+  </script>
+</body>
+</html>
